@@ -39,7 +39,7 @@ export default function LoginPage() {
   const [isValidEmail, setIsValidEmail] = useState(true);
 
   const router = useRouter();
-  const { login, isLoading, error, clearError, user } = useAuth();
+  const { login, isLoading, error, clearError } = useAuth();
 
   useEffect(() => {
     const savedEmail = localStorage.getItem('rememberedEmail');
