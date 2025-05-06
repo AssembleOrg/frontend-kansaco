@@ -27,26 +27,20 @@ function ProductsContent() {
   // Efecto para esperar la hidratación del store
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {
-      console.log('Auth store already hydrated on mount');
       setIsAuthReady(true);
       return;
     }
 
-    // onFinishHydration
     const unsubscribeFinish = useAuthStore.persist.onFinishHydration(() => {
-      console.log('Zustand Initial Hydration finished (onFinishHydration).');
       setIsAuthReady(true);
     });
 
-    // timeout de seguridad
     const timeoutId = setTimeout(() => {
       if (!isAuthReady) {
-        console.log('Hydration timeout reached, forcing auth ready');
         setIsAuthReady(true);
       }
-    }, 2000); //
+    }, 2000);
 
-    // Limpieza al desmontar
     return () => {
       unsubscribeFinish();
       clearTimeout(timeoutId);
@@ -56,20 +50,12 @@ function ProductsContent() {
   useEffect(() => {
     const fetchProducts = async () => {
       if (!isAuthReady) {
-        console.log('Waiting for auth store to be ready...');
         return;
       }
-
-      console.log('Auth state:', {
-        storeToken: storeToken ? 'present' : 'null',
-        hookToken: hookToken ? 'present' : 'null',
-        isAuthReady,
-      });
 
       const tokenToUse = storeToken || hookToken;
 
       if (!tokenToUse) {
-        console.log('Auth ready, but No token found. Setting error.');
         setError('Necesitas iniciar sesión para ver los productos.');
         setProducts([]);
         setUniqueCategories([]);
@@ -77,14 +63,11 @@ function ProductsContent() {
         return;
       }
 
-      console.log('Auth ready and token found, fetching products...');
       setIsLoading(true);
       setError(null);
 
       try {
-        console.log('Attempting to fetch products with token:', tokenToUse);
         const fetchedProducts = await getProducts(tokenToUse);
-        console.log('Fetched products inside useEffect:', fetchedProducts);
         setProducts(fetchedProducts);
 
         const categories = Array.from(
@@ -98,7 +81,6 @@ function ProductsContent() {
         setProducts([]);
         setUniqueCategories([]);
       } finally {
-        console.log('Setting isLoading to false after fetch attempt.');
         setIsLoading(false);
       }
     };
@@ -122,7 +104,6 @@ function ProductsContent() {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <p>Cargando productos...</p>
-        {/* Información de depuración - REMOVER*/}
         <div className="mt-4 text-sm text-gray-500">
           <p>Estado: {isAuthReady ? 'Auth listo' : 'Esperando hidratación'}</p>
           <p>Store Token: {storeToken ? 'Disponible' : 'No disponible'}</p>

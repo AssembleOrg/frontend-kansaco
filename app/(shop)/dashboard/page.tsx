@@ -1,5 +1,5 @@
 // VISTA HOME: (SERVER)
-export default function Placeholder() {
+export default function Dashboard() {
   return (
     <div>
       <h1>Página de testeo.</h1>

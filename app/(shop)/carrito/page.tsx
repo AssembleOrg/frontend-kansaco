@@ -1,7 +1,7 @@
 // useCartStore
 import React from 'react';
 
-export default function Placeholder() {
+export default function CartPage() {
   return (
     <div>
       <h1>Página de testeo.</h1>

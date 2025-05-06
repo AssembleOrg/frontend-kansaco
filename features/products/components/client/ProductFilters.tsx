@@ -14,21 +14,13 @@ import { ChevronDown, ShoppingCart, AlertCircle } from 'lucide-react';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
 import { Progress } from '@/components/ui/progress';
+import { useCart } from '@/features/cart/hooks/useCart';
+import Link from 'next/link';
 
 interface ProductFiltersProps {
   availableCategories: string[];
   currentCategory?: string;
 }
-
-// Función para formatear precio en pesos argentinos
-const formatPrice = (price: number): string => {
-  return new Intl.NumberFormat('es-AR', {
-    style: 'currency',
-    currency: 'ARS',
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(price);
-};
 
 // Constante para el mínimo de compra
 const MINIMUM_PURCHASE = 400000;
@@ -46,9 +38,12 @@ export default function ProductFilters({
     10000, 100000,
   ]);
 
-  const cartTotal = 99999; // Simulación de total del carrito
+  // Usar el hook de carrito en lugar de valores hardcodeados
+  const { cart, itemCount, subtotal, formatPrice, openCart, getProductPrice } =
+    useCart();
+
   const percentageToMinimum = Math.min(
-    (cartTotal / MINIMUM_PURCHASE) * 100,
+    (subtotal / MINIMUM_PURCHASE) * 100,
     100
   );
 
@@ -124,7 +119,7 @@ export default function ProductFilters({
         <h3 className="mb-3 border-b pb-2 text-lg font-semibold text-gray-800">
           Rango de Precio
         </h3>
-        <div className="mt-4 mb-4">
+        <div className="mb-4 mt-4">
           <div className="mb-2 flex justify-between text-sm text-gray-600">
             <span>{formatPrice(currentPriceRange[0])}</span>
             <span>{formatPrice(currentPriceRange[1])}</span>
@@ -153,56 +148,93 @@ export default function ProductFilters({
         <h3 className="mb-3 flex items-center border-b pb-2 text-lg font-semibold text-gray-800">
           <ShoppingCart className="mr-2 h-5 w-5" />
           Carrito
-          <Badge className="ml-2 bg-green-600 text-white">2</Badge>
+          {itemCount > 0 && (
+            <Badge className="ml-2 bg-green-600 text-white">{itemCount}</Badge>
+          )}
         </h3>
 
-        <div className="mb-3 max-h-60 space-y-3 overflow-y-auto">
-          <div className="flex items-center justify-between rounded-md border bg-gray-50 p-2">
-            <div className="flex-1">
-              <p className="text-sm font-medium">SAVIA K 5W 40 SINTETICO</p>
-              <p className="text-xs text-gray-500">{formatPrice(49999)} x 2</p>
+        {cart && cart.items.length > 0 ? (
+          <>
+            <div className="mb-3 max-h-60 space-y-3 overflow-y-auto">
+              {cart.items.slice(0, 3).map((item) => (
+                <div
+                  key={item.id}
+                  className="flex items-center justify-between rounded-md border bg-gray-50 p-2"
+                >
+                  <div className="flex-1">
+                    <p className="line-clamp-1 text-sm font-medium">
+                      {item.product.name}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {formatPrice(getProductPrice(item.product))} x{' '}
+                      {item.quantity}
+                    </p>
+                  </div>
+                </div>
+              ))}
+
+              {cart.items.length > 3 && (
+                <Button
+                  variant="ghost"
+                  className="w-full text-xs text-gray-500"
+                  onClick={openCart}
+                >
+                  Ver {cart.items.length - 3} productos más...
+                </Button>
+              )}
             </div>
-          </div>
 
-          <div className="flex items-center justify-between rounded-md border bg-gray-50 p-2">
-            <div className="flex-1">
-              <p className="text-sm font-medium">SAVIA J 10W 40 SINTETICO</p>
-              <p className="text-xs text-gray-500">{formatPrice(49999)} x 3</p>
+            <div className="mt-3 rounded-md bg-gray-50 p-3">
+              <div className="mb-2 flex justify-between">
+                <span className="text-sm font-medium">Total:</span>
+                <span className="text-sm font-bold text-green-600">
+                  {formatPrice(subtotal)}
+                </span>
+              </div>
+
+              <div className="mb-2">
+                <Progress value={percentageToMinimum} className="h-2" />
+              </div>
+
+              {subtotal < MINIMUM_PURCHASE ? (
+                <div className="flex items-start rounded-md bg-amber-50 p-2 text-xs text-amber-600">
+                  <AlertCircle className="mr-1 mt-0.5 h-4 w-4 flex-shrink-0" />
+                  <span>
+                    Te faltan {formatPrice(MINIMUM_PURCHASE - subtotal)} para
+                    alcanzar el mínimo de compra mayorista de{' '}
+                    {formatPrice(MINIMUM_PURCHASE)}
+                  </span>
+                </div>
+              ) : (
+                <div className="flex items-center rounded-md bg-green-50 p-2 text-xs text-green-600">
+                  <span>¡Has alcanzado el mínimo de compra mayorista!</span>
+                </div>
+              )}
             </div>
-          </div>
-        </div>
 
-        <div className="mt-3 rounded-md bg-gray-50 p-3">
-          <div className="mb-2 flex justify-between">
-            <span className="text-sm font-medium">Total:</span>
-            <span className="text-sm font-bold text-green-600">
-              {formatPrice(cartTotal)}
-            </span>
-          </div>
-
-          <div className="mb-2">
-            <Progress value={percentageToMinimum} className="h-2" />
-          </div>
-
-          {cartTotal < MINIMUM_PURCHASE ? (
-            <div className="flex items-start rounded-md bg-amber-50 p-2 text-xs text-amber-600">
-              <AlertCircle className="mt-0.5 mr-1 h-4 w-4 flex-shrink-0" />
-              <span>
-                Te faltan {formatPrice(MINIMUM_PURCHASE - cartTotal)} para
-                alcanzar el mínimo de compra mayorista de{' '}
-                {formatPrice(MINIMUM_PURCHASE)}
-              </span>
+            <div className="mt-3 space-y-2">
+              <Button
+                onClick={openCart}
+                className="w-full bg-green-600 text-white hover:bg-green-700"
+              >
+                Ver Carrito Completo
+              </Button>
+              <Link href="/checkout" className="block w-full">
+                <Button className="w-full bg-blue-600 text-white hover:bg-blue-700">
+                  Proceder al Pago
+                </Button>
+              </Link>
             </div>
-          ) : (
-            <div className="flex items-center rounded-md bg-green-50 p-2 text-xs text-green-600">
-              <span>¡Has alcanzado el mínimo de compra mayorista!</span>
-            </div>
-          )}
-        </div>
-
-        <Button className="mt-3 w-full bg-green-600 text-white hover:bg-green-700">
-          Proceder al Pago (Codear carrito)
-        </Button>
+          </>
+        ) : (
+          <div className="flex flex-col items-center justify-center py-6 text-center">
+            <ShoppingCart className="mb-2 h-10 w-10 text-gray-300" />
+            <p className="text-sm text-gray-500">Tu carrito está vacío</p>
+            <p className="mt-1 text-xs text-gray-400">
+              Añade productos para verlos aquí
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
