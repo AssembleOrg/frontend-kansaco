@@ -1,6 +1,6 @@
-// useCartStore
+// Ruta dinámica para detalle de producto
+// Detalle Producto: (SERVER) Carga datos del producto por slug
 import React from 'react';
-
 export default function Placeholder() {
   return (
     <div>

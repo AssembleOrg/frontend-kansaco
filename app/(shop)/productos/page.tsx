@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getProducts } from '@/lib/api';
 import { Product } from '@/types';
@@ -10,7 +10,8 @@ import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
 // import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
-export default function ProductosPage() {
+// Componente que contiene lógica con useSearchParams
+function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -147,10 +148,12 @@ export default function ProductosPage() {
       </h1>
       <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
         <aside className="md:col-span-1">
-          <ProductFilters
-            availableCategories={uniqueCategories}
-            currentCategory={currentCategoryFilter ?? undefined}
-          />
+          <Suspense fallback={<div>Cargando filtros...</div>}>
+            <ProductFilters
+              availableCategories={uniqueCategories}
+              currentCategory={currentCategoryFilter ?? undefined}
+            />
+          </Suspense>
         </aside>
         <main className="md:col-span-3">
           {filteredProducts.length > 0 ? (
@@ -169,5 +172,20 @@ export default function ProductosPage() {
         </main>
       </div>
     </div>
+  );
+}
+
+// Componente principal con Suspense
+export default function ProductosPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="container mx-auto p-8 text-center">
+          Cargando página de productos...
+        </div>
+      }
+    >
+      <ProductsContent />
+    </Suspense>
   );
 }

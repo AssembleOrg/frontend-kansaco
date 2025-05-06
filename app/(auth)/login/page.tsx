@@ -120,7 +120,7 @@ export default function LoginPage() {
             {' '}
             <div className="flex items-start space-x-4">
               {' '}
-              <div className="bg-opacity-20 rounded-full bg-white p-2">
+              <div className="rounded-full bg-white bg-opacity-20 p-2">
                 <LucideShieldCheck className="h-6 w-6" />
               </div>{' '}
               <div>
@@ -135,7 +135,7 @@ export default function LoginPage() {
             </div>{' '}
             <div className="flex items-start space-x-4">
               {' '}
-              <div className="bg-opacity-20 rounded-full bg-white p-2">
+              <div className="rounded-full bg-white bg-opacity-20 p-2">
                 <LucideShieldCheck className="h-6 w-6" />
               </div>{' '}
               <div>
@@ -146,7 +146,7 @@ export default function LoginPage() {
             </div>{' '}
             <div className="flex items-start space-x-4">
               {' '}
-              <div className="bg-opacity-20 rounded-full bg-white p-2">
+              <div className="rounded-full bg-white bg-opacity-20 p-2">
                 <LucideShieldCheck className="h-6 w-6" />
               </div>{' '}
               <div>
@@ -224,7 +224,7 @@ export default function LoginPage() {
                       className={`pl-3 ${!isValidEmail && email ? 'border-red-500 focus:ring-red-500' : ''}`}
                     />
                     {!isValidEmail && email && (
-                      <div className="absolute top-1/2 right-3 -translate-y-1/2 transform text-red-500">
+                      <div className="absolute right-3 top-1/2 -translate-y-1/2 transform text-red-500">
                         {' '}
                         <AlertCircle className="h-4 w-4" />{' '}
                       </div>
