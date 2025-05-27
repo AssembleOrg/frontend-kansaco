@@ -1,5 +1,4 @@
 // features/products/components/ProductCard.tsx
-//Hardcoded mostly
 import Link from 'next/link';
 import Image from 'next/image';
 import { Product } from '@/types/product';
@@ -8,19 +7,13 @@ import { AddToCartButton } from '@/features/cart/components/client/AddToCartButt
 import { useCart } from '@/features/cart/hooks/useCart';
 
 export default function ProductCard({ product }: { product: Product }) {
-  // Usar el hook useCart para acceder a las funciones de formateo de precios
   const { formatPrice, getProductPrice } = useCart();
-
-  // La base de datos devuelve todo isVisible: false
-  // if (!product.isVisible) {
-  //   return null;
-  // }
 
   const imageUrl = product.imageUrl || '/sauberatras.jpg';
   const imageAlt = product.name;
   const uniqueCategories =
     product.category && Array.isArray(product.category)
-      ? [...new Set(product.category)] // Crea un Set para eliminar duplicados y luego vuelve a convertirlo en array
+      ? [...new Set(product.category)]
       : [];
 
   return (

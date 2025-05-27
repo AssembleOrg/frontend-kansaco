@@ -43,6 +43,7 @@ export default function RegisterPage() {
 
   // Validación simple de contraseña en el frontend
   const validatePassword = (): boolean => {
+    setPasswordError(null);
     if (password.length < 8) {
       setPasswordError('La contraseña debe tener al menos 8 caracteres.');
       return false;
@@ -59,7 +60,13 @@ export default function RegisterPage() {
     event.preventDefault();
     setError(null);
     setSuccessMessage(null);
+
     if (!validatePassword()) {
+      return;
+    }
+
+    if (password !== confirmPassword) {
+      setPasswordError('Las contraseñas no coinciden.');
       return;
     }
 
@@ -92,7 +99,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#f7faf8] px-4">
+    <div className="from:bg-green-600 to:bg-green-500 flex min-h-screen items-center justify-center bg-[#f7faf8] px-4">
       <Card className="w-full max-w-md border-[#e6f5eb] shadow-md">
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold text-[#4a4a4a]">
@@ -184,7 +191,32 @@ export default function RegisterPage() {
                   value={password}
                   onChange={(e) => {
                     setPassword(e.target.value);
-                    if (confirmPassword) validatePassword();
+
+                    if (confirmPassword) {
+                      const currentPassword = e.target.value;
+                      const currentConfirmPassword = confirmPassword;
+                      if (currentPassword.length < 8) {
+                        setPasswordError(
+                          'La contraseña debe tener al menos 8 caracteres.'
+                        );
+                      } else if (
+                        currentPassword !== currentConfirmPassword &&
+                        currentConfirmPassword
+                      ) {
+                        setPasswordError('Las contraseñas no coinciden.');
+                      } else {
+                        setPasswordError(null);
+                      }
+                    } else if (
+                      e.target.value.length < 8 &&
+                      e.target.value.length > 0
+                    ) {
+                      setPasswordError(
+                        'La contraseña debe tener al menos 8 caracteres.'
+                      );
+                    } else {
+                      setPasswordError(null);
+                    }
                   }}
                   disabled={isRegistering}
                   className="border-[#e6f5eb] pr-10 focus:border-[#16a245] focus:ring-[#16a245]"
@@ -223,7 +255,19 @@ export default function RegisterPage() {
                   value={confirmPassword}
                   onChange={(e) => {
                     setConfirmPassword(e.target.value);
-                    validatePassword();
+
+                    const currentConfirmPassword = e.target.value;
+                    const currentPassword = password;
+
+                    if (currentPassword.length < 8) {
+                      setPasswordError(
+                        'La contraseña principal debe tener al menos 8 caracteres.'
+                      );
+                    } else if (currentPassword !== currentConfirmPassword) {
+                      setPasswordError('Las contraseñas no coinciden.');
+                    } else {
+                      setPasswordError(null);
+                    }
                   }}
                   disabled={isRegistering}
                   className={`border-[#e6f5eb] pr-10 focus:border-[#16a245] focus:ring-[#16a245] ${passwordError ? 'border-red-500' : ''}`}
@@ -269,7 +313,7 @@ export default function RegisterPage() {
           ¿Ya tienes cuenta?{' '}
           <Link
             href="/login"
-            className="text-[#16a245] underline hover:text-[#0d7a32]"
+            className="ml-1 text-[#16a245] underline hover:text-[#0d7a32]"
           >
             Inicia sesión aquí
           </Link>

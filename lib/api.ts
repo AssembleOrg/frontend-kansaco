@@ -9,12 +9,25 @@ import {
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
+interface BackendValidationErrorItem {
+  property: string;
+  constraints: { [key: string]: string };
+}
+
+interface BackendErrorResponse {
+  statusCode: number;
+  timestamp: string;
+  path: string;
+  message: string | string[] | BackendValidationErrorItem[];
+  error?: string;
+}
+
+// Interfaces de respuestas exitosas
 interface ActualProductsApiResponse {
   status: string;
   data: Product[];
 }
 
-// Interfaces para el carrito
 interface CartApiResponse {
   status: string;
   data: Cart;
@@ -23,15 +36,54 @@ interface CartApiResponse {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     let errorMsg = `Error ${response.status}: ${response.statusText}`;
+    let errorData: BackendErrorResponse | string | undefined;
+
     try {
-      const errorData = await response.json();
-      if (errorData && (errorData.message || errorData.error)) {
-        errorMsg = errorData.message || errorData.error;
-      }
+      errorData = (await response.json()) as BackendErrorResponse;
     } catch (jsonParseError) {
-      console.warn('Could not parse error response body:', jsonParseError);
+      console.warn(
+        'Could not parse error response body as JSON:',
+        jsonParseError
+      );
     }
-    console.error('API Error:', errorMsg);
+
+    if (errorData) {
+      if (typeof errorData === 'string') {
+        errorMsg = errorData;
+      } else if (errorData.message) {
+        if (Array.isArray(errorData.message)) {
+          errorMsg = errorData.message
+            .map((item: string | BackendValidationErrorItem) => {
+              if (typeof item === 'string') {
+                return item;
+              }
+              if (item.constraints) {
+                return Object.values(item.constraints).join('. ');
+              }
+              return `Validation error: ${JSON.stringify(item)}`; //falback
+            })
+            .join('; ');
+        } else {
+          errorMsg = errorData.message;
+        }
+      } else if (errorData.error) {
+        errorMsg = errorData.error;
+      } else if (Array.isArray(errorData) && errorData.length > 0) {
+        errorMsg = errorData
+          .map((e: string | BackendValidationErrorItem) => {
+            if (typeof e === 'string') return e;
+            if (e.constraints) return Object.values(e.constraints).join('. ');
+            return `Error: ${JSON.stringify(e)}`;
+          })
+          .join('; ');
+      }
+    }
+    console.error(
+      'API Error (parsed):',
+      errorMsg,
+      'Raw error data:',
+      errorData
+    );
     throw new Error(errorMsg);
   }
   try {
@@ -49,15 +101,12 @@ export async function getProducts(token: string | null): Promise<Product[]> {
   }
   const url = `${API_BASE_URL}/api/product`;
 
-  if (!token) {
-    console.warn('getProducts called without a token.');
-    return [];
-  }
-
   const headers: HeadersInit = {
     Accept: 'application/json',
-    Authorization: `Bearer ${token}`,
   };
+  if (token) {
+    headers.Authorization = `Bearer ${token}`;
+  }
 
   try {
     const response = await fetch(url, {
@@ -65,20 +114,16 @@ export async function getProducts(token: string | null): Promise<Product[]> {
       headers,
       cache: 'no-store',
     });
-
     const fullResponse =
-      await handleResponse<ActualProductsApiResponse>(response); //
+      await handleResponse<ActualProductsApiResponse>(response);
     if (fullResponse && Array.isArray(fullResponse.data)) {
-      console.log(
-        `getProducts returning ${fullResponse.data.length} products from data array.`
-      );
-      return fullResponse.data; // Devuelve SOLO el array de productos
+      return fullResponse.data;
     } else {
       console.warn(
         'getProducts received unexpected response structure:',
         fullResponse
       );
-      return []; // Devuelve vacío si la estructura no es la esperada
+      return [];
     }
   } catch (error) {
     console.error('Error fetching products:', error);
@@ -86,61 +131,42 @@ export async function getProducts(token: string | null): Promise<Product[]> {
   }
 }
 
-// Implementación de getProductBySlug
-export async function getProductBySlug(
-  slug: string,
-  token: string | null
-): Promise<Product | null> {
+export async function getProductBySlug(slug: string): Promise<Product | null> {
   if (!API_BASE_URL) {
     console.error('API URL not configured.');
     return null;
   }
 
-  // Si no hay token, no podemos hacer la solicitud
-  if (!token) {
-    console.warn('getProductBySlug called without a token.');
-    return null;
-  }
-
   try {
-    // Paso 1: Obtener todos los productos
-    const allProducts = await getProducts(token);
-    if (!allProducts || allProducts.length === 0) {
-      console.warn('No products found');
-      return null;
-    }
+    const url = `${API_BASE_URL}/api/product/filter?slug=${slug}`;
 
-    // Paso 2: Buscar el producto con el slug especificado
-    const productWithSlug = allProducts.find((p) => p.slug === slug);
-    if (!productWithSlug) {
-      console.warn(`No product found with slug: ${slug}`);
-      return null;
-    }
+    const headers: HeadersInit = {
+      Accept: 'application/json',
+    };
+    // if (token) {
+    //   headers.Authorization = `Bearer ${token}`;
+    // }
 
-    // Paso 3: Si es necesario, obtener detalles adicionales usando el ID
-    // En este caso, como ya tenemos todos los datos del producto, podemos devolverlo directamente
-    // Si necesitáramos más detalles, haríamos una solicitud a /api/product/{id}
-
-    /* 
-    // Código para obtener detalles por ID si es necesario
-    const productId = productWithSlug.id;
-    const detailUrl = `${API_BASE_URL}/api/product/${productId}`;
-    const detailResponse = await fetch(detailUrl, {
+    const response = await fetch(url, {
       method: 'GET',
-      headers: {
-        Accept: 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
+      headers,
       cache: 'no-store',
     });
-    
-    const productDetail = await handleResponse(detailResponse);
-    return productDetail;
-    */
-
-    // Devolvemos el producto encontrado
-    console.log(`Found product with slug ${slug}: ID=${productWithSlug.id}`);
-    return productWithSlug;
+    const fullResponse =
+      await handleResponse<ActualProductsApiResponse>(response);
+    if (
+      fullResponse &&
+      Array.isArray(fullResponse.data) &&
+      fullResponse.data.length > 0
+    ) {
+      return fullResponse.data[0];
+    } else {
+      console.warn(
+        `No product found with slug: ${slug} via /api/product/filter endpoint, or response structure was unexpected.`,
+        fullResponse
+      );
+      return null;
+    }
   } catch (error) {
     console.error(`Error in getProductBySlug for ${slug}:`, error);
     return null;
@@ -176,7 +202,6 @@ export async function registerUser(
 ): Promise<RegisterResponse> {
   if (!API_BASE_URL) throw new Error('API URL not configured.');
   const url = `${API_BASE_URL}/api/user/register`;
-  console.log(`Attempting registration to: ${url}`);
 
   try {
     const response = await fetch(url, {
@@ -196,7 +221,6 @@ export async function registerUser(
   }
 }
 
-// Funciones de carrito
 export async function getCartById(
   cartId: number,
   token: string | null
@@ -293,38 +317,36 @@ export async function createCart(
 export async function addProductToCart(
   cartId: number,
   productId: number,
-  quantity: number = 1,
+  quantity: number,
   token: string | null
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
     console.error('API URL not configured.');
     return null;
   }
-
   if (!token) {
     console.warn('addProductToCart called without a token.');
     return null;
   }
 
+  // Construir la URL con quantity como query parameter
+  const url = `${API_BASE_URL}/api/cart/${cartId}/add/product/${productId}?quantity=${quantity}`;
+  console.log(`addProductToCart: Calling PUT ${url}`);
+
   try {
-    const response = await fetch(
-      `${API_BASE_URL}/api/cart/${cartId}/add/product/${productId}`,
-      {
-        method: 'PUT',
-        headers: {
-          Accept: 'application/json',
-          'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
-        },
-        body: JSON.stringify({ quantity }),
-        cache: 'no-store',
-      }
-    );
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
 
     return await handleResponse<CartApiResponse>(response);
   } catch (error) {
     console.error(
-      `Error adding product ${productId} to cart ${cartId}:`,
+      `Error adding/updating product ${productId} (qty: ${quantity}) to cart ${cartId}:`,
       error
     );
     return null;

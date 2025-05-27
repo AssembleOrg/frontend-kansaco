@@ -1,9 +1,9 @@
+// features/cart/providers/CartProvider.tsx
 'use client';
 
-import { ReactNode, useEffect } from 'react';
-import { useCartStore } from '../store/cartStore';
+import { ReactNode, useEffect, useState } from 'react';
 import { useAuthStore } from '@/features/auth/store/authStore';
-import { useCart } from '../hooks/useCart';
+import { useCartStore } from '../store/cartStore';
 import { CartDrawer } from '../components/client/CartDrawer';
 
 interface CartProviderProps {
@@ -11,31 +11,32 @@ interface CartProviderProps {
 }
 
 export const CartProvider = ({ children }: CartProviderProps) => {
-  const { syncCart } = useCart();
-  const { token, user } = useAuthStore();
+  const { syncWithServer, cart } = useCartStore();
+  const isAuthReady = useAuthStore((state) => state.isAuthReady);
+  const token = useAuthStore((state) => state.token);
+  const [initialSyncDone, setInitialSyncDone] = useState(false);
 
-  // Sincronización cuando el usuario inicia sesión
   useEffect(() => {
-    if (user && token) {
-      console.log(
-        'Usuario autenticado, sincronizando carrito con el servidor...'
-      );
-      syncCart();
+    if (!isAuthReady) {
+      console.log('CartProvider: Esperando hidratación de Auth Store...');
+      return;
     }
-  }, [user, token, syncCart]);
 
-  // Sincronización tras la hidratación de los stores
-  useEffect(() => {
-    const isCartStoreHydrated = useCartStore.persist.hasHydrated();
-    const isAuthStoreHydrated = useAuthStore.persist.hasHydrated();
-
-    if (isCartStoreHydrated && isAuthStoreHydrated && user && token) {
+    if (token && !initialSyncDone) {
       console.log(
-        'Hidratación completa, usuario autenticado, sincronizando carrito...'
+        'CartProvider: Autenticado y listo. Realizando sincronización inicial del carrito...'
       );
-      syncCart();
+      syncWithServer();
+      setInitialSyncDone(true);
+    } else if (!token && initialSyncDone) {
+      console.log(
+        'CartProvider: Usuario desautenticado. Reseteando bandera de sync inicial.'
+      );
+      setInitialSyncDone(false);
+    } else if (!token) {
+      console.log('CartProvider: No autenticado. Carrito operará localmente.');
     }
-  }, [user, token, syncCart]);
+  }, [isAuthReady, token, syncWithServer, initialSyncDone]);
 
   return (
     <>

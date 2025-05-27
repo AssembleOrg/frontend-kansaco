@@ -1,3 +1,4 @@
+// app/(shop)/productos/page.tsx
 'use client';
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
@@ -8,9 +9,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
-// import LoadingSpinner from '@/components/ui/LoadingSpinner';
 
-// Componente que contiene lógica con useSearchParams
 function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
@@ -20,48 +19,38 @@ function ProductsContent() {
 
   const storeToken = useAuthStore((state) => state.token);
   const { token: hookToken } = useAuth();
-
   const searchParams = useSearchParams();
   const currentCategoryFilter = searchParams.get('category');
 
-  // Efecto para esperar la hidratación del store
+  // Efecto para esperar la hidratación del store de autenticación
   useEffect(() => {
     if (useAuthStore.persist.hasHydrated()) {
       setIsAuthReady(true);
       return;
     }
-
     const unsubscribeFinish = useAuthStore.persist.onFinishHydration(() => {
       setIsAuthReady(true);
     });
-
     const timeoutId = setTimeout(() => {
-      if (!isAuthReady) {
+      if (!useAuthStore.persist.hasHydrated()) {
+        console.warn(
+          'Auth store hydration timeout in ProductsContent. Forcing isAuthReady to true.'
+        );
         setIsAuthReady(true);
       }
     }, 2000);
-
     return () => {
       unsubscribeFinish();
       clearTimeout(timeoutId);
     };
-  }, [isAuthReady]);
+  }, []);
 
   useEffect(() => {
     const fetchProducts = async () => {
       if (!isAuthReady) {
         return;
       }
-
       const tokenToUse = storeToken || hookToken;
-
-      if (!tokenToUse) {
-        setError('Necesitas iniciar sesión para ver los productos.');
-        setProducts([]);
-        setUniqueCategories([]);
-        setIsLoading(false);
-        return;
-      }
 
       setIsLoading(true);
       setError(null);
@@ -88,7 +77,6 @@ function ProductsContent() {
     fetchProducts();
   }, [isAuthReady, storeToken, hookToken]);
 
-  // Filtrado
   const filteredProducts = useMemo(() => {
     let result = products;
     if (currentCategoryFilter) {
@@ -96,8 +84,7 @@ function ProductsContent() {
         p.category?.includes(currentCategoryFilter)
       );
     }
-    // return result.filter((p) => p.isVisible);
-    return result; // Muestra todos por ahora
+    return result;
   }, [products, currentCategoryFilter]);
 
   if (!isAuthReady || isLoading) {
@@ -106,8 +93,7 @@ function ProductsContent() {
         <p>Cargando productos...</p>
         <div className="mt-4 text-sm text-gray-500">
           <p>Estado: {isAuthReady ? 'Auth listo' : 'Esperando hidratación'}</p>
-          <p>Store Token: {storeToken ? 'Disponible' : 'No disponible'}</p>
-          <p>Hook Token: {hookToken ? 'Disponible' : 'No disponible'}</p>
+          <p>Token: {storeToken ? 'Disponible' : 'No disponible'}</p>
         </div>
       </div>
     );
@@ -156,7 +142,6 @@ function ProductsContent() {
   );
 }
 
-// Componente principal con Suspense
 export default function ProductosPage() {
   return (
     <Suspense

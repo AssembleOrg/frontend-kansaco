@@ -5,12 +5,12 @@ export type UserRole =
   | 'USER'
   | 'ADMIN'
   | 'WHOLESALER_PENDING'
-  | 'WHOLESALER_APPROVED'; // Preguntar.
+  | 'WHOLESALER_APPROVED'; // Preguntar | no definido yet..
 
 export interface User {
   id: string;
   email: string;
   fullName: string;
-  role: UserRole; //todavia no esta
+  role: UserRole;
   cart: Cart;
 }

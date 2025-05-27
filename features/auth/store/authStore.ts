@@ -1,119 +1,128 @@
-// /features/auth/store/authStore.ts
+// features/auth/store/authStore.ts
 import { create } from 'zustand';
-import { AuthState, LoginPayload, ActualLoginApiResponse } from '@/types';
-import { persist, createJSONStorage } from 'zustand/middleware';
-import { User } from '@/types';
-import { loginUser } from '@/lib/api';
+import {
+  persist,
+  createJSONStorage,
+  devtools,
+  StateStorage,
+} from 'zustand/middleware';
+import { User, LoginPayload, ActualLoginApiResponse } from '@/types/auth';
+import { loginUser as apiLoginUser } from '@/lib/api';
+import { useCartStore } from '@/features/cart/store/cartStore';
 
-// Helper - localStorage está disponible
-const isLocalStorageAvailable = () => {
-  if (typeof window === 'undefined') return false;
+const isLocalStorageAvailable = (): StateStorage | undefined => {
+  if (typeof window === 'undefined') return undefined;
   try {
     window.localStorage.setItem('zustand-test', 'test');
     window.localStorage.removeItem('zustand-test');
-    return true;
+    return localStorage;
   } catch (e) {
-    return false;
+    console.warn('localStorage no disponible o restringido:', e);
+    return undefined;
   }
 };
 
-//  depuración - estado del localStorage
-const debugStorage = () => {
-  if (!isLocalStorageAvailable()) return null;
-
-  try {
-    const storageContent = localStorage.getItem('auth-storage');
-    if (storageContent) {
-      return JSON.parse(storageContent);
-    }
-    return null;
-  } catch (e) {
-    console.error('Error reading localStorage:', e);
-    return null;
-  }
-};
+interface AuthState {
+  token: string | null;
+  user: User | null;
+  isLoading: boolean;
+  error: string | null;
+  isAuthReady: boolean;
+  setToken: (token: string | null) => void;
+  setUser: (user: User | null) => void;
+  login: (payload: LoginPayload) => Promise<ActualLoginApiResponse>;
+  logout: () => Promise<void>;
+}
 
 export const useAuthStore = create<AuthState>()(
-  persist(
-    (set) => ({
-      user: null,
-      token: null,
-      isLoading: false,
-      error: null,
-      login: async (payload: LoginPayload): Promise<boolean> => {
-        console.log('Login attempt started', payload);
-        set({ isLoading: true, error: null });
-        try {
-          console.log('Calling API');
-          const response: ActualLoginApiResponse = await loginUser(payload);
-          console.log('API response:', response);
+  devtools(
+    persist(
+      (set) => ({
+        token: null,
+        user: null,
+        isLoading: false,
+        error: null,
+        isAuthReady: false,
 
-          const responseToken = response.data?.token || null;
-          const userFromResponse = response.data?.user || null;
+        setToken: (token) => set({ token }),
+        setUser: (user) => set({ user }),
 
+        login: async (payload) => {
+          set({ isLoading: true, error: null });
+          try {
+            const response = await apiLoginUser(payload);
+            set({
+              token: response.access_token,
+              user: response.user,
+              isLoading: false,
+              error: null,
+            });
+            console.log('AuthStore: Login exitoso, token y user establecidos.');
+
+            return response;
+          } catch (error: unknown) {
+            const errorMessage =
+              error instanceof Error
+                ? error.message
+                : 'Error de login desconocido';
+            set({ error: errorMessage, isLoading: false });
+            console.error('AuthStore: Error en login:', errorMessage);
+            throw error;
+          }
+        },
+
+        logout: async () => {
+          console.log('AuthStore: Logout iniciado.');
+
+          const { token, cart } = useCartStore.getState();
+          if (token && cart.id !== 0) {
+            try {
+              console.log(
+                'AuthStore: (Idealmente) Carrito del servidor vaciado.'
+              );
+            } catch (e) {
+              console.error(
+                'AuthStore: Error vaciando carrito del servidor en logout',
+                e
+              );
+            }
+          }
+
+          await useCartStore.getState().clearCart();
+
+          set({ token: null, user: null, error: null });
           console.log(
-            'Token found in response.data:',
-            responseToken ? 'Yes' : 'No'
+            'AuthStore: Estado de autenticación y carrito local limpiados.'
           );
-          console.log(
-            'User found in response.data:',
-            userFromResponse ? 'Yes' : 'No'
-          );
-          console.log('Setting token:', responseToken ? 'has value' : 'null');
-          console.log('Setting user:', userFromResponse ? 'has data' : 'null');
-
-          set({
-            user: userFromResponse,
-            token: responseToken,
-            isLoading: false,
-            error: null,
-          });
-
-          setTimeout(() => {
-            const storageState = debugStorage();
-            console.log('Storage state after login:', storageState);
-          }, 500);
-          return true;
-        } catch (error) {
-          console.error('Login error:', error);
-          set({
-            user: null,
-            token: null,
-            isLoading: false,
-            error: error instanceof Error ? error.message : 'Error desconocido',
-          });
-          return false;
-        }
-      },
-      logout: () => {
-        set({ user: null, token: null, isLoading: false, error: null });
-      },
-      setToken: (token: string | null) => {
-        set({ token });
-      },
-      setUser: (user: User | null) => {
-        set({ user });
-      },
-      clearError: () => {
-        set({ error: null });
-      },
-    }),
-    {
-      name: 'auth-storage',
-      storage: createJSONStorage(() => {
-        return isLocalStorageAvailable()
-          ? localStorage
-          : {
+        },
+      }),
+      {
+        name: 'auth-storage',
+        storage: createJSONStorage(
+          () =>
+            isLocalStorageAvailable() ?? {
               getItem: () => null,
               setItem: () => null,
               removeItem: () => null,
-            };
-      }),
-      partialize: (state) => ({
-        user: state.user,
-        token: state.token,
-      }),
-      skipHydration: false,
-    }
+            }
+        ),
+        partialize: (state) => ({ token: state.token, user: state.user }),
+        onRehydrateStorage: () => () => {
+          useAuthStore.setState({ isAuthReady: true });
+          console.log('Auth Store: Rehidratación completa. isAuthReady=true.');
+        },
+        // onRehydrateError: (err: unknown) => {
+        //   console.error('Auth Store: Error de rehidratación:', err);
+        //   // Si hay error, igual marcamos como listo para no bloquear la app,
+        //   // pero el estado será el inicial (sin token/usuario).
+        //   useAuthStore.setState({
+        //     isAuthReady: true,
+        //     token: null,
+        //     user: null,
+        //     error: 'Error cargando sesión.',
+        //   });
+        // },
+      }
+    )
   )
 );

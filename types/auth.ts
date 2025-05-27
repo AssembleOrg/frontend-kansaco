@@ -1,35 +1,21 @@
-// /types/auth.ts
-import { User } from './user';
+// types/auth.ts
+
+export interface User {
+  id: string;
+  email: string;
+  fullName?: string;
+}
 
 export interface LoginPayload {
   email: string;
-  password: string;
+  password?: string;
 }
 
 export interface ActualLoginApiResponse {
   status: string;
-  data: {
-    user: User;
-    token: string;
-  };
-}
-// // Api response si 200
-// export interface LoginResponse {
-//   user: User;
-//   token: string; // JWT
-// }
-
-// Estructura del estado de autenticación en Zustand
-export interface AuthState {
-  user: User | null;
-  token: string | null;
-  isLoading: boolean;
-  error: string | null;
-  login: (payload: LoginPayload) => Promise<boolean>;
-  logout: () => void;
-  setToken: (token: string | null) => void;
-  setUser: (user: User | null) => void;
-  clearError: () => void;
+  access_token: string;
+  user: User;
+  message?: string;
 }
 
 export interface RegisterPayload {
@@ -40,4 +26,5 @@ export interface RegisterPayload {
 
 export interface RegisterResponse {
   status: string;
+  message: string;
 }

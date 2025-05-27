@@ -1,9 +1,10 @@
 // /app/(auth)/login/page.tsx
 'use client';
 
-import { useState, FormEvent, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useState, FormEvent } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
+import { useAuthStore } from '@/features/auth/store/authStore';
+import { useCartStore } from '@/features/cart/store/cartStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -31,65 +32,67 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
+const validateEmail = (email: string): boolean => {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+};
+
 export default function LoginPage() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const loginFromAuthStore = useAuthStore((state) => state.login);
+  const mergeLocalCartToServer = useCartStore(
+    (state) => state.mergeLocalCartToServer
+  );
+
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [isValidEmail, setIsValidEmail] = useState(true);
 
-  const router = useRouter();
-  const { login, isLoading, error, clearError } = useAuth();
-
-  useEffect(() => {
-    const savedEmail = localStorage.getItem('rememberedEmail');
-    if (savedEmail) {
-      setEmail(savedEmail);
-      setRememberMe(true);
-      validateEmail(savedEmail);
-    }
-  }, []);
-
-  const validateEmail = (emailToValidate: string): boolean => {
-    if (!emailToValidate) {
-      setIsValidEmail(true);
-      return true;
-    }
-    const regex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const isValid = regex.test(emailToValidate);
-    setIsValidEmail(isValid);
-    return isValid;
-  };
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value;
     setEmail(newEmail);
-    validateEmail(newEmail);
+    setIsValidEmail(validateEmail(newEmail) || newEmail === '');
   };
 
-  const handleSubmit = async (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
+  const handleSubmit = async (e: FormEvent) => {
+    e.preventDefault();
 
     if (!validateEmail(email)) {
+      setIsValidEmail(false);
+      setError('Por favor, ingresa un correo electrónico válido.');
+      return;
+    }
+    if (!password) {
+      setError('Por favor, ingresa tu contraseña.');
       return;
     }
 
-    if (error) clearError();
-
+    setIsLoading(true);
+    setError(null);
     try {
-      const loginSuccess = await login({ email, password });
+      await loginFromAuthStore({ email, password });
+      console.log('LoginPage: Login exitoso desde authStore.');
 
-      if (loginSuccess) {
-        if (rememberMe) {
-          localStorage.setItem('rememberedEmail', email);
-        } else {
-          localStorage.removeItem('rememberedEmail');
-        }
+      await mergeLocalCartToServer();
+      console.log('LoginPage: Fusión del carrito intentada después del login.');
 
-        router.push('/');
-      }
-    } catch (err) {
-      console.error('Login submit error caught in component:', err);
+      const redirectUrl = searchParams.get('redirect') || '/productos';
+      router.push(redirectUrl);
+    } catch (err: any) {
+      // any error api
+      const apiErrorMessage =
+        err.response?.data?.message ||
+        err.message ||
+        'Error al iniciar sesión. Verifica tus credenciales.';
+      setError(apiErrorMessage);
+      console.error('LoginPage: Error en handleSubmit:', err);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -103,60 +106,49 @@ export default function LoginPage() {
           transition={{ duration: 0.6 }}
         >
           <div className="mb-8 text-center">
-            {' '}
             <Image
               src="/sauberatras.jpg"
-              alt="Kansaco Logo"
+              alt="Kansaco Logo" //placeholder
               width={180}
               height={180}
               className="mx-auto mb-6 rounded-lg shadow-lg"
-            />{' '}
-            <h1 className="mb-2 text-4xl font-bold">KANSACO</h1>{' '}
-            <p className="text-xl opacity-90">
-              Especialistas en Lubricantes
-            </p>{' '}
+              priority
+            />
+            <h1 className="mb-2 text-4xl font-bold">KANSACO</h1>
+            <p className="text-xl opacity-90">Especialistas en Lubricantes</p>
           </div>
           <div className="mx-auto mt-12 max-w-md space-y-6">
-            {' '}
             <div className="flex items-start space-x-4">
-              {' '}
               <div className="rounded-full bg-white bg-opacity-20 p-2">
                 <LucideShieldCheck className="h-6 w-6" />
-              </div>{' '}
+              </div>
               <div>
-                {' '}
-                <h3 className="text-lg font-semibold">
-                  Calidad Garantizada
-                </h3>{' '}
+                <h3 className="text-lg font-semibold">Calidad Garantizada</h3>
                 <p className="opacity-80">
                   Productos certificados para el máximo rendimiento.
-                </p>{' '}
-              </div>{' '}
-            </div>{' '}
+                </p>
+              </div>
+            </div>
             <div className="flex items-start space-x-4">
-              {' '}
               <div className="rounded-full bg-white bg-opacity-20 p-2">
                 <LucideShieldCheck className="h-6 w-6" />
-              </div>{' '}
+              </div>
               <div>
-                {' '}
-                <h3 className="text-lg font-semibold">Soporte Técnico</h3>{' '}
-                <p className="opacity-80">Asesoramiento especializado.</p>{' '}
-              </div>{' '}
-            </div>{' '}
+                <h3 className="text-lg font-semibold">Soporte Técnico</h3>
+                <p className="opacity-80">Asesoramiento especializado.</p>
+              </div>
+            </div>
             <div className="flex items-start space-x-4">
-              {' '}
               <div className="rounded-full bg-white bg-opacity-20 p-2">
                 <LucideShieldCheck className="h-6 w-6" />
-              </div>{' '}
+              </div>
               <div>
-                {' '}
-                <h3 className="text-lg font-semibold">Entregas Rápidas</h3>{' '}
+                <h3 className="text-lg font-semibold">Entregas Rápidas</h3>
                 <p className="opacity-80">
                   Distribución eficiente para mayoristas.
-                </p>{' '}
-              </div>{' '}
-            </div>{' '}
+                </p>
+              </div>
+            </div>
           </div>
         </motion.div>
       </div>
@@ -169,27 +161,23 @@ export default function LoginPage() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <Card className="border-0 shadow-xl">
+          <Card className="dark:bg-gray-850 border-0 shadow-xl dark:border-gray-700">
             <CardHeader className="pb-4">
-              {' '}
               <div className="mb-2 text-center">
                 <div className="mb-6 lg:hidden">
-                  {' '}
                   <Image
                     src="/sauberatras.jpg"
                     alt="Kansaco Logo"
                     width={100}
                     height={100}
                     className="mx-auto rounded-lg"
-                  />{' '}
+                  />
                 </div>
                 <CardTitle className="text-2xl font-bold text-gray-800 dark:text-white">
-                  {' '}
-                  Bienvenido a KANSACO{' '}
+                  Bienvenido a KANSACO
                 </CardTitle>
                 <CardDescription className="text-gray-500 dark:text-gray-400">
-                  {' '}
-                  Accede a nuestra plataforma mayorista{' '}
+                  Accede a nuestra plataforma mayorista
                 </CardDescription>
               </div>
             </CardHeader>
@@ -209,8 +197,7 @@ export default function LoginPage() {
                     htmlFor="email"
                     className="flex items-center text-gray-700 dark:text-gray-300"
                   >
-                    {' '}
-                    <Mail className="mr-2 h-4 w-4" /> Correo Electrónico{' '}
+                    <Mail className="mr-2 h-4 w-4" /> Correo Electrónico
                   </Label>
                   <div className="relative">
                     <Input
@@ -221,19 +208,17 @@ export default function LoginPage() {
                       value={email}
                       onChange={handleEmailChange}
                       disabled={isLoading}
-                      className={`pl-3 ${!isValidEmail && email ? 'border-red-500 focus:ring-red-500' : ''}`}
+                      className={`w-full rounded-md border p-2 pl-3 text-sm shadow-sm ${!isValidEmail && email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-green-500 focus:ring-green-500 dark:border-gray-600'} dark:bg-gray-700 dark:text-white`}
                     />
                     {!isValidEmail && email && (
-                      <div className="absolute right-3 top-1/2 -translate-y-1/2 transform text-red-500">
-                        {' '}
-                        <AlertCircle className="h-4 w-4" />{' '}
+                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-red-500">
+                        <AlertCircle className="h-4 w-4" />
                       </div>
                     )}
                   </div>
                   {!isValidEmail && email && (
                     <p className="mt-1 text-xs text-red-500">
-                      {' '}
-                      Por favor ingresa un correo válido{' '}
+                      Por favor ingresa un correo válido
                     </p>
                   )}
                 </div>
@@ -243,8 +228,7 @@ export default function LoginPage() {
                     htmlFor="password"
                     className="flex items-center text-gray-700 dark:text-gray-300"
                   >
-                    {' '}
-                    <Lock className="mr-2 h-4 w-4" /> Contraseña{' '}
+                    <Lock className="mr-2 h-4 w-4" /> Contraseña
                   </Label>
                   <div className="relative">
                     <Input
@@ -255,13 +239,18 @@ export default function LoginPage() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
-                      className="pr-10"
+                      className="w-full rounded-md border border-gray-300 p-2 pr-10 text-sm shadow-sm focus:border-green-500 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600"
+                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
                       tabIndex={-1}
+                      aria-label={
+                        showPassword
+                          ? 'Ocultar contraseña'
+                          : 'Mostrar contraseña'
+                      }
                     >
                       {showPassword ? (
                         <EyeOff className="h-4 w-4" />
@@ -272,7 +261,6 @@ export default function LoginPage() {
                   </div>
                 </div>
 
-                {/* Recordarme y Olvidé Contraseña */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Checkbox
@@ -281,78 +269,64 @@ export default function LoginPage() {
                       onCheckedChange={(checked) =>
                         setRememberMe(checked as boolean)
                       }
+                      className="dark:border-gray-600"
                     />
                     <Label
                       htmlFor="remember"
                       className="cursor-pointer text-sm text-gray-600 dark:text-gray-400"
                     >
-                      {' '}
-                      Recordarme{' '}
+                      Recordarme
                     </Label>
                   </div>
                   <Link
-                    href="/forgot-password"
-                    className="text-sm font-medium text-green-600 hover:text-green-700 dark:text-green-400"
+                    href="#"
+                    onClick={(e) => e.preventDefault()}
+                    className="cursor-not-allowed text-sm font-medium text-green-600 dark:text-gray-600"
+                    aria-disabled="true"
+                    title="Funcionalidad no disponible actualmente"
                   >
-                    {' '}
-                    ¿Olvidaste tu contraseña?{' '}
+                    ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
 
-                {/* Botón de Envío */}
                 <Button
                   type="submit"
-                  className="w-full bg-green-600 text-white transition-all hover:bg-green-700"
-                  disabled={isLoading}
+                  className="w-full bg-green-600 text-white transition-all hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:bg-green-500 dark:hover:bg-green-600"
+                  disabled={isLoading || (!isValidEmail && !!email)}
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />{' '}
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Verificando...
                     </span>
                   ) : (
                     <span className="flex items-center justify-center">
-                      {' '}
-                      Iniciar Sesión{' '}
-                      <ChevronRight className="ml-1 h-4 w-4" />{' '}
+                      Iniciar Sesión
+                      <ChevronRight className="ml-1 h-4 w-4" />
                     </span>
                   )}
                 </Button>
               </form>
             </CardContent>
 
-            {/* Footer con enlace a Registro */}
             <CardFooter className="flex flex-col space-y-2 pt-4">
-              {' '}
               <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                ¿No tienes una cuenta?
+                ¿No tenes una cuenta?
                 <Link
                   href="/register"
-                  className="ml-1 font-medium text-green-600 hover:text-green-700 hover:underline dark:text-green-400"
+                  className="ml-1 font-medium text-green-600 hover:text-green-700 hover:underline dark:text-green-400 dark:hover:text-green-300"
                 >
-                  {' '}
-                  Regístrate aquí{' '}
+                  Regístrate aquí
                 </Link>
               </div>
-              {/* Falta Links a Términos y Privacidad*/}
-              <div className="text-center text-xs text-gray-500">
-                {' '}
-                Al iniciar sesión, aceptas nuestros{' '}
+              <div className="text-center text-xs text-gray-500 dark:text-gray-400">
+                Al iniciar sesión, aceptas nuestros
                 <Link
-                  href="/terms"
-                  className="ml-1 text-green-600 hover:underline"
+                  href="/terminos-y-condiciones"
+                  className="ml-1 text-green-600 hover:underline dark:text-green-400"
                 >
-                  {' '}
-                  Términos{' '}
-                </Link>{' '}
-                y{' '}
-                <Link
-                  href="/privacy"
-                  className="ml-1 text-green-600 hover:underline"
-                >
-                  {' '}
-                  Privacidad{' '}
-                </Link>{' '}
+                  Términos y Condiciones
+                </Link>
               </div>
             </CardFooter>
           </Card>
