@@ -605,14 +605,15 @@ export const useCartStore = create<CartState>()(
           useCartStore.setState((state) => ({}));
           console.log('Cart Store: Rehidratación completa.');
         },
-        onRehydrateError: (err: unknown) => {
-          console.error('Cart Store: Error de rehidratación:', err);
-          useCartStore.setState({
-            cart: { ...initialCartState },
-            error: 'Error al cargar carrito guardado.',
-            isLoading: false,
-          });
-        },
+        // onRehydrateError no es una propiedad válida en las opciones de persist
+        // onRehydrateError: (err: unknown) => {
+        //   console.error('Cart Store: Error de rehidratación:', err);
+        //   useCartStore.setState({
+        //     cart: { ...initialCartState },
+        //     error: 'Error al cargar carrito guardado.',
+        //     isLoading: false,
+        //   });
+        // },
       }
     )
   )

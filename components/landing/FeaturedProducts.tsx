@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { ShoppingCart, Star, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useCart } from '@/features/cart/hooks/useCart';
@@ -203,9 +204,11 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
                 <div className="relative mb-6 h-48 overflow-hidden rounded-lg bg-gradient-to-br from-gray-800 to-gray-900">
                   <div className="flex h-full w-full items-center justify-center">
                     <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#16a245] to-[#0d7a32] shadow-lg">
-                      <img
+                      <Image
                         src="/landing/kansaco-logo.png"
                         alt="KANSACO Logo"
+                        width={64}
+                        height={64}
                         className="h-16 w-auto"
                       />
                     </div>

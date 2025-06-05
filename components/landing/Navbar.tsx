@@ -2,8 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, User, ShoppingCart, Menu, X, ChevronDown } from 'lucide-react';
+import { User, ShoppingCart, Menu, X, ChevronDown } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useCart } from '@/features/cart/hooks/useCart';
 
@@ -51,9 +52,11 @@ const Navbar = () => {
         <div className="flex h-16 items-center justify-between lg:h-20">
           <div className="flex items-center space-x-3">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-[#16a245] to-[#0d7a32] shadow-lg">
-              <img
+              <Image
                 src="/landing/kansaco-logo.png"
                 alt="KANSACO Logo"
+                width={32}
+                height={32}
                 className="h-8 w-auto"
               />
             </div>

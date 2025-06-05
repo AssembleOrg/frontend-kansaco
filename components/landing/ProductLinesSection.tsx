@@ -10,14 +10,13 @@ import {
   Settings,
   ChevronDown,
   ChevronRight,
-  Star,
   CheckCircle,
   Thermometer,
-  Clock,
   Award,
   Zap,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 
 // Datos de productos basados en la web actual
@@ -391,9 +390,11 @@ const ProductLinesSection = () => {
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
                 <div className="relative">
-                  <img
+                  <Image
                     src={heroProduct.image}
                     alt={heroProduct.name}
+                    width={600}
+                    height={400}
                     className="h-80 w-full object-contain drop-shadow-2xl lg:h-96"
                   />
                   {/* Glow effect behind image */}
@@ -500,9 +501,11 @@ const ProductLinesSection = () => {
                         {/* Product Image - Más grande y sin recuadro */}
                         <div className="lg:col-span-2">
                           <div className="relative">
-                            <img
+                            <Image
                               src={product.image}
                               alt={product.name}
+                              width={400}
+                              height={320}
                               className="h-64 w-full object-contain drop-shadow-2xl lg:h-80"
                             />
                             {/* Glow effect behind image */}

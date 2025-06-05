@@ -277,7 +277,7 @@ export default function SobreNosotrosPage() {
               </div>
               <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
                 TECNOLOGÍA
-                <span className="block text-[#16a245]">POLYMER'S PROTECTION</span>
+                <span className="block text-[#16a245]">POLYMER&apos;S PROTECTION</span>
               </h2>
             </motion.div>
 
@@ -303,7 +303,7 @@ export default function SobreNosotrosPage() {
                 {/* Tech Specs Cards */}
                 <div className="absolute -left-6 top-8 bg-black/90 backdrop-blur-sm border border-[#16a245]/30 rounded-lg p-4">
                   <div className="text-[#16a245] text-sm font-medium">Tecnología</div>
-                  <div className="text-white font-bold">Polymer's Film</div>
+                  <div className="text-white font-bold">Polymer&apos;s Film</div>
                 </div>
 
                 <div className="absolute -right-6 bottom-8 bg-black/90 backdrop-blur-sm border border-[#16a245]/30 rounded-lg p-4">

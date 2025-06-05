@@ -6,7 +6,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
-import { Atom, Zap, Shield, Settings, FlaskConical, Microscope, Cog, ArrowRight, Beaker, Gauge, Layers, Target, TrendingUp } from 'lucide-react';
+import { Atom, Zap, Shield, Settings, FlaskConical, Cog, ArrowRight, Beaker, Gauge, Layers, Target, TrendingUp } from 'lucide-react';
 import { NeonBorders } from '@/components/landing/HeroBanner';
 import Link from 'next/link';
 
@@ -312,7 +312,7 @@ export default function TecnologiaLubricantesPage() {
 
                 <div className="bg-gradient-to-r from-black to-gray-900 border-l-4 border-[#16a245] rounded-lg p-6">
                   <p className="text-white font-medium leading-relaxed">
-                    Separar las superficies en movimiento relativo significa interponer "algo" entre ellas, 
+                    Separar las superficies en movimiento relativo significa interponer &quot;algo&quot; entre ellas, 
                     con un espesor mínimo que las mantenga a distancia, lo que se logra con 
                     <span className="text-[#16a245] font-bold"> EL LUBRICANTE</span>.
                   </p>
@@ -378,7 +378,7 @@ export default function TecnologiaLubricantesPage() {
               </Badge>
               
               <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
-                POLYMER'S
+                POLYMER&apos;S
                 <span className="block text-[#16a245]">PROTECTION FILM</span>
               </h2>
             </motion.div>
@@ -393,7 +393,7 @@ export default function TecnologiaLubricantesPage() {
               >
                 <p className="text-lg md:text-xl text-gray-300 leading-relaxed">
                   Todas nuestras formulaciones están desarrolladas con 
-                  <strong className="text-[#16a245]"> Polymer's Protection Film</strong>, 
+                  <strong className="text-[#16a245]"> Polymer&apos;s Protection Film</strong>, 
                   el orgullo de nuestra empresa. Un aditivo que nos diferencia por su funcionalidad 
                   única ya que actúa por absorción física sobre las superficies metálicas.
                 </p>
@@ -433,7 +433,7 @@ export default function TecnologiaLubricantesPage() {
                 <div className="relative rounded-2xl overflow-hidden border border-gray-800/50">
                   <Image
                     src="/landing/Logo-Polymers.png"
-                    alt="Polymer's Protection Film"
+                    alt="Polymer&apos;s Protection Film"
                     width={600}
                     height={400}
                     className="w-full h-[400px] object-contain bg-gradient-to-br from-gray-900 via-black to-gray-900 p-8"
@@ -456,7 +456,7 @@ export default function TecnologiaLubricantesPage() {
               className="bg-gradient-to-r from-[#16a245]/10 via-[#16a245]/5 to-transparent border border-[#16a245]/30 rounded-2xl p-8"
             >
               <h3 className="text-3xl font-bold text-[#16a245] mb-8 text-center">
-                Beneficios del Polymer's Protection Film
+                Beneficios del Polymer&apos;s Protection Film
               </h3>
               
               <div className="grid md:grid-cols-2 gap-8">
@@ -533,7 +533,7 @@ export default function TecnologiaLubricantesPage() {
                 {
                   step: "2", 
                   title: "Durante el Funcionamiento",
-                  description: "El Polymer's Protection Film se adhiere físicamente a las superficies metálicas, creando una barrera protectora que complementa la acción del lubricante tradicional.",
+                  description: "El Polymer&apos;s Protection Film se adhiere físicamente a las superficies metálicas, creando una barrera protectora que complementa la acción del lubricante tradicional.",
                   image: "/landing/piezas-motor-automovil-aceite-lubricante-reparacion.png",
                   side: "right"
                 },
@@ -699,7 +699,7 @@ export default function TecnologiaLubricantesPage() {
           >
             <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
               DESCUBRE EL PODER DEL
-              <span className="block text-[#16a245]">POLYMER'S PROTECTION FILM</span>
+              <span className="block text-[#16a245]">POLYMER&apos;S PROTECTION FILM</span>
             </h2>
             <p className="text-xl text-gray-300 mb-8">
               Experimenta la diferencia que hace nuestra tecnología exclusiva en tus motores y maquinarias

@@ -3,4 +3,4 @@ export * from './auth';
 export * from './cart';
 export * from './cartItem';
 export * from './product';
-export * from './user';
+export type { UserRole } from './user';

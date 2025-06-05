@@ -74,7 +74,8 @@ export const useAuthStore = create<AuthState>()(
         logout: async () => {
           console.log('AuthStore: Logout iniciado.');
 
-          const { token, cart } = useCartStore.getState();
+          const { cart } = useCartStore.getState();
+          const { token } = useAuthStore.getState();
           if (token && cart.id !== 0) {
             try {
               console.log(

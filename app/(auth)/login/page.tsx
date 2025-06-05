@@ -1,7 +1,7 @@
 // /app/(auth)/login/page.tsx
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
@@ -36,7 +36,7 @@ const validateEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
 
-export default function LoginPage() {
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const loginFromAuthStore = useAuthStore((state) => state.login);
@@ -83,11 +83,12 @@ export default function LoginPage() {
 
       const redirectUrl = searchParams.get('redirect') || '/productos';
       router.push(redirectUrl);
-    } catch (err: any) {
-      // any error api
+    } catch (err: unknown) {
+      // Handle API errors
+      const error = err as { response?: { data?: { message?: string } }; message?: string };
       const apiErrorMessage =
-        err.response?.data?.message ||
-        err.message ||
+        error.response?.data?.message ||
+        error.message ||
         'Error al iniciar sesión. Verifica tus credenciales.';
       setError(apiErrorMessage);
       console.error('LoginPage: Error en handleSubmit:', err);
@@ -333,5 +334,18 @@ export default function LoginPage() {
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-green-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+        <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+      </div>
+    </div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

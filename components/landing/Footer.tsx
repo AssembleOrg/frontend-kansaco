@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import {
   MapPin,
   Phone,
@@ -64,9 +65,11 @@ const Footer = () => {
           <div className="space-y-6">
             <div className="flex items-center space-x-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-[#16a245] to-[#0d7a32] shadow-lg">
-                <img
+                <Image
                   src="/landing/kansaco-logo.png"
                   alt="KANSACO Logo"
+                  width={32}
+                  height={32}
                   className="h-8 w-auto"
                 />
               </div>
