@@ -1,0 +1,249 @@
+'use client';
+
+import Link from 'next/link';
+import {
+  MapPin,
+  Phone,
+  Mail,
+  Clock,
+  Facebook,
+  Instagram,
+  Linkedin,
+  Youtube,
+  ArrowUp,
+} from 'lucide-react';
+import OilDropEffect from './OilDropEffect';
+
+const Footer = () => {
+  const scrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const productCategories = [
+    { name: 'Aceites Sintéticos', href: '/productos?category=Sintéticos' },
+    { name: 'Aceites Minerales', href: '/productos?category=Minerales' },
+    { name: 'Aceites para Vehículos', href: '/productos?category=Vehículos' },
+    { name: 'Aceites Industriales', href: '/productos?category=Industrial' },
+    { name: 'Aceites para Motos', href: '/productos?category=Motos' },
+    {
+      name: 'Derivados y Aditivos',
+      href: '/productos?category=Derivados Y Aditivos',
+    },
+  ];
+
+  const companyLinks = [
+    { name: 'Sobre Nosotros', href: '/sobre-nosotros' },
+    { name: 'Nuestra Tecnología', href: '/tecnologia' },
+    { name: 'Certificaciones', href: '/certificaciones' },
+    { name: 'Distribuidores', href: '/distribuidores' },
+    { name: 'Ser Mayorista', href: '/mayorista' },
+  ];
+
+  const supportLinks = [
+    { name: 'Contacto', href: '/contacto' },
+    { name: 'Soporte Técnico', href: '/soporte' },
+    { name: 'Guía de Productos', href: '/guia-productos' },
+    { name: 'Preguntas Frecuentes', href: '/faq' },
+    { name: 'Términos y Condiciones', href: '/terminos' },
+  ];
+
+  const socialLinks = [
+    { icon: Facebook, href: '#', label: 'Facebook' },
+    { icon: Instagram, href: '#', label: 'Instagram' },
+    { icon: Linkedin, href: '#', label: 'LinkedIn' },
+    { icon: Youtube, href: '#', label: 'YouTube' },
+  ];
+
+  return (
+    <footer className="relative bg-gradient-to-b from-black via-gray-950 to-gray-900 text-white">
+      <OilDropEffect x="25%" y="65%" size="medium" intensity="normal" />
+      <OilDropEffect x="15%" y="74.5%" size="small" intensity="normal" />
+      <OilDropEffect x="35%" y="58%" size="small" intensity="normal" />
+
+      <div className="absolute left-0 right-0 top-0 h-24 bg-gradient-to-b from-black/80 to-transparent"></div>
+
+      <div className="relative z-10 h-1 bg-gradient-to-r from-transparent via-[#16a245] to-transparent"></div>
+
+      <div className="container relative z-10 mx-auto px-4 py-16 sm:px-6 lg:px-8">
+        <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
+          <div className="space-y-6">
+            <div className="flex items-center space-x-3">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-[#16a245] to-[#0d7a32] shadow-lg">
+                <img
+                  src="/landing/kansaco-logo.png"
+                  alt="KANSACO Logo"
+                  className="h-8 w-auto"
+                />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black tracking-wider">KANSACO</h3>
+                <p className="text-sm text-gray-400">Ingeniería Líquida</p>
+              </div>
+            </div>
+
+            <p className="leading-relaxed text-gray-400">
+              Más de 50 años desarrollando tecnologías avanzadas en lubricación
+              para maximizar el rendimiento y protección de motores y
+              maquinarias.
+            </p>
+
+            <div className="space-y-3">
+              <div className="flex items-center space-x-3 text-gray-400">
+                <MapPin className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
+                <span className="text-sm">Buenos Aires, Argentina</span>
+              </div>
+              <div className="flex items-center space-x-3 text-gray-400">
+                <Phone className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
+                <span className="text-sm">+54 11 1234-5678</span>
+              </div>
+              <div className="flex items-center space-x-3 text-gray-400">
+                <Mail className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
+                <span className="text-sm">info@kansaco.com</span>
+              </div>
+              <div className="flex items-center space-x-3 text-gray-400">
+                <Clock className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
+                <span className="text-sm">Lun - Vie: 8:00 - 18:00</span>
+              </div>
+            </div>
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="mb-6 text-lg font-bold text-white">Productos</h4>
+            <ul className="space-y-3">
+              {productCategories.map((category) => (
+                <li key={category.name}>
+                  <Link
+                    href={category.href}
+                    className="text-sm text-gray-400 transition-colors duration-200 hover:text-[#16a245]"
+                  >
+                    {category.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="mb-6 text-lg font-bold text-white">Empresa</h4>
+            <ul className="space-y-3">
+              {companyLinks.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-gray-400 transition-colors duration-200 hover:text-[#16a245]"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+
+          <div className="space-y-6">
+            <h4 className="mb-6 text-lg font-bold text-white">Soporte</h4>
+            <ul className="space-y-3">
+              {supportLinks.map((link) => (
+                <li key={link.name}>
+                  <Link
+                    href={link.href}
+                    className="text-sm text-gray-400 transition-colors duration-200 hover:text-[#16a245]"
+                  >
+                    {link.name}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+
+            <div className="pt-6">
+              <h5 className="mb-4 text-sm font-semibold text-white">
+                Síguenos
+              </h5>
+              <div className="flex space-x-4">
+                {socialLinks.map((social) => (
+                  <a
+                    key={social.label}
+                    href={social.href}
+                    className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 text-gray-400 transition-all duration-300 hover:bg-[#16a245] hover:text-white"
+                    aria-label={social.label}
+                  >
+                    <social.icon className="h-5 w-5" />
+                  </a>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div className="mt-16 border-t border-gray-800 pt-8">
+          <div className="mx-auto max-w-2xl text-center">
+            <h4 className="mb-4 text-xl font-bold text-white">
+              Mantente Actualizado
+            </h4>
+            <p className="mb-6 text-gray-400">
+              Recibe las últimas noticias sobre productos, tecnología y ofertas
+              especiales.
+            </p>
+            <div className="mx-auto flex max-w-md flex-col gap-4 sm:flex-row">
+              <input
+                type="email"
+                placeholder="Tu email"
+                className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white placeholder-gray-400 transition-colors duration-200 focus:border-[#16a245] focus:outline-none"
+              />
+              <button className="rounded-lg bg-[#16a245] px-6 py-3 font-semibold text-white transition-all duration-300 hover:bg-[#0d7a32]">
+                Suscribirse
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="border-t border-gray-800">
+        <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
+          <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
+            <div className="text-sm text-gray-400">
+              © 2025 KANSACO. Todos los derechos reservados.
+            </div>
+
+            <div className="flex items-center space-x-6">
+              <Link
+                href="/privacidad"
+                className="text-sm text-gray-400 transition-colors duration-200 hover:text-[#16a245]"
+              >
+                Política de Privacidad
+              </Link>
+              <Link
+                href="/cookies"
+                className="text-sm text-gray-400 transition-colors duration-200 hover:text-[#16a245]"
+              >
+                Cookies
+              </Link>
+
+              <button
+                onClick={scrollToTop}
+                className="flex h-10 w-10 items-center justify-center rounded-lg bg-[#16a245] text-white transition-colors duration-300 hover:bg-[#0d7a32]"
+                aria-label="Volver arriba"
+              >
+                <ArrowUp className="h-5 w-5" />
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="pointer-events-none absolute inset-0 opacity-[0.01]">
+        <div
+          className="absolute inset-0"
+          style={{
+            backgroundImage: `
+              linear-gradient(rgba(22, 162, 69, 0.1) 1px, transparent 1px),
+              linear-gradient(90deg, rgba(22, 162, 69, 0.1) 1px, transparent 1px)
+            `,
+            backgroundSize: '60px 60px',
+          }}
+        />
+      </div>
+    </footer>
+  );
+};
+
+export default Footer;
