@@ -8,8 +8,6 @@ import {
   Clock,
   Facebook,
   Instagram,
-  Linkedin,
-  Youtube,
   ArrowUp,
 } from 'lucide-react';
 import OilDropEffect from './OilDropEffect';
@@ -41,17 +39,14 @@ const Footer = () => {
 
   const supportLinks = [
     { name: 'Contacto', href: '/contacto' },
-    { name: 'Soporte Técnico', href: '/soporte' },
     { name: 'Guía de Productos', href: '/guia-productos' },
     { name: 'Preguntas Frecuentes', href: '/faq' },
     { name: 'Términos y Condiciones', href: '/terminos' },
   ];
 
   const socialLinks = [
-    { icon: Facebook, href: '#', label: 'Facebook' },
-    { icon: Instagram, href: '#', label: 'Instagram' },
-    { icon: Linkedin, href: '#', label: 'LinkedIn' },
-    { icon: Youtube, href: '#', label: 'YouTube' },
+    { icon: Facebook, href: 'https://www.facebook.com/kansacolubs/', label: 'Facebook' },
+    { icon: Instagram, href: 'https://www.instagram.com/kansaco', label: 'Instagram' },
   ];
 
   return (
@@ -94,7 +89,7 @@ const Footer = () => {
               </div>
               <div className="flex items-center space-x-3 text-gray-400">
                 <Phone className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
-                <span className="text-sm">+54 11 1234-5678</span>
+                <span className="text-sm">4237-2636/1365/0813</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-400">
                 <Mail className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
@@ -170,28 +165,6 @@ const Footer = () => {
                   </a>
                 ))}
               </div>
-            </div>
-          </div>
-        </div>
-
-        <div className="mt-16 border-t border-gray-800 pt-8">
-          <div className="mx-auto max-w-2xl text-center">
-            <h4 className="mb-4 text-xl font-bold text-white">
-              Mantente Actualizado
-            </h4>
-            <p className="mb-6 text-gray-400">
-              Recibe las últimas noticias sobre productos, tecnología y ofertas
-              especiales.
-            </p>
-            <div className="mx-auto flex max-w-md flex-col gap-4 sm:flex-row">
-              <input
-                type="email"
-                placeholder="Tu email"
-                className="flex-1 rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white placeholder-gray-400 transition-colors duration-200 focus:border-[#16a245] focus:outline-none"
-              />
-              <button className="rounded-lg bg-[#16a245] px-6 py-3 font-semibold text-white transition-all duration-300 hover:bg-[#0d7a32]">
-                Suscribirse
-              </button>
             </div>
           </div>
         </div>

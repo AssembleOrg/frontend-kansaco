@@ -71,6 +71,7 @@ const CategoriesSection = () => {
 
   return (
     <section
+      id="categories"
       ref={sectionRef}
       className="relative min-h-screen overflow-hidden bg-gradient-to-br from-gray-900 via-black to-gray-800 py-20"
     >
@@ -386,7 +387,7 @@ const CategoriesSection = () => {
           >
             <motion.div whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }}>
               <Link
-                href="#product-lines"
+                href="/lineas-de-productos"
                 className="group relative inline-flex items-center gap-3 overflow-hidden rounded-xl bg-gradient-to-r from-[#16a245] to-[#0d7a32] px-8 py-4 text-lg font-bold text-white shadow-2xl transition-all duration-300 hover:shadow-[#16a245]/30"
               >
                 <Sparkles className="h-5 w-5" />

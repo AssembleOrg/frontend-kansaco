@@ -212,10 +212,30 @@ const HeroBanner = () => {
     setIsMuted(video.muted);
   };
 
+  // Función para scroll smooth a la siguiente sección
+  const scrollToNextSection = () => {
+    const nextSection = document.querySelector('#categories') || 
+                       document.querySelector('section[id]') || 
+                       document.querySelector('main > section:nth-child(2)');
+    
+    if (nextSection) {
+      nextSection.scrollIntoView({ 
+        behavior: 'smooth',
+        block: 'start'
+      });
+    } else {
+      // Fallback: scroll down por viewport height
+      window.scrollTo({
+        top: window.innerHeight,
+        behavior: 'smooth'
+      });
+    }
+  };
+
   return (
     <section className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white lg:flex-row">
-      {/* Video Section - 2/3 */}
-      <div className="relative h-screen w-full lg:w-2/3">
+      {/* Video Section - 2/3 - OCULTO EN MÓVILES */}
+      <div className="relative hidden h-screen w-full lg:block lg:w-2/3">
         {/* Video Element */}
         <video
           ref={videoRef}
@@ -312,7 +332,7 @@ const HeroBanner = () => {
         </div>
       </div>
 
-      {/* Content Section - 1/3 */}
+      {/* Content Section - 1/3 en desktop, full width en móvil */}
       <div className="relative flex min-h-screen w-full flex-col items-center justify-center text-center lg:h-screen lg:w-1/3 lg:items-start lg:text-left">
         {/* Simple Lightning Borders */}
         <motion.div
@@ -641,24 +661,27 @@ const HeroBanner = () => {
         </div>
       </div>
 
-      {/* Scroll Indicator */}
-      <motion.div
-        className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 transform lg:left-1/3"
+      {/* Scroll Indicator - Con funcionalidad de scroll */}
+      <motion.button
+        onClick={scrollToNextSection}
+        className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 transform cursor-pointer lg:left-1/3"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 1 }}
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
       >
-        <div className="flex flex-col items-center gap-2 text-white/60">
+        <div className="flex flex-col items-center gap-2 text-white/60 transition-colors duration-300 hover:text-[#16a245]">
           <span className="text-sm font-medium">Descubre más</span>
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}
-            className="rounded-full bg-white/10 p-2 backdrop-blur-sm"
+            className="rounded-full bg-white/10 p-2 backdrop-blur-sm transition-all duration-300 hover:bg-[#16a245]/20"
           >
             <ChevronDown className="h-6 w-6 text-[#16a245] drop-shadow-sm" />
           </motion.div>
         </div>
-      </motion.div>
+      </motion.button>
     </section>
   );
 };

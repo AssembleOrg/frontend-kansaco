@@ -136,9 +136,6 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-            <button className="p-2 text-white transition-colors duration-200 hover:text-[#16a245]">
-              <Search className="h-5 w-5" />
-            </button>
 
             <Link
               href={isAuthenticated ? '/cuenta' : '/login'}

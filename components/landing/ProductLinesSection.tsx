@@ -12,7 +12,13 @@ import {
   ChevronRight,
   Star,
   CheckCircle,
+  Thermometer,
+  Clock,
+  Award,
+  Zap,
 } from 'lucide-react';
+import Link from 'next/link';
+import { Button } from '@/components/ui/button';
 
 // Datos de productos basados en la web actual
 const heroProduct = {
@@ -26,6 +32,7 @@ const heroProduct = {
     'Permanece en el motor aún cuando se detiene',
     'Protege en el momento crítico del arranque',
   ],
+  image: '/linea/Polymers-Protection-Film.png.webp',
   icon: Shield,
 };
 
@@ -34,47 +41,63 @@ const productLines = [
     category: 'LÍNEAS VEHÍCULOS',
     icon: Car,
     gradient: 'from-[#16a245] to-[#0d7a32]',
+    description: 'Tecnología avanzada para vehículos modernos y clásicos',
     products: [
       {
         name: 'LÍNEA SINTÉTICA',
         subtitle: 'Synthetic Evolution Oil',
+        image: '/linea/Linea_Sintetica-removebg-preview.png.webp',
         description:
-          'Línea totalmente renovada para motores modernos de alto rendimiento',
+          'Línea totalmente renovada para motores modernos de alto rendimiento. Formulada con bases sintéticas de última generación para máxima protección.',
         benefits: [
-          'Intervalos de cambio extendidos',
-          'Mejor rendimiento en altas temperaturas',
+          'Intervalos de cambio extendidos hasta 15,000 km',
+          'Mejor rendimiento en temperaturas extremas (-40°C a +150°C)',
           'Protección mejorada bajo estrés extremo',
-          'Máxima ganancia de potencia',
+          'Máxima ganancia de potencia y eficiencia',
+          'Reducción de emisiones contaminantes',
+          'Excelente fluidez en arranques en frío',
         ],
         technical:
-          'Formulados con polialfaolefina, ésteres y aditivos de última generación',
+          'Formulados con polialfaolefina (PAO), ésteres sintéticos y aditivos de última generación. Viscosidades: 0W-20, 5W-30, 5W-40, 10W-40.',
+        applications: 'Autos de alta gama, deportivos, motores turbo, GDI, híbridos',
+        certifications: ['API SN Plus', 'ACEA C3', 'BMW LL-04', 'MB 229.51'],
       },
       {
         name: 'LÍNEA PREMIUM',
         subtitle: 'Semi-sintético de alta performance',
+        image: '/linea/linea-premium.webp',
         description:
-          'Equilibrio perfecto entre economía y rendimiento superior',
+          'Equilibrio perfecto entre economía y rendimiento superior. Tecnología semi-sintética que combina lo mejor de ambos mundos.',
         benefits: [
-          'Extiende período de reemplazo',
-          'Mayor eficiencia y economía',
-          'Óptima performance',
+          'Extiende período de reemplazo hasta 10,000 km',
+          'Mayor eficiencia y economía de combustible',
+          'Óptima performance en condiciones severas',
           'Balance costo-beneficio ideal',
+          'Protección antidesgaste superior',
+          'Limpieza interna del motor',
         ],
-        technical: 'Bases parafínicas altamente refinadas con sintéticas',
+        technical: 'Bases parafínicas altamente refinadas con sintéticas. Tecnología de dispersantes avanzados.',
+        applications: 'Vehículos familiares, flotas comerciales, taxis, remises',
+        certifications: ['API SN', 'ACEA A3/B4', 'VW 502.00/505.00'],
       },
       {
         name: 'LÍNEA MINERAL',
         subtitle: 'Opción económica de alta calidad',
+        image: '/linea/linea-mineral.webp',
         description:
-          'Desarrollada para servicios severos en condiciones rigurosas',
+          'Desarrollada específicamente para servicios severos en condiciones rigurosas. Calidad premium a precio accesible.',
         benefits: [
-          'Ideal para transporte público',
-          'Taxis, remises, patrulleros',
-          'Marchas extendidas diarias',
-          'Altos estándares de calidad',
+          'Ideal para transporte público y comercial',
+          'Perfecto para taxis, remises, patrulleros',
+          'Resistencia en marchas extendidas diarias',
+          'Altos estándares de calidad garantizados',
+          'Protección confiable y duradera',
+          'Formulación probada por décadas',
         ],
         technical:
-          'Aceites parafínicos refinados con paquete de aditivos premium',
+          'Aceites parafínicos altamente refinados con paquete de aditivos premium. Tecnología antioxidante mejorada.',
+        applications: 'Vehículos de alto kilometraje, uso intensivo, flotillas',
+        certifications: ['API SL/CF', 'ACEA A3/B3'],
       },
     ],
   },
@@ -82,18 +105,41 @@ const productLines = [
     category: 'INDUSTRIA PESADA',
     icon: Truck,
     gradient: 'from-[#0d7a32] to-[#16a245]',
+    description: 'Soluciones robustas para maquinaria pesada y industrial',
     products: [
       {
         name: 'DIESEL HEAVY LINE',
         subtitle: 'Para pick ups 4x4, ómnibus, camiones',
-        description: 'Niveles superiores de protección para maquinaria pesada',
+        image: '/linea/Linea_Diesel_Heavy_Line.png',
+        description: 'Niveles superiores de protección para maquinaria pesada que opera en condiciones extremas 24/7.',
         benefits: [
           'Óptima lubricación en condiciones extremas',
-          'Economía en consumo de combustible',
-          'Prolonga vida útil del lubricante',
+          'Economía en consumo de combustible hasta 5%',
+          'Prolonga vida útil del lubricante 50% más',
           'Bajo costo de mantenimiento',
+          'Resistencia a la formación de hollín',
+          'Control superior de la viscosidad',
         ],
-        technical: 'Formulación especial para motores diesel de alta exigencia',
+        technical: 'Formulación especial para motores diesel de alta exigencia. Aditivos antiespumantes y dispersantes.',
+        applications: 'Camiones, ómnibus, maquinaria vial, generadores',
+        certifications: ['API CJ-4', 'ACEA E9', 'Caterpillar ECF-3', 'Cummins CES 20081'],
+      },
+      {
+        name: 'LUBRICANTES INDUSTRIALES',
+        subtitle: 'Para maquinaria industrial',
+        image: '/linea/Lubricantes-Industriales.png.webp',
+        description: 'Soluciones especializadas para aplicaciones industriales de alto rendimiento y durabilidad extrema.',
+        benefits: [
+          'Protección antidesgaste excepcional',
+          'Resistencia a cargas extremas',
+          'Estabilidad térmica superior',
+          'Vida útil extendida',
+          'Compatibilidad con sellos',
+          'Protección anticorrosiva',
+        ],
+        technical: 'Aceites hidráulicos, de engranajes, compresores y turbinas. ISO VG 32-680.',
+        applications: 'Industria manufacturera, minería, construcción, energía',
+        certifications: ['ISO 6743', 'DIN 51517', 'AGMA 9005-E02'],
       },
     ],
   },
@@ -101,50 +147,92 @@ const productLines = [
     category: 'ESPECIALIDADES',
     icon: Trophy,
     gradient: 'from-[#16a245] to-[#0d7a32]',
+    description: 'Productos especializados para aplicaciones específicas',
     products: [
+      {
+        name: 'LÍNEA CAJA Y DIFERENCIAL',
+        subtitle: 'Transmisiones y diferenciales',
+        image: '/linea/LINEA-CAJA-Y-DIFERENCIAL.png',
+        description: 'Lubricantes especializados para cajas de cambio y diferenciales con tecnología EP extrema presión.',
+        benefits: [
+          'Protección EP (extrema presión)',
+          'Suavidad en cambios',
+          'Resistencia al desgaste',
+          'Estabilidad térmica',
+          'Compatible con sincronizadores',
+          'Protección de engranajes',
+        ],
+        technical: 'Aceites SAE 75W-90, 80W-90, 85W-140 con aditivos EP y modificadores de fricción.',
+        applications: 'Cajas manuales, automáticas, diferenciales, transferencias',
+        certifications: ['API GL-4/GL-5', 'SAE J306', 'ZF TE-ML'],
+      },
       {
         name: 'LUBRICANTES PARA EL AGRO',
         subtitle: 'Maquinaria agrícola y vial',
-        description: 'Lubricación especializada para el sector agropecuario',
+        image: '/linea/Lina-Agro.png.webp',
+        description: 'Lubricación especializada para el sector agropecuario con resistencia a contaminación.',
         benefits: [
           'Resistencia a condiciones extremas',
-          'Protección contra desgaste',
-          'Óptimo rendimiento',
+          'Protección contra desgaste y corrosión',
+          'Óptimo rendimiento en campo',
+          'Intervalos extendidos',
+          'Resistencia a contaminación',
+          'Protección en almacenamiento',
         ],
-        technical: 'Formulación específica para maquinaria agrícola',
+        technical: 'Formulación específica para maquinaria agrícola con aditivos antioxidantes.',
+        applications: 'Tractores, cosechadoras, implementos agrícolas',
+        certifications: ['API CK-4', 'ACEA E9', 'John Deere JDM J20C'],
       },
       {
         name: 'LUBRICANTES PARA COMPETICIÓN',
         subtitle: 'Alto rendimiento deportivo',
-        description: 'Para motores de competición y alto rendimiento',
+        image: '/linea/Linea-Competicion.png.webp',
+        description: 'Para motores de competición y alto rendimiento donde cada segundo cuenta.',
         benefits: [
-          'Máxima protección',
-          'Rendimiento extremo',
-          'Resistencia térmica',
+          'Máxima protección a altas RPM',
+          'Rendimiento extremo sostenido',
+          'Resistencia térmica superior',
+          'Mínima fricción interna',
+          'Protección antidesgaste',
+          'Respuesta inmediata',
         ],
-        technical: 'Bases sintéticas de competición',
+        technical: 'Bases sintéticas 100% con ésteres. Viscosidades racing específicas.',
+        applications: 'Motores de carrera, track days, alto rendimiento',
+        certifications: ['FIA homologated', 'SAE J300'],
       },
       {
         name: 'LUBRICANTES PARA MOTOS',
         subtitle: 'Especial motocicletas',
-        description: 'Formulación específica para motores de moto',
+        image: '/linea/Linea-Moto-1.png.webp',
+        description: 'Formulación específica para motores de moto que integran motor, caja y embrague.',
         benefits: [
-          'Protección de embrague',
-          'Resistencia al corte',
-          'Estabilidad térmica',
+          'Protección de embrague húmedo',
+          'Resistencia al corte por engranajes',
+          'Estabilidad térmica superior',
+          'Protección antidesgaste',
+          'Suavidad en cambios',
+          'Protección anticorrosiva',
         ],
-        technical: 'Compatible con embragues húmedos',
+        technical: 'Compatible con embragues húmedos. Especificación JASO MA2.',
+        applications: 'Motocicletas, scooters, ATVs, motos de agua',
+        certifications: ['JASO MA2', 'API SL', 'ACEA A3'],
       },
       {
         name: 'LUBRICANTES LÍNEA NÁUTICA',
         subtitle: 'Para aplicaciones marítimas',
-        description: 'Resistencia a ambiente marino y humedad',
+        image: '/linea/Linea-Nautica.png.webp',
+        description: 'Resistencia superior a ambiente marino, humedad y corrosión salina.',
         benefits: [
-          'Anticorrosivo marino',
+          'Anticorrosivo marino superior',
           'Resistencia al agua salada',
-          'Protección extrema',
+          'Protección extrema contra humedad',
+          'Estabilidad en condiciones marinas',
+          'Protección de metales',
+          'Resistencia a emulsificación',
         ],
-        technical: 'Formulación resistente a ambiente marino',
+        technical: 'Formulación resistente a ambiente marino con inhibidores de corrosión.',
+        applications: 'Motores marinos, embarcaciones, equipos portuarios',
+        certifications: ['NMMA FC-W', 'API CF', 'ACEA A3/B4'],
       },
     ],
   },
@@ -152,29 +240,41 @@ const productLines = [
     category: 'COMPLEMENTOS',
     icon: Settings,
     gradient: 'from-[#0d7a32] to-[#16a245]',
+    description: 'Productos complementarios para mantenimiento integral',
     products: [
       {
         name: 'GRASAS LUBRICANTES',
-        subtitle: 'Lubricación sólida',
-        description: 'Grasas de alta calidad para múltiples aplicaciones',
+        subtitle: 'Lubricación sólida de alta duración',
+        image: '/linea/Linea-Grasas.png.webp',
+        description: 'Grasas de alta calidad para múltiples aplicaciones industriales y automotrices.',
         benefits: [
-          'Larga duración',
-          'Resistencia al agua',
-          'Múltiples viscosidades',
+          'Larga duración en servicio',
+          'Resistencia al agua y humedad',
+          'Múltiples viscosidades disponibles',
+          'Estabilidad mecánica',
+          'Protección anticorrosiva',
+          'Amplio rango de temperatura',
         ],
-        technical: 'Bases de jabón de litio y sintéticas',
+        technical: 'Bases de jabón de litio complejo y sintéticas. Grados NLGI 0, 1, 2, 3.',
+        applications: 'Rodamientos, chassis, equipos industriales',
+        certifications: ['DIN 51825', 'ISO 6743-9'],
       },
       {
         name: 'DERIVADOS Y ADITIVOS',
-        subtitle: 'Productos complementarios',
-        description: 'Kanfren, Glicina C-300, Desengrin, W-Kan, KOG, QP47',
+        subtitle: 'Productos complementarios especializados',
+        image: '/linea/Linea-Derivados-Y-Aditivos.png.webp',
+        description: 'Línea completa de productos especializados: Kanfren, Glicina C-300, Desengrin, W-Kan, KOG, QP47.',
         benefits: [
-          'Líquido de frenos',
-          'Anticongelantes',
-          'Desengrasantes',
-          'Aditivos especiales',
+          'Líquido de frenos DOT 3/4',
+          'Anticongelantes concentrados',
+          'Desengrasantes biodegradables',
+          'Aditivos especiales multifunción',
+          'Productos de limpieza',
+          'Tratamientos especializados',
         ],
-        technical: 'Productos especializados complementarios',
+        technical: 'Productos especializados complementarios formulados según normas internacionales.',
+        applications: 'Mantenimiento automotriz e industrial integral',
+        certifications: ['DOT 3/4', 'ASTM D3306', 'ISO 4925'],
       },
     ],
   },
@@ -233,7 +333,7 @@ const ProductLinesSection = () => {
               transition={{ duration: 3, repeat: Infinity }}
             />
 
-            <div className="relative z-10 grid items-center gap-8 md:grid-cols-2">
+            <div className="relative z-10 grid items-center gap-12 lg:grid-cols-2">
               <div>
                 <motion.div
                   className="mb-6 flex items-center gap-4"
@@ -290,8 +390,16 @@ const ProductLinesSection = () => {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.8, delay: 0.4 }}
               >
-                <div className="flex h-64 w-full items-center justify-center rounded-2xl border border-[#16a245]/30 bg-gradient-to-br from-[#16a245]/20 to-[#0d7a32]/20">
-                  <Star className="h-24 w-24 text-[#16a245]" />
+                <div className="relative">
+                  <img
+                    src={heroProduct.image}
+                    alt={heroProduct.name}
+                    className="h-80 w-full object-contain drop-shadow-2xl lg:h-96"
+                  />
+                  {/* Glow effect behind image */}
+                  <div className="absolute inset-0 -z-10 blur-3xl">
+                    <div className="h-full w-full bg-gradient-to-r from-[#16a245]/30 to-[#0d7a32]/30 rounded-full"></div>
+                  </div>
                 </div>
               </motion.div>
             </div>
@@ -316,8 +424,7 @@ const ProductLinesSection = () => {
             </span>
           </h2>
           <p className="mx-auto max-w-3xl text-xl text-gray-400">
-            Más de medio siglo desarrollando tecnologías de lubricación para
-            cada necesidad
+            Más de medio siglo desarrollando tecnologías de lubricación para cada necesidad
           </p>
         </motion.div>
 
@@ -349,9 +456,12 @@ const ProductLinesSection = () => {
                     >
                       <line.icon className="h-full w-full text-white" />
                     </div>
-                    <h3 className="text-2xl font-bold text-white">
-                      {line.category}
-                    </h3>
+                    <div className="text-left">
+                      <h3 className="text-2xl font-bold text-white">
+                        {line.category}
+                      </h3>
+                      <p className="text-sm text-gray-400">{line.description}</p>
+                    </div>
                     <span className="rounded-full bg-[#16a245]/20 px-3 py-1 text-sm text-[#16a245]">
                       {line.products.length} productos
                     </span>
@@ -377,63 +487,99 @@ const ProductLinesSection = () => {
                 transition={{ duration: 0.4, ease: 'easeInOut' }}
                 className="overflow-hidden"
               >
-                <div className="space-y-4 pt-4">
+                <div className="space-y-8 pt-6">
                   {line.products.map((product, productIndex) => (
                     <motion.div
                       key={product.name}
-                      className="ml-4 rounded-xl border border-gray-600/30 bg-gray-900/50 p-6"
+                      className="ml-4 rounded-xl border border-gray-600/30 bg-gray-900/50 p-8"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: productIndex * 0.1 }}
                     >
-                      <button
-                        className="w-full text-left"
-                        onClick={() =>
-                          setExpandedProduct(
-                            expandedProduct === product.name
-                              ? null
-                              : product.name
-                          )
-                        }
-                      >
-                        <div className="mb-4 flex items-center justify-between">
-                          <div>
-                            <h4 className="mb-1 text-xl font-bold text-[#16a245]">
-                              {product.name}
-                            </h4>
-                            <p className="italic text-gray-400">
-                              {product.subtitle}
-                            </p>
-                          </div>
-                          <ChevronRight
-                            className={`h-5 w-5 text-gray-400 transition-transform ${
-                              expandedProduct === product.name
-                                ? 'rotate-90'
-                                : ''
-                            }`}
-                          />
-                        </div>
-                      </button>
-
-                      <p className="mb-4 text-gray-300">
-                        {product.description}
-                      </p>
-
-                      {/* Benefits Preview */}
-                      <div className="mb-4 grid grid-cols-1 gap-2 md:grid-cols-2">
-                        {product.benefits
-                          .slice(0, 4)
-                          .map((benefit, benefitIndex) => (
-                            <div
-                              key={benefitIndex}
-                              className="flex items-center gap-2"
-                            >
-                              <CheckCircle className="h-4 w-4 flex-shrink-0 text-[#16a245]" />
-                              <span className="text-sm text-gray-400">
-                                {benefit}
-                              </span>
+                      <div className="grid gap-8 lg:grid-cols-5">
+                        {/* Product Image - Más grande y sin recuadro */}
+                        <div className="lg:col-span-2">
+                          <div className="relative">
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className="h-64 w-full object-contain drop-shadow-2xl lg:h-80"
+                            />
+                            {/* Glow effect behind image */}
+                            <div className="absolute inset-0 -z-10 blur-2xl">
+                              <div className="h-full w-full bg-gradient-to-r from-[#16a245]/20 to-[#0d7a32]/20 rounded-full"></div>
                             </div>
-                          ))}
+                          </div>
+                        </div>
+
+                        {/* Product Info */}
+                        <div className="lg:col-span-3">
+                          <button
+                            className="w-full text-left"
+                            onClick={() =>
+                              setExpandedProduct(
+                                expandedProduct === product.name
+                                  ? null
+                                  : product.name
+                              )
+                            }
+                          >
+                            <div className="mb-6 flex items-center justify-between">
+                              <div>
+                                <h4 className="mb-2 text-2xl font-bold text-[#16a245] lg:text-3xl">
+                                  {product.name}
+                                </h4>
+                                <p className="text-lg italic text-gray-400">
+                                  {product.subtitle}
+                                </p>
+                              </div>
+                              <ChevronRight
+                                className={`h-6 w-6 text-gray-400 transition-transform ${
+                                  expandedProduct === product.name
+                                    ? 'rotate-90'
+                                    : ''
+                                }`}
+                              />
+                            </div>
+                          </button>
+
+                          <p className="mb-6 text-lg text-gray-300 leading-relaxed">
+                            {product.description}
+                          </p>
+
+                          {/* Benefits Preview */}
+                          <div className="mb-6 grid grid-cols-1 gap-3 md:grid-cols-2">
+                            {product.benefits
+                              .slice(0, 4)
+                              .map((benefit, benefitIndex) => (
+                                <div
+                                  key={benefitIndex}
+                                  className="flex items-center gap-3"
+                                >
+                                  <CheckCircle className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
+                                  <span className="text-gray-400">
+                                    {benefit}
+                                  </span>
+                                </div>
+                              ))}
+                          </div>
+
+                          {/* Quick Info Icons */}
+                          <div className="flex flex-wrap gap-6 text-sm text-gray-500">
+                            {product.applications && (
+                              <div className="flex items-center gap-2">
+                                <Settings className="h-4 w-4 text-[#16a245]" />
+                                <span>{product.applications}</span>
+                              </div>
+                            )}
+                            {product.certifications && (
+                              <div className="flex items-center gap-2">
+                                <Award className="h-4 w-4 text-[#16a245]" />
+                                <span>{product.certifications.length} certificaciones</span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
 
                       {/* Expanded Technical Details */}
@@ -443,14 +589,71 @@ const ProductLinesSection = () => {
                           animate={{ opacity: 1, height: 'auto' }}
                           exit={{ opacity: 0, height: 0 }}
                           transition={{ duration: 0.3 }}
-                          className="mt-4 border-t border-gray-600/30 pt-4"
+                          className="mt-8 border-t border-gray-600/30 pt-8"
                         >
-                          <h5 className="mb-2 text-lg font-semibold text-white">
-                            Especificaciones Técnicas
-                          </h5>
-                          <p className="text-sm text-gray-300">
-                            {product.technical}
-                          </p>
+                          <div className="grid gap-8 lg:grid-cols-2">
+                            <div>
+                              <h5 className="mb-4 flex items-center gap-3 text-xl font-semibold text-white">
+                                <Thermometer className="h-6 w-6 text-[#16a245]" />
+                                Especificaciones Técnicas
+                              </h5>
+                              <p className="mb-6 text-gray-300 leading-relaxed">
+                                {product.technical}
+                              </p>
+
+                              {product.applications && (
+                                <div className="mb-6">
+                                  <h6 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-200">
+                                    <Zap className="h-5 w-5 text-[#16a245]" />
+                                    Aplicaciones
+                                  </h6>
+                                  <p className="text-gray-400">{product.applications}</p>
+                                </div>
+                              )}
+                            </div>
+
+                            <div>
+                              {product.certifications && (
+                                <div className="mb-6">
+                                  <h6 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-200">
+                                    <Award className="h-5 w-5 text-[#16a245]" />
+                                    Certificaciones
+                                  </h6>
+                                  <div className="flex flex-wrap gap-2">
+                                    {product.certifications.map((cert, index) => (
+                                      <span
+                                        key={index}
+                                        className="rounded-full bg-[#16a245]/20 px-3 py-2 text-sm text-[#16a245]"
+                                      >
+                                        {cert}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              {/* All Benefits */}
+                              <div>
+                                <h6 className="mb-3 flex items-center gap-2 text-lg font-semibold text-gray-200">
+                                  <CheckCircle className="h-5 w-5 text-[#16a245]" />
+                                  Beneficios Completos
+                                </h6>
+                                <div className="grid gap-3">
+                                  {product.benefits.map((benefit, benefitIndex) => (
+                                    <div
+                                      key={benefitIndex}
+                                      className="flex items-center gap-3"
+                                    >
+                                      <CheckCircle className="h-4 w-4 flex-shrink-0 text-[#16a245]" />
+                                      <span className="text-gray-400">
+                                        {benefit}
+                                      </span>
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            </div>
+                          </div>
                         </motion.div>
                       )}
                     </motion.div>
@@ -460,6 +663,41 @@ const ProductLinesSection = () => {
             </motion.div>
           ))}
         </div>
+
+        {/* Call to Action */}
+        <motion.div
+          className="mt-20 text-center"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.8 }}
+          viewport={{ once: true }}
+        >
+          <h3 className="mb-6 text-3xl font-bold text-white">
+            ¿Necesitas asesoramiento especializado?
+          </h3>
+          <p className="mb-8 text-xl text-gray-400">
+            Nuestros expertos te ayudan a elegir el lubricante perfecto para tu aplicación
+          </p>
+          <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
+            <Link href="/productos">
+              <Button
+                size="lg"
+                className="bg-[#16a245] text-white hover:bg-[#0d7a32] transition-all duration-300"
+              >
+                VER CATÁLOGO COMPLETO
+              </Button>
+            </Link>
+            <Link href="/contacto">
+              <Button
+                size="lg"
+                variant="outline"
+                className="border-[#16a245] text-[#16a245] hover:bg-[#16a245] hover:text-white transition-all duration-300"
+              >
+                CONTACTAR EXPERTO
+              </Button>
+            </Link>
+          </div>
+        </motion.div>
       </div>
     </section>
   );

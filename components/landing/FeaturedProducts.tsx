@@ -182,7 +182,7 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
 
           <h2 className="mb-6 text-4xl font-black leading-tight text-white lg:text-5xl">
             PRODUCTOS
-            <span className="block text-[#16a245]">DESTACADOS</span>
+            <span className="block text-[#16a245]">DESTACADOS (Hardcodeado)</span>
           </h2>
 
           <p className="mx-auto max-w-3xl text-lg leading-relaxed text-gray-400">
