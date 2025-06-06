@@ -8,6 +8,9 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { Atom, Zap, Shield, Settings, FlaskConical, Cog, ArrowRight, Beaker, Gauge, Layers, Target, TrendingUp } from 'lucide-react';
 import { NeonBorders } from '@/components/landing/HeroBanner';
+import BackToHomeButton from '@/components/ui/BackToHomeButton';
+import Navbar from '@/components/landing/Navbar';
+import Footer from '@/components/landing/Footer';
 import Link from 'next/link';
 
 export default function TecnologiaLubricantesPage() {
@@ -21,8 +24,10 @@ export default function TecnologiaLubricantesPage() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-black">
-      {/* Hero Section - Oil Video Background */}
+    <div className="min-h-screen bg-black">
+      <Navbar />
+      <div ref={containerRef} className="bg-black">
+        {/* Hero Section - Oil Video Background */}
       <motion.section 
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
         style={{ y: heroY, opacity: heroOpacity }}
@@ -43,24 +48,40 @@ export default function TecnologiaLubricantesPage() {
 
         {/* Animated Oil Molecules */}
         <div className="absolute inset-0 overflow-hidden">
-          {Array.from({ length: 15 }).map((_, i) => (
+          {[
+            { left: 12, top: 25, delay: 0, duration: 7.2, moveX: 5 },
+            { left: 88, top: 35, delay: 0.8, duration: 8.1, moveX: -8 },
+            { left: 22, top: 65, delay: 1.5, duration: 6.8, moveX: 3 },
+            { left: 75, top: 18, delay: 2.2, duration: 8.5, moveX: -6 },
+            { left: 42, top: 82, delay: 0.4, duration: 7.6, moveX: 7 },
+            { left: 95, top: 55, delay: 1.8, duration: 6.9, moveX: -4 },
+            { left: 8, top: 45, delay: 1.1, duration: 8.2, moveX: 9 },
+            { left: 65, top: 38, delay: 0.3, duration: 7.4, moveX: -7 },
+            { left: 38, top: 12, delay: 2.5, duration: 6.7, moveX: 4 },
+            { left: 82, top: 78, delay: 0.9, duration: 8.3, moveX: -5 },
+            { left: 55, top: 28, delay: 1.7, duration: 7.1, moveX: 6 },
+            { left: 18, top: 88, delay: 0.6, duration: 7.8, moveX: -3 },
+            { left: 72, top: 52, delay: 2.1, duration: 6.6, moveX: 8 },
+            { left: 28, top: 15, delay: 1.3, duration: 8.4, moveX: -9 },
+            { left: 48, top: 72, delay: 0.7, duration: 7.3, moveX: 2 }
+          ].map((molecule, i) => (
             <motion.div
               key={i}
               className="absolute w-3 h-3 bg-gradient-to-br from-[#16a245] to-[#0d7a32] rounded-full"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: `${molecule.left}%`,
+                top: `${molecule.top}%`,
               }}
               animate={{
                 y: [0, -30, 0],
-                x: [0, Math.random() * 20 - 10, 0],
+                x: [0, molecule.moveX, 0],
                 opacity: [0.2, 1, 0.2],
                 scale: [0.5, 1.2, 0.5],
               }}
               transition={{
-                duration: 6 + Math.random() * 3,
+                duration: molecule.duration,
                 repeat: Infinity,
-                delay: Math.random() * 3,
+                delay: molecule.delay,
                 ease: "easeInOut",
               }}
             />
@@ -84,7 +105,7 @@ export default function TecnologiaLubricantesPage() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.7 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-none"
+            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-none"
           >
             EL
             <span className="block text-[#16a245] drop-shadow-[0_0_30px_rgba(22,162,69,0.5)]">
@@ -285,7 +306,7 @@ export default function TecnologiaLubricantesPage() {
                   <div className="text-white font-bold">Óptima</div>
                 </div>
 
-                <div className="absolute -right-6 bottom-8 bg-black/90 backdrop-blur-sm border border-[#16a245]/30 rounded-lg p-4">
+                <div className="absolute right-2 bottom-8 bg-black/90 backdrop-blur-sm border border-[#16a245]/30 rounded-lg p-4 md:right-6 md:-right-6">
                   <div className="text-[#16a245] text-sm font-medium">Protección</div>
                   <div className="text-white font-bold">Máxima</div>
                 </div>
@@ -727,6 +748,11 @@ export default function TecnologiaLubricantesPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* Back to Home Button */}
+      <BackToHomeButton />
+      </div>
+      <Footer />
     </div>
   );
 } 

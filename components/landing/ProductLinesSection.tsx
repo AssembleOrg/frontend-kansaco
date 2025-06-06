@@ -299,7 +299,7 @@ const ProductLinesSection = () => {
     <section
       ref={sectionRef}
       id="product-lines"
-      className="relative min-h-screen bg-gradient-to-br from-black via-gray-900 to-black py-20"
+      className="relative min-h-screen bg-gradient-to-br from-black via-gray-900 to-black py-20 overflow-x-hidden"
     >
       {/* Background Effects */}
       <motion.div
@@ -463,7 +463,7 @@ const ProductLinesSection = () => {
                       </h3>
                       <p className="text-sm text-gray-400">{line.description}</p>
                     </div>
-                    <span className="rounded-full bg-[#16a245]/20 px-3 py-1 text-sm text-[#16a245]">
+                    <span className="rounded-full bg-[#16a245]/20 px-2 py-1 text-xs sm:px-3 sm:text-sm text-[#16a245] flex-shrink-0">
                       {line.products.length} productos
                     </span>
                   </div>
@@ -497,7 +497,7 @@ const ProductLinesSection = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.4, delay: productIndex * 0.1 }}
                     >
-                      <div className="grid gap-8 lg:grid-cols-5">
+                      <div className="grid gap-6 lg:gap-8 lg:grid-cols-5">
                         {/* Product Image - Más grande y sin recuadro */}
                         <div className="lg:col-span-2">
                           <div className="relative">

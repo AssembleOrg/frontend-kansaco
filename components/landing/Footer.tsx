@@ -63,8 +63,8 @@ const Footer = () => {
       <div className="container relative z-10 mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-6">
-            <div className="flex items-center space-x-3">
-              <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-[#16a245] to-[#0d7a32] shadow-lg">
+            <Link href="/" className="flex items-center space-x-3 group">
+              <div className="flex h-12 w-12 items-center justify-center rounded-lg shadow-lg transition-all duration-200 group-hover:scale-105">
                 <Image
                   src="/landing/kansaco-logo.png"
                   alt="KANSACO Logo"
@@ -74,10 +74,10 @@ const Footer = () => {
                 />
               </div>
               <div>
-                <h3 className="text-2xl font-black tracking-wider">KANSACO</h3>
-                <p className="text-sm text-gray-400">Ingeniería Líquida</p>
+                <h3 className="text-2xl font-black tracking-wider group-hover:text-[#16a245] transition-colors duration-200">KANSACO</h3>
+                <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-200">Ingeniería Líquida</p>
               </div>
-            </div>
+            </Link>
 
             <p className="leading-relaxed text-gray-400">
               Más de 50 años desarrollando tecnologías avanzadas en lubricación

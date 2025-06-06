@@ -7,7 +7,7 @@ import { Product } from '@/types';
 export const MINIMUM_PURCHASE = 400000;
 
 const generateConsistentPrice = (productId: number): number => {
-  const seed = productId || Math.floor(Math.random() * 1000);
+  const seed = productId || 1000; // Use fixed fallback instead of random
   return 5000 + ((seed * 937) % 45000);
 };
 

@@ -196,7 +196,7 @@ const TechnologySection = () => {
               <div className="text-xl font-black text-white">5W-30</div>
             </div>
 
-            <div className="absolute -bottom-6 -right-6 rounded-lg border border-gray-800/50 bg-black/90 p-4 backdrop-blur-sm">
+                            <div className="absolute bottom-2 right-2 rounded-lg border border-gray-800/50 bg-black/90 p-4 backdrop-blur-sm md:bottom-6 md:right-6 md:-bottom-6 md:-right-6">
               <div className="text-sm font-medium text-gray-400">
                 Protección
               </div>

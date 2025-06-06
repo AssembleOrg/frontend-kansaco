@@ -8,6 +8,9 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { Factory, Users, Award, Settings, FlaskConical, Zap, Shield, Target, ArrowRight, Microscope, Building, TrendingUp } from 'lucide-react';
 import { NeonBorders } from '@/components/landing/HeroBanner';
+import BackToHomeButton from '@/components/ui/BackToHomeButton';
+import Navbar from '@/components/landing/Navbar';
+import Footer from '@/components/landing/Footer';
 import Link from 'next/link';
 
 export default function SobreNosotrosPage() {
@@ -21,8 +24,10 @@ export default function SobreNosotrosPage() {
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
 
   return (
-    <div ref={containerRef} className="min-h-screen bg-black">
-      {/* Hero Section - Video Background */}
+    <div className="min-h-screen bg-black">
+      <Navbar />
+      <div ref={containerRef} className="bg-black">
+        {/* Hero Section - Video Background */}
       <motion.section 
         className="relative min-h-screen flex items-center justify-center overflow-hidden"
         style={{ y: heroY, opacity: heroOpacity }}
@@ -43,13 +48,26 @@ export default function SobreNosotrosPage() {
 
         {/* Floating Molecules */}
         <div className="absolute inset-0 overflow-hidden">
-          {Array.from({ length: 12 }).map((_, i) => (
+          {[
+            { left: 15, top: 20, delay: 0, duration: 4.5 },
+            { left: 85, top: 30, delay: 0.5, duration: 5 },
+            { left: 25, top: 70, delay: 1, duration: 4.2 },
+            { left: 70, top: 15, delay: 1.5, duration: 5.5 },
+            { left: 45, top: 85, delay: 0.3, duration: 4.8 },
+            { left: 90, top: 60, delay: 1.2, duration: 4.3 },
+            { left: 10, top: 50, delay: 0.8, duration: 5.2 },
+            { left: 60, top: 40, delay: 0.2, duration: 4.7 },
+            { left: 35, top: 10, delay: 1.8, duration: 4.4 },
+            { left: 80, top: 80, delay: 0.7, duration: 5.1 },
+            { left: 50, top: 25, delay: 1.3, duration: 4.6 },
+            { left: 20, top: 90, delay: 0.4, duration: 4.9 }
+          ].map((particle, i) => (
             <motion.div
               key={i}
               className="absolute w-2 h-2 bg-[#16a245] rounded-full"
               style={{
-                left: `${Math.random() * 100}%`,
-                top: `${Math.random() * 100}%`,
+                left: `${particle.left}%`,
+                top: `${particle.top}%`,
               }}
               animate={{
                 y: [0, -20, 0],
@@ -57,9 +75,9 @@ export default function SobreNosotrosPage() {
                 scale: [1, 1.5, 1],
               }}
               transition={{
-                duration: 4 + Math.random() * 2,
+                duration: particle.duration,
                 repeat: Infinity,
-                delay: Math.random() * 2,
+                delay: particle.delay,
                 ease: "easeInOut",
               }}
             />
@@ -83,7 +101,7 @@ export default function SobreNosotrosPage() {
             initial={{ opacity: 0, y: 50 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 1, delay: 0.7 }}
-            className="text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-none"
+            className="text-4xl sm:text-5xl md:text-7xl lg:text-8xl font-black text-white mb-6 leading-none"
           >
             MÁS DE
             <span className="block text-[#16a245] drop-shadow-[0_0_30px_rgba(22,162,69,0.5)]">
@@ -185,7 +203,7 @@ export default function SobreNosotrosPage() {
                 <Users className="h-5 w-5" />
                 <span>NUESTRA HISTORIA</span>
               </div>
-              <h2 className="text-4xl md:text-6xl font-black text-white mb-6">
+              <h2 className="text-3xl sm:text-4xl md:text-6xl font-black text-white mb-6">
                 NOSOTROS
               </h2>
             </motion.div>
@@ -301,20 +319,20 @@ export default function SobreNosotrosPage() {
                 </div>
 
                 {/* Tech Specs Cards */}
-                <div className="absolute -left-6 top-8 bg-black/90 backdrop-blur-sm border border-[#16a245]/30 rounded-lg p-4">
+                <div className="absolute left-2 top-8 bg-black/90 backdrop-blur-sm border border-[#16a245]/30 rounded-lg p-4 md:left-6 md:-left-6">
                   <div className="text-[#16a245] text-sm font-medium">Tecnología</div>
                   <div className="text-white font-bold">Polymer&apos;s Film</div>
                 </div>
 
-                <div className="absolute -right-6 bottom-8 bg-black/90 backdrop-blur-sm border border-[#16a245]/30 rounded-lg p-4">
+                <div className="absolute right-2 bottom-8 bg-black/90 backdrop-blur-sm border border-[#16a245]/30 rounded-lg p-4 md:right-6 md:-right-6">
                   <div className="text-[#16a245] text-sm font-medium">Protección</div>
                   <div className="text-white font-bold">Avanzada</div>
                 </div>
               </motion.div>
 
               <motion.div
-                initial={{ opacity: 0, x: 50 }}
-                whileInView={{ opacity: 1, x: 0 }}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 1 }}
                 viewport={{ once: true }}
                 className="space-y-8"
@@ -713,6 +731,11 @@ export default function SobreNosotrosPage() {
           </motion.div>
         </div>
       </section>
+
+      {/* Back to Home Button */}
+      <BackToHomeButton />
+      </div>
+      <Footer />
     </div>
   );
 } 

@@ -16,8 +16,11 @@ import {
 } from '@/lib/api';
 import { useAuthStore } from '@/features/auth/store/authStore';
 
-const generateLocalCartItemId = (): number =>
-  Date.now() + Math.floor(Math.random() * 1000);
+let localCartItemCounter = 0;
+const generateLocalCartItemId = (): number => {
+  localCartItemCounter += 1;
+  return Date.now() + localCartItemCounter;
+};
 
 interface CartState {
   cart: Cart;

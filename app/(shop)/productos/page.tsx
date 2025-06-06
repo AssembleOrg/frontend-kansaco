@@ -9,6 +9,9 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
+import Navbar from '@/components/landing/Navbar';
+import Footer from '@/components/landing/Footer';
+import BackToHomeButton from '@/components/ui/BackToHomeButton';
 
 function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
@@ -144,14 +147,21 @@ function ProductsContent() {
 
 export default function ProductosPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="container mx-auto p-8 text-center">
-          Cargando página de productos...
-        </div>
-      }
-    >
-      <ProductsContent />
-    </Suspense>
+    <div className="min-h-screen bg-black">
+      <Navbar />
+      <main className="bg-white pt-20">
+        <Suspense
+          fallback={
+            <div className="container mx-auto p-8 text-center">
+              Cargando página de productos...
+            </div>
+          }
+        >
+          <ProductsContent />
+        </Suspense>
+      </main>
+      <Footer />
+      <BackToHomeButton />
+    </div>
   );
 }

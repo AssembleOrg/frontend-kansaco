@@ -50,8 +50,8 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between lg:h-20">
-          <div className="flex items-center space-x-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-gradient-to-r from-[#16a245] to-[#0d7a32] shadow-lg">
+          <Link href="/" className="flex items-center space-x-3 group">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg shadow-lg transition-all duration-200 group-hover:scale-105">
               <Image
                 src="/landing/kansaco-logo.png"
                 alt="KANSACO Logo"
@@ -61,12 +61,12 @@ const Navbar = () => {
               />
             </div>
             <div>
-              <h3 className="text-2xl font-black tracking-wider text-white">
+              <h3 className="text-2xl font-black tracking-wider text-white group-hover:text-[#16a245] transition-colors duration-200">
                 KANSACO
               </h3>
-              <p className="text-sm text-gray-400">Ingeniería Líquida</p>
+              <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-200">Ingeniería Líquida</p>
             </div>
-          </div>
+          </Link>
 
           <div className="hidden items-center space-x-8 lg:flex">
             <div
