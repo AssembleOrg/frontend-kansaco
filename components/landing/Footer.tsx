@@ -32,17 +32,14 @@ const Footer = () => {
 
   const companyLinks = [
     { name: 'Sobre Nosotros', href: '/sobre-nosotros' },
-    { name: 'Nuestra Tecnología', href: '/tecnologia' },
-    { name: 'Certificaciones', href: '/certificaciones' },
-    { name: 'Distribuidores', href: '/distribuidores' },
+    { name: 'Nuestra Tecnología', href: '/tecnologia-lubricantes' },
     { name: 'Ser Mayorista', href: '/mayorista' },
   ];
 
   const supportLinks = [
     { name: 'Contacto', href: '/contacto' },
-    { name: 'Guía de Productos', href: '/guia-productos' },
-    { name: 'Preguntas Frecuentes', href: '/faq' },
-    { name: 'Términos y Condiciones', href: '/terminos' },
+    { name: 'Guía de Compra', href: '/guia-compra' },
+    { name: 'Términos y Condiciones', href: '/terminos-y-condiciones' },
   ];
 
   const socialLinks = [
@@ -186,12 +183,6 @@ const Footer = () => {
                 className="text-sm text-gray-400 transition-colors duration-200 hover:text-[#16a245]"
               >
                 Política de Privacidad
-              </Link>
-              <Link
-                href="/cookies"
-                className="text-sm text-gray-400 transition-colors duration-200 hover:text-[#16a245]"
-              >
-                Cookies
               </Link>
 
               <button

@@ -25,7 +25,9 @@ import {
   Mail,
   Lock,
   Loader2,
-  LucideShieldCheck,
+  ShoppingCart,
+  Users,
+  Truck,
   ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
@@ -98,55 +100,61 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gradient-to-br from-green-50 to-white dark:from-gray-900 dark:to-gray-800">
-      {/* Panel izquierdo */}
-      <div className="hidden flex-col items-center justify-center bg-green-600 p-12 text-white lg:flex lg:w-1/2">
+    <div className="flex min-h-screen bg-gray-50">
+      {/* Left Panel */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#16a245] to-[#0d7a32] p-12 items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
+          className="max-w-md text-white"
         >
-          <div className="mb-8 text-center">
+          <div className="text-center mb-12">
             <Image
-              src="/sauberatras.jpg"
-              alt="Kansaco Logo" //placeholder
-              width={180}
-              height={180}
-              className="mx-auto mb-6 rounded-lg shadow-lg"
+              src="/landing/kansaco-logo.png"
+              alt="Kansaco Logo"
+              width={200}
+              height={200}
+              className="mx-auto mb-6"
               priority
             />
-            <h1 className="mb-2 text-4xl font-bold">KANSACO</h1>
-            <p className="text-xl opacity-90">Especialistas en Lubricantes</p>
+            <h1 className="text-3xl font-bold mb-2">Bienvenido a KANSACO</h1>
+            <p className="text-lg opacity-90">Plataforma Mayorista</p>
           </div>
-          <div className="mx-auto mt-12 max-w-md space-y-6">
+          
+          <div className="space-y-6">
             <div className="flex items-start space-x-4">
-              <div className="rounded-full bg-white bg-opacity-20 p-2">
-                <LucideShieldCheck className="h-6 w-6" />
+              <div className="rounded-full bg-white/20 p-3 flex-shrink-0">
+                <ShoppingCart className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Calidad Garantizada</h3>
-                <p className="opacity-80">
-                  Productos certificados para el máximo rendimiento.
+                <h3 className="text-lg font-semibold mb-1">Catálogo Completo</h3>
+                <p className="opacity-80 text-sm">
+                  Accede a todos nuestros productos con precios mayoristas exclusivos.
                 </p>
               </div>
             </div>
+            
             <div className="flex items-start space-x-4">
-              <div className="rounded-full bg-white bg-opacity-20 p-2">
-                <LucideShieldCheck className="h-6 w-6" />
+              <div className="rounded-full bg-white/20 p-3 flex-shrink-0">
+                <Users className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Soporte Técnico</h3>
-                <p className="opacity-80">Asesoramiento especializado.</p>
+                <h3 className="text-lg font-semibold mb-1">Soporte Especializado</h3>
+                <p className="opacity-80 text-sm">
+                  Asesoramiento técnico personalizado para tu negocio.
+                </p>
               </div>
             </div>
+            
             <div className="flex items-start space-x-4">
-              <div className="rounded-full bg-white bg-opacity-20 p-2">
-                <LucideShieldCheck className="h-6 w-6" />
+              <div className="rounded-full bg-white/20 p-3 flex-shrink-0">
+                <Truck className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold">Entregas Rápidas</h3>
-                <p className="opacity-80">
-                  Distribución eficiente para mayoristas.
+                <h3 className="text-lg font-semibold mb-1">Entregas Rápidas</h3>
+                <p className="opacity-80 text-sm">
+                  Distribución eficiente en todo el territorio nacional.
                 </p>
               </div>
             </div>
@@ -154,84 +162,82 @@ function LoginContent() {
         </motion.div>
       </div>
 
-      {/* Panel derecho */}
-      <div className="flex w-full items-center justify-center px-6 py-12 lg:w-1/2">
+      {/* Right Panel */}
+      <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          <Card className="dark:bg-gray-850 border-0 shadow-xl dark:border-gray-700">
-            <CardHeader className="pb-4">
-              <div className="mb-2 text-center">
-                <div className="mb-6 lg:hidden">
-                  <Image
-                    src="/sauberatras.jpg"
-                    alt="Kansaco Logo"
-                    width={100}
-                    height={100}
-                    className="mx-auto rounded-lg"
-                  />
-                </div>
-                <CardTitle className="text-2xl font-bold text-gray-800 dark:text-white">
-                  Bienvenido a KANSACO
-                </CardTitle>
-                <CardDescription className="text-gray-500 dark:text-gray-400">
-                  Accede a nuestra plataforma mayorista
-                </CardDescription>
-              </div>
+          {/* Mobile Logo */}
+          <div className="lg:hidden text-center mb-8">
+            <Image
+              src="/landing/kansaco-logo.png"
+              alt="Kansaco Logo"
+              width={120}
+              height={120}
+              className="mx-auto"
+            />
+          </div>
+
+          <Card className="bg-white shadow-lg border-gray-200">
+            <CardHeader className="text-center pb-6">
+              <CardTitle className="text-2xl font-bold text-gray-800">
+                Iniciar Sesión
+              </CardTitle>
+              <CardDescription className="text-gray-600">
+                Accede a tu cuenta mayorista
+              </CardDescription>
             </CardHeader>
 
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <Alert variant="destructive" className="animate-shake">
+                  <Alert variant="destructive">
                     <AlertCircle className="h-4 w-4" />
                     <AlertTitle>Error de autenticación</AlertTitle>
                     <AlertDescription>{error}</AlertDescription>
                   </Alert>
                 )}
 
+                {/* Email */}
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="email"
-                    className="flex items-center text-gray-700 dark:text-gray-300"
-                  >
-                    <Mail className="mr-2 h-4 w-4" /> Correo Electrónico
+                  <Label htmlFor="email" className="text-gray-700 font-medium">
+                    Correo Electrónico
                   </Label>
                   <div className="relative">
+                    <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="email"
                       type="email"
-                      placeholder="tucorreo@empresa.com"
+                      placeholder="tu@empresa.com"
                       required
                       value={email}
                       onChange={handleEmailChange}
                       disabled={isLoading}
-                      className={`w-full rounded-md border p-2 pl-3 text-sm shadow-sm ${!isValidEmail && email ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:border-green-500 focus:ring-green-500 dark:border-gray-600'} dark:bg-gray-700 dark:text-white`}
+                      className={`pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245] ${
+                        !isValidEmail && email ? 'border-red-300' : ''
+                      }`}
                     />
                     {!isValidEmail && email && (
-                      <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-3 text-red-500">
-                        <AlertCircle className="h-4 w-4" />
-                      </div>
+                      <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-500" />
                     )}
                   </div>
                   {!isValidEmail && email && (
-                    <p className="mt-1 text-xs text-red-500">
+                    <p className="text-sm text-red-600">
                       Por favor ingresa un correo válido
                     </p>
                   )}
                 </div>
 
+                {/* Password */}
                 <div className="space-y-2">
-                  <Label
-                    htmlFor="password"
-                    className="flex items-center text-gray-700 dark:text-gray-300"
-                  >
-                    <Lock className="mr-2 h-4 w-4" /> Contraseña
+                  <Label htmlFor="password" className="text-gray-700 font-medium">
+                    Contraseña
                   </Label>
                   <div className="relative">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
@@ -240,59 +246,46 @@ function LoginContent() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
-                      className="w-full rounded-md border border-gray-300 p-2 pr-10 text-sm shadow-sm focus:border-green-500 focus:ring-green-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white"
+                      className="pl-10 pr-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:text-gray-500 dark:hover:text-gray-300"
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
                       tabIndex={-1}
-                      aria-label={
-                        showPassword
-                          ? 'Ocultar contraseña'
-                          : 'Mostrar contraseña'
-                      }
+                      aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     >
-                      {showPassword ? (
-                        <EyeOff className="h-4 w-4" />
-                      ) : (
-                        <Eye className="h-4 w-4" />
-                      )}
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
                 </div>
 
+                {/* Remember Me & Forgot Password */}
                 <div className="flex items-center justify-between">
                   <div className="flex items-center space-x-2">
                     <Checkbox
                       id="remember"
                       checked={rememberMe}
-                      onCheckedChange={(checked) =>
-                        setRememberMe(checked as boolean)
-                      }
-                      className="dark:border-gray-600"
+                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
                     />
-                    <Label
-                      htmlFor="remember"
-                      className="cursor-pointer text-sm text-gray-600 dark:text-gray-400"
-                    >
+                    <Label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
                       Recordarme
                     </Label>
                   </div>
                   <Link
                     href="#"
                     onClick={(e) => e.preventDefault()}
-                    className="cursor-not-allowed text-sm font-medium text-green-600 dark:text-gray-600"
-                    aria-disabled="true"
-                    title="Funcionalidad no disponible actualmente"
+                    className="text-sm text-gray-400 cursor-not-allowed"
+                    title="Funcionalidad no disponible"
                   >
                     ¿Olvidaste tu contraseña?
                   </Link>
                 </div>
 
+                {/* Submit Button */}
                 <Button
                   type="submit"
-                  className="w-full bg-green-600 text-white transition-all hover:bg-green-700 focus:ring-2 focus:ring-green-500 focus:ring-offset-2 dark:bg-green-500 dark:hover:bg-green-600"
+                  className="w-full bg-[#16a245] hover:bg-[#0d7a32] text-white"
                   disabled={isLoading || (!isValidEmail && !!email)}
                 >
                   {isLoading ? (
@@ -310,24 +303,34 @@ function LoginContent() {
               </form>
             </CardContent>
 
-            <CardFooter className="flex flex-col space-y-2 pt-4">
-              <div className="text-center text-sm text-gray-600 dark:text-gray-400">
-                ¿No tenes una cuenta?
-                <Link
-                  href="/register"
-                  className="ml-1 font-medium text-green-600 hover:text-green-700 hover:underline dark:text-green-400 dark:hover:text-green-300"
-                >
-                  Regístrate aquí
-                </Link>
-              </div>
-              <div className="text-center text-xs text-gray-500 dark:text-gray-400">
-                Al iniciar sesión, aceptas nuestros
-                <Link
-                  href="/terminos-y-condiciones"
-                  className="ml-1 text-green-600 hover:underline dark:text-green-400"
-                >
-                  Términos y Condiciones
-                </Link>
+            <CardFooter className="text-center border-t border-gray-100 pt-6">
+              <div className="space-y-3 w-full">
+                <div className="text-center">
+                  <Link
+                    href="/productos"
+                    className="text-sm text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline"
+                  >
+                    Ver productos sin iniciar sesión →
+                  </Link>
+                </div>
+                <p className="text-sm text-gray-600">
+                  ¿No tienes una cuenta?{' '}
+                  <Link
+                    href="/register"
+                    className="text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline"
+                  >
+                    Regístrate aquí
+                  </Link>
+                </p>
+                <p className="text-xs text-gray-500">
+                  Al iniciar sesión, aceptas nuestros{' '}
+                  <Link
+                    href="/terminos-y-condiciones"
+                    className="text-[#16a245] hover:underline"
+                  >
+                    Términos y Condiciones
+                  </Link>
+                </p>
               </div>
             </CardFooter>
           </Card>
@@ -339,12 +342,14 @@ function LoginContent() {
 
 export default function LoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-gradient-to-br from-green-50 to-white dark:from-gray-900 dark:to-gray-800 flex items-center justify-center">
-      <div className="text-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
-        <p className="text-gray-600 dark:text-gray-400">Cargando...</p>
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#16a245] mx-auto mb-4"></div>
+          <p className="text-gray-600">Cargando...</p>
+        </div>
       </div>
-    </div>}>
+    }>
       <LoginContent />
     </Suspense>
   );

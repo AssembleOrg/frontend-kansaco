@@ -113,9 +113,11 @@ function ProductsContent() {
   return (
     <div className="container mx-auto px-4 py-8">
       <h1 className="mb-8 text-center text-3xl font-bold">
-        {' '}
-        Nuestros Productos{' '}
+        Nuestros Productos
       </h1>
+      
+
+      
       <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
         <aside className="md:col-span-1">
           <Suspense fallback={<div>Cargando filtros...</div>}>

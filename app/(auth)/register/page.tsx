@@ -26,6 +26,7 @@ import {
   Lock,
 } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 export default function RegisterPage() {
   const [fullName, setFullName] = useState('');
@@ -99,226 +100,216 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="from:bg-green-600 to:bg-green-500 flex min-h-screen items-center justify-center bg-[#f7faf8] px-4">
-      <Card className="w-full max-w-md border-[#e6f5eb] shadow-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold text-[#4a4a4a]">
-            Crear Cuenta
-          </CardTitle>
-          <CardDescription className="text-[#4a4a4a]">
-            Regístrate en Kansaco.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {/* Mensaje de Éxito */}
-            {successMessage && (
-              <Alert
-                variant="default"
-                className="border-[#16a245] bg-[#e6f5eb] text-[#0d7a32]"
-              >
-                <CheckCircle className="h-4 w-4" />
-                <AlertTitle>Éxito</AlertTitle>
-                <AlertDescription>{successMessage}</AlertDescription>
-              </Alert>
-            )}
-            {/* Mensaje de Error API */}
-            {error && (
-              <Alert variant="destructive">
-                <AlertCircle className="h-4 w-4" />
-                <AlertTitle>Error de Registro</AlertTitle>
-                <AlertDescription>{error}</AlertDescription>
-              </Alert>
-            )}
-
-            {/* Input Full Name */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="fullName"
-                className="flex items-center text-[#4a4a4a]"
-              >
-                <UserIcon className="mr-2 h-4 w-4 text-[#16a245]" />
-                Nombre Completo
-              </Label>
-              <Input
-                id="fullName"
-                type="text"
-                placeholder="Tu nombre completo"
-                required
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                disabled={isRegistering}
-                className="border-[#e6f5eb] focus:border-[#16a245] focus:ring-[#16a245]"
-              />
-            </div>
-
-            {/* Input Email */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="email"
-                className="flex items-center text-[#4a4a4a]"
-              >
-                <Mail className="mr-2 h-4 w-4 text-[#16a245]" />
-                Correo Electrónico
-              </Label>
-              <Input
-                id="email"
-                type="email"
-                placeholder="tu@correo.com"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isRegistering}
-                className="border-[#e6f5eb] focus:border-[#16a245] focus:ring-[#16a245]"
-              />
-            </div>
-
-            {/* Input Contraseña */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="password"
-                className="flex items-center text-[#4a4a4a]"
-              >
-                <Lock className="mr-2 h-4 w-4 text-[#16a245]" />
-                Contraseña
-              </Label>
-              <div className="relative">
-                <Input
-                  id="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  placeholder="Mínimo 8 caracteres"
-                  value={password}
-                  onChange={(e) => {
-                    setPassword(e.target.value);
-
-                    if (confirmPassword) {
-                      const currentPassword = e.target.value;
-                      const currentConfirmPassword = confirmPassword;
-                      if (currentPassword.length < 8) {
-                        setPasswordError(
-                          'La contraseña debe tener al menos 8 caracteres.'
-                        );
-                      } else if (
-                        currentPassword !== currentConfirmPassword &&
-                        currentConfirmPassword
-                      ) {
-                        setPasswordError('Las contraseñas no coinciden.');
-                      } else {
-                        setPasswordError(null);
-                      }
-                    } else if (
-                      e.target.value.length < 8 &&
-                      e.target.value.length > 0
-                    ) {
-                      setPasswordError(
-                        'La contraseña debe tener al menos 8 caracteres.'
-                      );
-                    } else {
-                      setPasswordError(null);
-                    }
-                  }}
-                  disabled={isRegistering}
-                  className="border-[#e6f5eb] pr-10 focus:border-[#16a245] focus:ring-[#16a245]"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-[#16a245]"
-                  tabIndex={-1}
-                >
-                  {' '}
-                  {showPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}{' '}
-                </button>
+    <div className="min-h-screen bg-gray-50 py-12 px-4">
+      <div className="mx-auto max-w-md">
+        {/* Main Form Card */}
+        <Card className="bg-white shadow-xl border-0 overflow-hidden">
+          {/* Header con diseño profesional */}
+          <div className="relative bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-8">
+            {/* Decorative elements */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#16a245]/5 rounded-full -translate-y-16 translate-x-16"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#0d7a32]/5 rounded-full translate-y-12 -translate-x-12"></div>
+            
+            <CardHeader className="text-center pb-0 relative z-10">
+                             {/* Logo en recuadro elegante */}
+               <div className="mb-6 inline-block">
+                 <div className="relative">
+                   <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-lg p-6 border border-gray-300">
+                     <Image
+                       src="/landing/kansaco-logo.png"
+                       alt="Kansaco"
+                       width={100}
+                       height={100}
+                       className="mx-auto"
+                     />
+                   </div>
+                   {/* Accent dot */}
+                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#16a245] rounded-full flex items-center justify-center">
+                     <div className="w-2 h-2 bg-white rounded-full"></div>
+                   </div>
+                 </div>
+               </div>
+              
+              <CardTitle className="text-3xl font-bold text-gray-800 mb-2">
+                Crear Cuenta
+              </CardTitle>
+              <div className="flex items-center justify-center space-x-2 mb-4">
+                <div className="h-px bg-gradient-to-r from-transparent via-[#16a245] to-transparent w-16"></div>
+                <span className="text-[#16a245] font-semibold text-sm tracking-wider">KANSACO</span>
+                <div className="h-px bg-gradient-to-r from-transparent via-[#16a245] to-transparent w-16"></div>
               </div>
-            </div>
+              <CardDescription className="text-gray-600 text-lg">
+                Únete a nuestra red de distribuidores mayoristas
+              </CardDescription>
+            </CardHeader>
+          </div>
+          
+          <CardContent>
+            <form onSubmit={handleSubmit} className="space-y-4">
+              {/* Success Message */}
+              {successMessage && (
+                <Alert className="border-green-200 bg-green-50">
+                  <CheckCircle className="h-4 w-4 text-green-600" />
+                  <AlertTitle className="text-green-800">¡Éxito!</AlertTitle>
+                  <AlertDescription className="text-green-700">
+                    {successMessage}
+                  </AlertDescription>
+                </Alert>
+              )}
+              
+              {/* Error Message */}
+              {error && (
+                <Alert variant="destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertTitle>Error de Registro</AlertTitle>
+                  <AlertDescription>{error}</AlertDescription>
+                </Alert>
+              )}
 
-            {/* Input Confirmar Contraseña */}
-            <div className="space-y-2">
-              <Label
-                htmlFor="confirmPassword"
-                className="flex items-center text-[#4a4a4a]"
-              >
-                <Lock className="mr-2 h-4 w-4 text-[#16a245]" />
-                Confirmar Contraseña
-              </Label>
-              <div className="relative">
-                <Input
-                  id="confirmPassword"
-                  type={showConfirmPassword ? 'text' : 'password'}
-                  required
-                  placeholder="Repite tu contraseña"
-                  value={confirmPassword}
-                  onChange={(e) => {
-                    setConfirmPassword(e.target.value);
-
-                    const currentConfirmPassword = e.target.value;
-                    const currentPassword = password;
-
-                    if (currentPassword.length < 8) {
-                      setPasswordError(
-                        'La contraseña principal debe tener al menos 8 caracteres.'
-                      );
-                    } else if (currentPassword !== currentConfirmPassword) {
-                      setPasswordError('Las contraseñas no coinciden.');
-                    } else {
-                      setPasswordError(null);
-                    }
-                  }}
-                  disabled={isRegistering}
-                  className={`border-[#e6f5eb] pr-10 focus:border-[#16a245] focus:ring-[#16a245] ${passwordError ? 'border-red-500' : ''}`}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-[#16a245]"
-                  tabIndex={-1}
-                >
-                  {' '}
-                  {showConfirmPassword ? (
-                    <EyeOff className="h-4 w-4" />
-                  ) : (
-                    <Eye className="h-4 w-4" />
-                  )}{' '}
-                </button>
+              {/* Full Name */}
+              <div className="space-y-2">
+                <Label htmlFor="fullName" className="text-gray-700 font-medium">
+                  Nombre Completo
+                </Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="fullName"
+                    type="text"
+                    placeholder="Tu nombre completo"
+                    required
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    disabled={isRegistering}
+                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                  />
+                </div>
               </div>
-              {/* Mensaje de Error Contraseña */}
-              {passwordError && (
-                <p className="mt-1 text-xs text-red-500">{passwordError}</p>
-              )}
-            </div>
 
-            {/* Botón Registrarse */}
-            <Button
-              type="submit"
-              className="w-full bg-[#16a245] text-white hover:bg-[#0d7a32]"
-              disabled={isRegistering}
-            >
-              {isRegistering ? (
-                <span className="flex items-center justify-center">
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />{' '}
-                  Registrando...
-                </span>
-              ) : (
-                'Registrarse'
-              )}
-            </Button>
-          </form>
-        </CardContent>
-        <CardFooter className="text-center text-sm text-[#4a4a4a]">
-          ¿Ya tienes cuenta?{' '}
-          <Link
-            href="/login"
-            className="ml-1 text-[#16a245] underline hover:text-[#0d7a32]"
-          >
-            Inicia sesión aquí
-          </Link>
-        </CardFooter>
-      </Card>
+              {/* Email */}
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-gray-700 font-medium">
+                  Correo Electrónico
+                </Label>
+                <div className="relative">
+                  <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="email"
+                    type="email"
+                    placeholder="tu@empresa.com"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    disabled={isRegistering}
+                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                  />
+                </div>
+              </div>
+
+              {/* Password */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="text-gray-700 font-medium">
+                  Contraseña
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="password"
+                    type={showPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Mínimo 8 caracteres"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    disabled={isRegistering}
+                    className="pl-10 pr-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    tabIndex={-1}
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Confirm Password */}
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">
+                  Confirmar Contraseña
+                </Label>
+                <div className="relative">
+                  <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="confirmPassword"
+                    type={showConfirmPassword ? 'text' : 'password'}
+                    required
+                    placeholder="Repite tu contraseña"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    disabled={isRegistering}
+                    className={`pl-10 pr-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245] ${
+                      passwordError ? 'border-red-300' : ''
+                    }`}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    tabIndex={-1}
+                  >
+                    {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+                {passwordError && (
+                  <p className="text-sm text-red-600">{passwordError}</p>
+                )}
+              </div>
+
+              {/* Submit Button */}
+              <Button
+                type="submit"
+                className="w-full bg-[#16a245] hover:bg-[#0d7a32] text-white"
+                disabled={isRegistering}
+              >
+                {isRegistering ? (
+                  <span className="flex items-center justify-center">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Registrando...
+                  </span>
+                ) : (
+                  'Crear Cuenta'
+                )}
+              </Button>
+            </form>
+          </CardContent>
+          
+          <CardFooter className="text-center border-t border-gray-100 pt-6">
+            <div className="space-y-3 w-full flex flex-col items-center">
+              <div className="text-center">
+                <Link
+                  href="/productos"
+                  className="text-sm text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline"
+                >
+                  Ver productos sin registrarse →
+                </Link>
+              </div>
+              <p className="text-sm text-gray-600 text-center">
+                ¿Ya tienes cuenta?{' '}
+                <Link
+                  href="/login"
+                  className="text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline"
+                >
+                  Inicia sesión aquí
+                </Link>
+              </p>
+            </div>
+          </CardFooter>
+        </Card>
+
+
+      </div>
     </div>
   );
 }

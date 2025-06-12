@@ -96,10 +96,10 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
 export async function getProducts(token: string | null): Promise<Product[]> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured.');
-    return [];
+    console.error('API URL not configured. Using fallback mock products.');
+    return getMockProducts();
   }
-  const url = `${API_BASE_URL}/api/product`;
+  const url = `${API_BASE_URL}/product`;
 
   const headers: HeadersInit = {
     Accept: 'application/json',
@@ -114,21 +114,208 @@ export async function getProducts(token: string | null): Promise<Product[]> {
       headers,
       cache: 'no-store',
     });
+    
     const fullResponse =
       await handleResponse<ActualProductsApiResponse>(response);
     if (fullResponse && Array.isArray(fullResponse.data)) {
       return fullResponse.data;
     } else {
       console.warn(
-        'getProducts received unexpected response structure:',
+        'getProducts received unexpected response structure, using fallback:',
         fullResponse
       );
-      return [];
+      return getMockProducts();
     }
   } catch (error) {
-    console.error('Error fetching products:', error);
-    return [];
+    console.error('Error fetching products (Railway might be down), using fallback:', error);
+    return getMockProducts();
   }
+}
+
+// Mock products for demo purposes when API is not available or user is not authenticated
+function getMockProducts(): Product[] {
+  return [
+    {
+      id: 1,
+      name: 'KANSACO Sintético 5W-30',
+      sku: 'KAN-SIN-5W30-4L',
+      slug: 'kansaco-sintetico-5w30',
+      category: ['Sintéticos', 'Aceites para Motor'],
+      description: 'Aceite sintético de alta performance para motores modernos con tecnología Polymer\'s Protection Film',
+      presentation: '4L',
+      aplication: 'Motores de gasolina modernos, turbo, híbridos',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 50,
+      isVisible: true,
+      price: 8500,
+    },
+    {
+      id: 2,
+      name: 'KANSACO Diesel Heavy Line 15W-40',
+      sku: 'KAN-DIE-15W40-20L',
+      slug: 'kansaco-diesel-heavy-15w40',
+      category: ['Industrial', 'Diesel Heavy Line'],
+      description: 'Lubricante especializado para motores diesel pesados con máxima protección',
+      presentation: '20L',
+      aplication: 'Motores diesel industriales, camiones, ómnibus',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 25,
+      isVisible: true,
+      price: 12000,
+    },
+    {
+      id: 3,
+      name: 'KANSACO Polymer Protection Film',
+      sku: 'KAN-POL-PROT-500ML',
+      slug: 'kansaco-polymer-protection-film',
+      category: ['Derivados Y Aditivos'],
+      description: 'El orgullo de nuestra empresa. Film de protección polimérica exclusivo',
+      presentation: '500ml',
+      aplication: 'Protección de superficies metálicas en motores',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 30,
+      isVisible: true,
+      price: 15000,
+    },
+    {
+      id: 4,
+      name: 'KANSACO Premium 10W-40',
+      sku: 'KAN-PREM-10W40-4L',
+      slug: 'kansaco-premium-10w40',
+      category: ['Premium', 'Aceites para Motor'],
+      description: 'Aceite semi-sintético de alto rendimiento para uso comercial',
+      presentation: '4L',
+      aplication: 'Vehículos familiares, flotas comerciales, taxis',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 40,
+      isVisible: true,
+      price: 6500,
+    },
+    {
+      id: 5,
+      name: 'KANSACO Mineral 20W-50',
+      sku: 'KAN-MIN-20W50-4L',
+      slug: 'kansaco-mineral-20w50',
+      category: ['Minerales', 'Aceites para Motor'],
+      description: 'Aceite mineral de calidad premium para servicios severos',
+      presentation: '4L',
+      aplication: 'Vehículos de alto kilometraje, uso intensivo',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 60,
+      isVisible: true,
+      price: 4500,
+    },
+    {
+      id: 6,
+      name: 'KANSACO Moto 4T 10W-40',
+      sku: 'KAN-MOTO-4T-10W40-1L',
+      slug: 'kansaco-moto-4t-10w40',
+      category: ['Motos', 'Aceites para Motor'],
+      description: 'Aceite especial para motocicletas 4 tiempos con embrague húmedo',
+      presentation: '1L',
+      aplication: 'Motocicletas 4 tiempos, scooters, ATVs',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 35,
+      isVisible: true,
+      price: 3200,
+    },
+    {
+      id: 7,
+      name: 'KANSACO Grasa Multipropósito NLGI 2',
+      sku: 'KAN-GRASA-MP-NLGI2-500G',
+      slug: 'kansaco-grasa-multiproposito-nlgi2',
+      category: ['Grasas', 'Lubricantes'],
+      description: 'Grasa de litio complejo para múltiples aplicaciones industriales',
+      presentation: '500g',
+      aplication: 'Rodamientos, chassis, equipos industriales',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 45,
+      isVisible: true,
+      price: 2800,
+    },
+    {
+      id: 8,
+      name: 'KANSACO Náutico 25W-40',
+      sku: 'KAN-NAUT-25W40-4L',
+      slug: 'kansaco-nautico-25w40',
+      category: ['Náutica', 'Aceites Marinos'],
+      description: 'Aceite marino especializado resistente al ambiente salino',
+      presentation: '4L',
+      aplication: 'Motores marinos, embarcaciones, equipos portuarios',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 20,
+      isVisible: true,
+      price: 9500,
+    },
+    {
+      id: 9,
+      name: 'KANSACO Competición 0W-20',
+      sku: 'KAN-COMP-0W20-4L',
+      slug: 'kansaco-competicion-0w20',
+      category: ['Competición', 'Aceites para Motor'],
+      description: 'Aceite de competición para máximo rendimiento en pista',
+      presentation: '4L',
+      aplication: 'Motores de carrera, track days, alto rendimiento',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 15,
+      isVisible: true,
+      price: 18000,
+    },
+    {
+      id: 10,
+      name: 'KANSACO Agro 15W-40',
+      sku: 'KAN-AGRO-15W40-20L',
+      slug: 'kansaco-agro-15w40',
+      category: ['Agro', 'Aceites para Motor'],
+      description: 'Lubricante especializado para maquinaria agrícola y vial',
+      presentation: '20L',
+      aplication: 'Tractores, cosechadoras, implementos agrícolas',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 30,
+      isVisible: true,
+      price: 14000,
+    },
+    {
+      id: 11,
+      name: 'KANSACO Caja Manual 75W-90',
+      sku: 'KAN-CAJA-75W90-1L',
+      slug: 'kansaco-caja-manual-75w90',
+      category: ['Caja y Diferencial', 'Aceites para Transmisión'],
+      description: 'Aceite para cajas manuales y diferenciales con aditivos EP',
+      presentation: '1L',
+      aplication: 'Cajas manuales, diferenciales, transferencias',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 40,
+      isVisible: true,
+      price: 3800,
+    },
+    {
+      id: 12,
+      name: 'KANSACO Industrial Hidráulico ISO 68',
+      sku: 'KAN-IND-HID-ISO68-20L',
+      slug: 'kansaco-industrial-hidraulico-iso68',
+      category: ['Industrial', 'Aceites Hidráulicos'],
+      description: 'Aceite hidráulico de alta calidad para sistemas industriales',
+      presentation: '20L',
+      aplication: 'Sistemas hidráulicos industriales, prensas, elevadores',
+      imageUrl: '/landing/kansaco-logo.png',
+      wholeSaler: 'KANSACO',
+      stock: 25,
+      isVisible: true,
+      price: 11500,
+    }
+  ];
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
@@ -138,7 +325,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   }
 
   try {
-    const url = `${API_BASE_URL}/api/product/filter?slug=${slug}`;
+    const url = `${API_BASE_URL}/product/filter?slug=${slug}`;
 
     const headers: HeadersInit = {
       Accept: 'application/json',
@@ -162,7 +349,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
       return fullResponse.data[0];
     } else {
       console.warn(
-        `No product found with slug: ${slug} via /api/product/filter endpoint, or response structure was unexpected.`,
+        `No product found with slug: ${slug} via /product/filter endpoint, or response structure was unexpected.`,
         fullResponse
       );
       return null;
@@ -177,7 +364,7 @@ export async function loginUser(
   payload: LoginPayload
 ): Promise<ActualLoginApiResponse> {
   if (!API_BASE_URL) throw new Error('API URL not configured.');
-  const url = `${API_BASE_URL}/api/user/login`;
+  const url = `${API_BASE_URL}/user/login`;
 
   try {
     const response = await fetch(url, {
@@ -201,7 +388,7 @@ export async function registerUser(
   payload: RegisterPayload
 ): Promise<RegisterResponse> {
   if (!API_BASE_URL) throw new Error('API URL not configured.');
-  const url = `${API_BASE_URL}/api/user/register`;
+  const url = `${API_BASE_URL}/user/register`;
 
   try {
     const response = await fetch(url, {
@@ -236,7 +423,7 @@ export async function getCartById(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/cart/${cartId}`, {
+    const response = await fetch(`${API_BASE_URL}/cart/${cartId}`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -267,7 +454,7 @@ export async function getUserCart(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/cart/${userId}`, {
+    const response = await fetch(`${API_BASE_URL}/cart/${userId}`, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -297,7 +484,7 @@ export async function createCart(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/cart/create`, {
+    const response = await fetch(`${API_BASE_URL}/cart/create`, {
       method: 'POST',
       headers: {
         Accept: 'application/json',
@@ -330,7 +517,7 @@ export async function addProductToCart(
   }
 
   // Construir la URL con quantity como query parameter
-  const url = `${API_BASE_URL}/api/cart/${cartId}/add/product/${productId}?quantity=${quantity}`;
+  const url = `${API_BASE_URL}/cart/${cartId}/add/product/${productId}?quantity=${quantity}`;
   console.log(`addProductToCart: Calling PUT ${url}`);
 
   try {
@@ -370,7 +557,7 @@ export async function removeProductFromCart(
 
   try {
     const response = await fetch(
-      `${API_BASE_URL}/api/cart/${cartId}/delete/product/${productId}`,
+      `${API_BASE_URL}/cart/${cartId}/delete/product/${productId}`,
       {
         method: 'PATCH',
         headers: {
@@ -406,7 +593,7 @@ export async function emptyCart(
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/api/cart/${cartId}/empty`, {
+    const response = await fetch(`${API_BASE_URL}/cart/${cartId}/empty`, {
       method: 'PATCH',
       headers: {
         Accept: 'application/json',
