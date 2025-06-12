@@ -1,3 +1,7 @@
+// Reemplazar productos hardcodeados por datos reales del API (si aplica al backoffice)
+// Habilitar los botones y agregar navegación real
+// Conectar con funcionalidad de carrito
+
 'use client';
 
 import { useState, useEffect } from 'react';
@@ -5,7 +9,6 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { ShoppingCart, Star, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useCart } from '@/features/cart/hooks/useCart';
 import { Product } from '@/types';
 import { NeonBorders } from './HeroBanner';
 
@@ -14,9 +17,13 @@ interface FeaturedProductsProps {
 }
 
 const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
-  const { addToCart, formatPrice, getProductPrice } = useCart();
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+
+  // Función simple para formatear precios (solo para display)
+  const formatPrice = (price: number): string => {
+    return `$${price.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  };
 
   useEffect(() => {
     const mockFeaturedProducts: Product[] = [
@@ -76,12 +83,9 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
     }, 1000);
   }, [products]);
 
-  const handleAddToCart = async (product: Product) => {
-    try {
-      await addToCart(product, 1);
-    } catch (error) {
-      console.error('Error adding to cart:', error);
-    }
+  // Los productos destacados son solo placeholder visual - sin funcionalidad
+  const handlePlaceholderClick = () => {
+    // Placeholder sin funcionalidad
   };
 
   if (isLoading) {
@@ -194,7 +198,7 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
 
         <div className="mb-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {featuredProducts.map((product) => {
-            const productPrice = getProductPrice(product);
+            const productPrice = product.price || 8500; // Precio mock para display
 
             return (
               <div
@@ -215,15 +219,15 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
                   </div>
 
                   <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <Link href={`/productos/${product.slug}`}>
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        className="border-gray-700 bg-gray-800/90 text-white hover:bg-gray-700"
-                      >
-                        Ver Detalles
-                      </Button>
-                    </Link>
+                    <Button
+                      variant="secondary"
+                      size="sm"
+                      className="border-gray-700 bg-gray-600 text-white cursor-not-allowed"
+                      disabled
+                      onClick={handlePlaceholderClick}
+                    >
+                      Placeholder
+                    </Button>
                   </div>
                 </div>
 
@@ -269,12 +273,13 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
                   </div>
 
                   <Button
-                    onClick={() => handleAddToCart(product)}
-                    className="w-full bg-[#16a245] text-white transition-all duration-300 hover:bg-[#0d7a32]"
+                    onClick={handlePlaceholderClick}
+                    className="w-full bg-gray-500 text-white cursor-not-allowed"
                     size="sm"
+                    disabled
                   >
                     <ShoppingCart className="mr-2 h-4 w-4" />
-                    Agregar al Carrito
+                    Placeholder
                   </Button>
                 </div>
               </div>

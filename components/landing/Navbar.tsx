@@ -13,10 +13,19 @@ const Navbar = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);
   const { user, token } = useAuth();
-  const { cart } = useCart();
-
-  const totalItems =
-    cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  
+  // Manejar useCart con fallback para cuando no hay CartProvider
+  let cart, openCart, totalItems = 0;
+  try {
+    const cartHook = useCart();
+    cart = cartHook.cart;
+    openCart = cartHook.openCart;
+    totalItems = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+  } catch (error) {
+    cart = null;
+    openCart = () => {}; 
+    totalItems = 0;
+  }
   const isAuthenticated = !!token;
 
   useEffect(() => {
@@ -153,17 +162,24 @@ const Navbar = () => {
             </Link>
 
             <div className="relative">
-              <Link
-                href="/carrito"
-                className="p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
-              >
-                <ShoppingCart className="h-5 w-5" />
-                {totalItems > 0 && (
+              {totalItems > 0 ? (
+                <button
+                  onClick={openCart}
+                  className="p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
+                >
+                  <ShoppingCart className="h-5 w-5" />
                   <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#16a245] text-xs font-bold text-white">
                     {totalItems > 99 ? '99+' : totalItems}
                   </span>
-                )}
-              </Link>
+                </button>
+              ) : (
+                <Link
+                  href="/productos"
+                  className="p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                </Link>
+              )}
             </div>
 
             <button

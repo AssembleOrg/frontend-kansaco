@@ -5,8 +5,6 @@ import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { getProducts } from '@/lib/api';
 import { Product } from '@/types';
-import { useAuth } from '@/features/auth/hooks/useAuth';
-import { useAuthStore } from '@/features/auth/store/authStore';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
 import Navbar from '@/components/landing/Navbar';
@@ -15,51 +13,21 @@ import BackToHomeButton from '@/components/ui/BackToHomeButton';
 
 function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [isAuthReady, setIsAuthReady] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [uniqueCategories, setUniqueCategories] = useState<string[]>([]);
 
-  const storeToken = useAuthStore((state) => state.token);
-  const { token: hookToken } = useAuth();
   const searchParams = useSearchParams();
   const currentCategoryFilter = searchParams.get('category');
 
-  // Efecto para esperar la hidratación del store de autenticación
-  useEffect(() => {
-    if (useAuthStore.persist.hasHydrated()) {
-      setIsAuthReady(true);
-      return;
-    }
-    const unsubscribeFinish = useAuthStore.persist.onFinishHydration(() => {
-      setIsAuthReady(true);
-    });
-    const timeoutId = setTimeout(() => {
-      if (!useAuthStore.persist.hasHydrated()) {
-        console.warn(
-          'Auth store hydration timeout in ProductsContent. Forcing isAuthReady to true.'
-        );
-        setIsAuthReady(true);
-      }
-    }, 2000);
-    return () => {
-      unsubscribeFinish();
-      clearTimeout(timeoutId);
-    };
-  }, []);
-
   useEffect(() => {
     const fetchProducts = async () => {
-      if (!isAuthReady) {
-        return;
-      }
-      const tokenToUse = storeToken || hookToken;
-
       setIsLoading(true);
       setError(null);
 
       try {
-        const fetchedProducts = await getProducts(tokenToUse);
+        // Productos no requieren token - son públicos
+        const fetchedProducts = await getProducts(null);
         setProducts(fetchedProducts);
 
         const categories = Array.from(
@@ -78,7 +46,7 @@ function ProductsContent() {
     };
 
     fetchProducts();
-  }, [isAuthReady, storeToken, hookToken]);
+  }, []);
 
   const filteredProducts = useMemo(() => {
     let result = products;
@@ -90,14 +58,10 @@ function ProductsContent() {
     return result;
   }, [products, currentCategoryFilter]);
 
-  if (!isAuthReady || isLoading) {
+  if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8 text-center">
         <p>Cargando productos...</p>
-        <div className="mt-4 text-sm text-gray-500">
-          <p>Estado: {isAuthReady ? 'Auth listo' : 'Esperando hidratación'}</p>
-          <p>Token: {storeToken ? 'Disponible' : 'No disponible'}</p>
-        </div>
       </div>
     );
   }
