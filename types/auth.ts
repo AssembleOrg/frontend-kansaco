@@ -3,7 +3,7 @@
 export interface User {
   id: string;
   email: string;
-  fullName?: string;
+  fullName: string;
 }
 
 export interface LoginPayload {
@@ -13,8 +13,9 @@ export interface LoginPayload {
 
 export interface ActualLoginApiResponse {
   status: string;
-  access_token: string;
-  user: User;
+  data: {
+    token: string;
+  };
   message?: string;
 }
 

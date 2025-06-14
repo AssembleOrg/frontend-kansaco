@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { useCart } from '../../hooks/useCart';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
   Sheet,
   SheetContent,
@@ -12,10 +13,11 @@ import {
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
 import { CartItemCard } from './CartItemCard';
-import { ShoppingCart, X, AlertCircle, Check } from 'lucide-react';
+import { ShoppingCart, AlertCircle, Check, LogIn } from 'lucide-react';
 import Link from 'next/link';
 
 export const CartDrawer = () => {
+  const { token } = useAuth();
   const {
     cart,
     isCartOpen,
@@ -33,27 +35,26 @@ export const CartDrawer = () => {
     clearCart,
   } = useCart();
 
+  const isAuthenticated = !!token;
+  const canProceedToCheckout = isAuthenticated && hasReachedMinimumPurchase;
+
   useEffect(() => {
     if (isCartOpen) {
       syncCart();
     }
   }, [isCartOpen, syncCart]);
 
+  const handleProceedToCheckout = () => {
+    closeCart();
+  };
+
   return (
     <Sheet open={isCartOpen} onOpenChange={closeCart}>
       <SheetContent className="flex w-full flex-col sm:max-w-md">
-        <SheetHeader className="space-y-2.5 pr-6">
+        <SheetHeader className="space-y-2.5">
           <SheetTitle className="flex items-center text-xl">
             <ShoppingCart className="mr-2 h-5 w-5" />
             Carrito de compra
-            <Button
-              onClick={closeCart}
-              variant="ghost"
-              size="icon"
-              className="absolute right-4 top-4"
-            >
-              <X className="h-4 w-4" />
-            </Button>
           </SheetTitle>
         </SheetHeader>
 
@@ -117,7 +118,7 @@ export const CartDrawer = () => {
               <div className="space-y-2 rounded-md bg-gray-50 p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">
-                    Mínimo de compra mayorista
+                    Monto mínimo de compra
                   </span>
                   <span className="text-sm font-medium">
                     {formatPrice(MINIMUM_PURCHASE)}
@@ -128,34 +129,60 @@ export const CartDrawer = () => {
                 {hasReachedMinimumPurchase ? (
                   <div className="flex items-center rounded-md bg-green-50 p-2 text-xs text-green-600">
                     <Check className="mr-1 h-4 w-4" />
-                    <span>¡Has alcanzado el mínimo de compra mayorista!</span>
+                    <span>¡Has alcanzado el monto mínimo de compra!</span>
                   </div>
                 ) : (
                   <div className="flex items-start rounded-md bg-amber-50 p-2 text-xs text-amber-600">
                     <AlertCircle className="mr-1 mt-0.5 h-4 w-4 flex-shrink-0" />
                     <span>
                       Te faltan {formatPrice(amountMissingForMinimum)} para
-                      alcanzar el mínimo de compra mayorista
+                      completar tu pedido
                     </span>
                   </div>
                 )}
               </div>
 
               <div className="flex flex-col gap-2">
-                {hasReachedMinimumPurchase ? (
+                {canProceedToCheckout ? (
                   <Link href="/checkout" className="w-full">
-                    <Button className="w-full bg-green-600 hover:bg-green-700">
+                    <Button 
+                      className="w-full bg-green-600 hover:bg-green-700"
+                      onClick={handleProceedToCheckout}
+                    >
                       Proceder al pago
                     </Button>
                   </Link>
                 ) : (
-                  <Button
-                    className="w-full cursor-not-allowed bg-gray-400 hover:bg-gray-500"
-                    disabled
-                    title="Debes alcanzar el mínimo de compra"
-                  >
-                    Proceder al pago
-                  </Button>
+                  <div className="space-y-2">
+                    {!isAuthenticated && (
+                      <div className="flex items-center rounded-md bg-blue-50 p-2 text-xs text-blue-600">
+                        <LogIn className="mr-1 h-4 w-4" />
+                        <span>
+                          Debes iniciar sesión para proceder al pago
+                        </span>
+                      </div>
+                    )}
+                    {!hasReachedMinimumPurchase && (
+                      <div className="flex items-start rounded-md bg-amber-50 p-2 text-xs text-amber-600">
+                        <AlertCircle className="mr-1 mt-0.5 h-4 w-4 flex-shrink-0" />
+                        <span>
+                          Te faltan {formatPrice(amountMissingForMinimum)} para
+                          alcanzar el mínimo de compra mayorista
+                        </span>
+                      </div>
+                    )}
+                    <Button
+                      className="w-full cursor-not-allowed bg-gray-400 hover:bg-gray-500"
+                      disabled
+                      title={
+                        !isAuthenticated
+                          ? "Debes iniciar sesión para proceder al pago"
+                          : "Debes alcanzar el mínimo de compra"
+                      }
+                    >
+                      Proceder al pago
+                    </Button>
+                  </div>
                 )}
                 <div className="flex gap-2">
                   <Button

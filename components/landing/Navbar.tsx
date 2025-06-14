@@ -4,15 +4,21 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ShoppingCart, Menu, X, ChevronDown } from 'lucide-react';
+import { User, ShoppingCart, Menu, X, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCart } from '@/features/cart/hooks/useCart';
+import { useRouter, usePathname } from 'next/navigation';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);
-  const { user, token } = useAuth();
+  const [isHydrated, setIsHydrated] = useState(false);
+  const { user, token, isAuthReady } = useAuth();
+  const { logout } = useAuthStore();
+  const router = useRouter();
+  const pathname = usePathname();
   
   // Manejar useCart con fallback para cuando no hay CartProvider
   let cart, openCart, totalItems = 0;
@@ -21,12 +27,19 @@ const Navbar = () => {
     cart = cartHook.cart;
     openCart = cartHook.openCart;
     totalItems = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-  } catch (error) {
+  } catch {
     cart = null;
     openCart = () => {}; 
     totalItems = 0;
   }
-  const isAuthenticated = !!token;
+  
+  // Solo mostrar estado de autenticación después de la hidratación
+  const isAuthenticated = isHydrated && isAuthReady && !!token;
+
+  useEffect(() => {
+    // Marcar como hidratado después del primer render en el cliente
+    setIsHydrated(true);
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -149,37 +162,64 @@ const Navbar = () => {
 
           <div className="flex items-center space-x-4">
 
-            <Link
-              href={isAuthenticated ? '/cuenta' : '/login'}
-              className="flex items-center p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
-            >
-              <User className="h-5 w-5" />
-              {isAuthenticated && (
-                <span className="ml-2 hidden text-sm font-medium sm:block">
-                  {user?.fullName?.split(' ')[0]}
-                </span>
-              )}
-            </Link>
+            {!isHydrated ? (
+              // Estado neutral durante la hidratación para evitar mismatch
+              <div className="flex items-center p-2 text-white">
+                <User className="h-5 w-5" />
+              </div>
+            ) : isAuthenticated ? (
+              <div className="flex items-center space-x-2">
+                <Link
+                  href="/cuenta"
+                  className="flex items-center p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
+                >
+                  <User className="h-5 w-5" />
+                  <span className="ml-2 hidden text-sm font-medium sm:block">
+                    {user?.fullName?.split(' ')[0]}
+                  </span>
+                </Link>
+                <button
+                  onClick={async () => {
+                    await logout();
+                    router.push('/');
+                  }}
+                  className="flex items-center p-2 text-white transition-colors duration-200 hover:text-red-400"
+                  title="Cerrar sesión"
+                >
+                  <LogOut className="h-5 w-5" />
+                </button>
+              </div>
+            ) : (
+              <Link
+                href="/login"
+                className="flex items-center p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
+              >
+                <User className="h-5 w-5" />
+              </Link>
+            )}
 
             <div className="relative">
-              {totalItems > 0 ? (
-                <button
-                  onClick={openCart}
-                  className="p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
-                >
-                  <ShoppingCart className="h-5 w-5" />
+              <button
+                onClick={() => {
+                  if (totalItems > 0) {
+                    if (!pathname.startsWith('/productos')) {
+                      router.push('/productos?openCart=true');
+                    } else {
+                      openCart();
+                    }
+                  } else {
+                    router.push('/productos');
+                  }
+                }}
+                className="p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
+              >
+                <ShoppingCart className="h-5 w-5" />
+                {totalItems > 0 && (
                   <span className="absolute -right-1 -top-1 flex h-5 w-5 items-center justify-center rounded-full bg-[#16a245] text-xs font-bold text-white">
                     {totalItems > 99 ? '99+' : totalItems}
                   </span>
-                </button>
-              ) : (
-                <Link
-                  href="/productos"
-                  className="p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
-                >
-                  <ShoppingCart className="h-5 w-5" />
-                </Link>
-              )}
+                )}
+              </button>
             </div>
 
             <button
@@ -270,7 +310,12 @@ const Navbar = () => {
               </Link>
 
               <div className="border-t border-gray-700 pt-4">
-                {isAuthenticated ? (
+                {!isHydrated ? (
+                  // Estado neutral durante la hidratación
+                  <div className="py-2 text-gray-400">
+                    Cargando...
+                  </div>
+                ) : isAuthenticated ? (
                   <div className="space-y-2">
                     <p className="text-sm text-gray-300">
                       Hola, {user?.fullName?.split(' ')[0]}
@@ -282,6 +327,17 @@ const Navbar = () => {
                     >
                       Mi Cuenta
                     </Link>
+                    <button
+                      onClick={async () => {
+                        await logout();
+                        setIsMobileMenuOpen(false);
+                        router.push('/');
+                      }}
+                      className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-red-400"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Cerrar Sesión
+                    </button>
                   </div>
                 ) : (
                   <Link

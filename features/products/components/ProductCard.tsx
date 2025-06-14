@@ -75,8 +75,7 @@ export default function ProductCard({ product }: { product: Product }) {
         <div className="mt-auto space-y-2">
           <AddToCartButton
             product={product}
-            variant="card"
-            showQuantity={false}
+            className="w-full bg-green-600 hover:bg-green-700 text-white"
           />
           <Link href={`/productos/${product.slug}`} className="block">
             <span className="block w-full rounded-md border border-green-600 bg-white px-4 py-2 text-center text-sm font-medium text-green-600 transition-colors duration-300 hover:bg-green-50">

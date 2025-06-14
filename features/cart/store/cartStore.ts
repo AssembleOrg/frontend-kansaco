@@ -1,11 +1,6 @@
 // features/cart/store/cartStore.ts
 import { create } from 'zustand';
-import {
-  persist,
-  createJSONStorage,
-  devtools,
-  StateStorage,
-} from 'zustand/middleware';
+import { persist } from 'zustand/middleware';
 import { Cart, Product, CartItem as CartItemType } from '@/types';
 import {
   getUserCart,
@@ -15,12 +10,7 @@ import {
   emptyCart,
 } from '@/lib/api';
 import { useAuthStore } from '@/features/auth/store/authStore';
-
-let localCartItemCounter = 0;
-const generateLocalCartItemId = (): number => {
-  localCartItemCounter += 1;
-  return Date.now() + localCartItemCounter;
-};
+import { logger } from '@/lib/logger';
 
 interface CartState {
   cart: Cart;
@@ -33,591 +23,333 @@ interface CartState {
   updateQuantity: (itemId: number, newQuantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
   syncWithServer: () => Promise<void>;
-  mergeLocalCartToServer: () => Promise<void>;
 
   toggleCart: () => void;
   closeCart: () => void;
   openCart: () => void;
 }
 
-const isLocalStorageAvailable = (): StateStorage | undefined => {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    const testKey = 'zustand-test-cart';
-    window.localStorage.setItem(testKey, 'test');
-    window.localStorage.removeItem(testKey);
-    return localStorage;
-  } catch (e) {
-    console.warn('localStorage no disponible o restringido en cart store:', e);
-    return undefined;
-  }
-};
-
 const initialCartState: Cart = {
-  id: 0, // 0 indica carrito local/no sincronizado con servidor
+  id: 0,
   createdAt: new Date().toISOString(),
   updateAt: new Date().toISOString(),
   userId: '',
   items: [],
 };
 
-export const useCartStore = create<CartState>()(
-  devtools(
-    persist(
-      (set, get) => ({
-        cart: { ...initialCartState },
-        isLoading: false,
-        error: null,
-        isCartOpen: false,
+// Función para generar ID único para items del carrito local
+const generateLocalItemId = () => Date.now() + Math.random();
 
-        // Sincroniza/Obtiene el carrito del servidor si el usuario está logueado
-        syncWithServer: async () => {
-          const authState = useAuthStore.getState();
-          if (!authState.token || !authState.user?.id) {
-            console.log(
-              'syncWithServer: No autenticado, no se puede sincronizar/obtener carrito del servidor.'
-            );
+export const useCartStore = create<CartState>()(
+  persist(
+    (set, get) => ({
+      cart: { ...initialCartState },
+      isLoading: false,
+      error: null,
+      isCartOpen: false,
+      //syncWithServer test manejar con Zustand ?
+      syncWithServer: async () => {
+        const authState = useAuthStore.getState();
+        if (!authState.token || !authState.user?.id) {
+          console.log('syncWithServer: No autenticado, usando carrito local.');
+          set({
+            isLoading: false,
+            error: null,
+            cart: { ...initialCartState },
+          });
+          return;
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+          // Intentar obtener carrito del servidor
+          const userCartResponse = await getUserCart(
+            authState.user.id,
+            authState.token
+          );
+          
+          if (userCartResponse?.data?.id) {
+            set({
+              cart: userCartResponse.data,
+              isLoading: false,
+              error: null,
+            });
+            console.log('syncWithServer: Carrito sincronizado con servidor.', userCartResponse.data);
+          } else {
+            console.log('syncWithServer: Servidor no disponible, continuando con carrito local.');
             set({
               isLoading: false,
               error: null,
-              cart: { ...get().cart, id: 0, userId: '' },
+              cart: { 
+                ...get().cart, // Mantener carrito local existente
+                userId: authState.user.id,
+              },
             });
-            return;
           }
+        } catch (error: unknown) {
+          // Si falla el servidor, continuar con carrito local
+          logger.info('syncWithServer: Servidor no disponible, continuando con carrito local.');
+          set({
+            isLoading: false,
+            error: null,
+            cart: { 
+              ...get().cart, // Mantener carrito local existente
+              userId: authState.user.id,
+            },
+          });
+        }
+      },
 
-          set({ isLoading: true, error: null });
+      // CARRITO LOCAL ROBUSTO: Funciona siempre, con o sin servidor
+      addToCart: async (product: Product, quantityToAdd: number) => {
+        const authState = useAuthStore.getState();
+        if (!authState.token || !authState.user?.id) {
+          console.log('addToCart: Usuario no autenticado.');
+          return;
+        }
+
+        set({ isLoading: true, error: null });
+        const currentCart = get().cart;
+
+        // ESTRATEGIA HÍBRIDA: Intentar servidor primero, si falla usar local
+        if (currentCart.id > 0) {
+          // Tenemos carrito del servidor, intentar agregar ahí
           try {
-            const userCartResponse = await getUserCart(
-              authState.user.id,
+            const existingItem = currentCart.items.find(
+              (item) => item.product.id === product.id
+            );
+            const newQuantity = existingItem ? existingItem.quantity + quantityToAdd : quantityToAdd;
+
+            console.log(`addToCart: Intentando agregar al servidor (carrito ID ${currentCart.id})`);
+            const response = await addProductToCart(
+              currentCart.id,
+              product.id,
+              newQuantity,
               authState.token
             );
-            if (userCartResponse?.data?.id) {
-              set({
-                cart: userCartResponse.data,
-                isLoading: false,
-                error: null,
-              });
-              console.log(
-                'syncWithServer: Carrito obtenido del servidor.',
-                userCartResponse.data
-              );
-            } else {
-              console.log(
-                'syncWithServer: No hay carrito existente en servidor para el usuario, creando uno nuevo (vacío)...'
-              );
-              const newCartResponse = await createCart(authState.token);
-              if (newCartResponse?.data?.id) {
-                set({
-                  cart: newCartResponse.data,
-                  isLoading: false,
-                  error: null,
-                });
-                console.log(
-                  'syncWithServer: Nuevo carrito creado en servidor.',
-                  newCartResponse.data
-                );
-              } else {
-                set({
-                  isLoading: false,
-                  error: 'No se pudo crear un nuevo carrito en el servidor.',
-                  cart: { ...initialCartState },
-                });
-                console.error(
-                  'syncWithServer: Fallo al crear carrito en servidor.'
-                );
-              }
+            
+            if (response?.data?.id) {
+              set({ cart: response.data, isLoading: false, error: null });
+              console.log('addToCart: Producto agregado al servidor exitosamente.');
+              return;
             }
-          } catch (error: unknown) {
-            console.error('syncWithServer: Error:', error);
-            set({
-              isLoading: false,
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Error al sincronizar el carrito.',
-              cart: { ...initialCartState },
-            });
+          } catch (error) {
+            console.log('addToCart: Servidor falló, usando carrito local:', error);
           }
-        },
+        }
 
-        mergeLocalCartToServer: async () => {
-          const authState = useAuthStore.getState();
-          const localCartItems = get().cart.items;
+        // CARRITO LOCAL: Siempre funciona
+        console.log(`addToCart: Agregando ${quantityToAdd} de ${product.name} al carrito local`);
+        
+        const existingItemIndex = currentCart.items.findIndex(
+          (item) => item.product.id === product.id
+        );
 
-          if (!authState.token || !authState.user?.id) {
-            console.log(
-              'mergeLocalCartToServer: No autenticado, no se puede fusionar.'
-            );
-            return;
-          }
-          if (localCartItems.length === 0) {
-            console.log(
-              'mergeLocalCartToServer: Carrito local vacío, no hay nada que fusionar. Sincronizando para asegurar carrito de servidor...'
-            );
-            await get().syncWithServer();
-            return;
-          }
+        let updatedItems = [...currentCart.items];
+        
+        if (existingItemIndex >= 0) {
+          // Actualizar cantidad del item existente
+          updatedItems[existingItemIndex] = {
+            ...updatedItems[existingItemIndex],
+            quantity: updatedItems[existingItemIndex].quantity + quantityToAdd
+          };
+        } else {
+          // Agregar nuevo item
+          const newItem: CartItemType = {
+            id: generateLocalItemId(),
+            quantity: quantityToAdd,
+            product: product
+          };
+          updatedItems.push(newItem);
+        }
 
-          console.log(
-            'mergeLocalCartToServer: Iniciando fusión de carrito local al servidor...'
-          );
-          set({ isLoading: true, error: null });
+        const updatedCart: Cart = {
+          ...currentCart,
+          items: updatedItems,
+          updateAt: new Date().toISOString(),
+          userId: authState.user.id,
+          id: currentCart.id || -1 // -1 indica carrito local
+        };
 
+        set({ cart: updatedCart, isLoading: false, error: null });
+        console.log('addToCart: Producto agregado al carrito local exitosamente.');
+      },
+
+      removeFromCart: async (cartItemIdToRemove: number) => {
+        const authState = useAuthStore.getState();
+        if (!authState.token || !authState.user?.id) {
+          console.log('removeFromCart: Usuario no autenticado.');
+          return;
+        }
+
+        set({ isLoading: true, error: null });
+        const currentCart = get().cart;
+        
+        const itemToRemove = currentCart.items.find(
+          (item) => item.id === cartItemIdToRemove
+        );
+
+        if (!itemToRemove) {
+          set({
+            isLoading: false,
+            error: 'Item no encontrado en carrito.',
+          });
+          return;
+        }
+
+        // ESTRATEGIA HÍBRIDA: Intentar servidor primero, si falla usar local
+        if (currentCart.id > 0) {
           try {
-            let serverCart = get().cart;
-            if (
-              serverCart.id === 0 ||
-              serverCart.userId !== authState.user.id
-            ) {
-              const userCartResponse = await getUserCart(
-                authState.user.id,
-                authState.token
-              );
-              if (userCartResponse?.data?.id) {
-                serverCart = userCartResponse.data;
-              } else {
-                const newCartResponse = await createCart(authState.token);
-                if (newCartResponse?.data?.id) {
-                  serverCart = newCartResponse.data;
-                } else {
-                  throw new Error(
-                    'No se pudo crear/obtener carrito de servidor para fusionar.'
-                  );
-                }
-              }
-              set({ cart: serverCart });
+            console.log(`removeFromCart: Intentando eliminar del servidor (carrito ID ${currentCart.id})`);
+            const response = await removeProductFromCart(
+              currentCart.id,
+              itemToRemove.product.id,
+              authState.token
+            );
+            
+            if (response?.data?.id) {
+              set({ cart: response.data, isLoading: false, error: null });
+              console.log('removeFromCart: Producto eliminado del servidor exitosamente.');
+              return;
             }
+          } catch (error) {
+            console.log('removeFromCart: Servidor falló, usando carrito local:', error);
+          }
+        }
 
-            console.log(
-              `mergeLocalCartToServer: Fusionando ${localCartItems.length} items al carrito de servidor ID: ${serverCart.id}`
+        // CARRITO LOCAL: Siempre funciona
+        console.log(`removeFromCart: Eliminando ${itemToRemove.product.name} del carrito local`);
+        
+        const updatedItems = currentCart.items.filter(
+          (item) => item.id !== cartItemIdToRemove
+        );
+
+        const updatedCart: Cart = {
+          ...currentCart,
+          items: updatedItems,
+          updateAt: new Date().toISOString()
+        };
+
+        set({ cart: updatedCart, isLoading: false, error: null });
+        console.log('removeFromCart: Producto eliminado del carrito local exitosamente.');
+      },
+
+      updateQuantity: async (cartItemIdToUpdate: number, newTotalQuantity: number) => {
+        if (newTotalQuantity <= 0) {
+          await get().removeFromCart(cartItemIdToUpdate);
+          return;
+        }
+
+        const authState = useAuthStore.getState();
+        if (!authState.token || !authState.user?.id) {
+          console.log('updateQuantity: Usuario no autenticado.');
+          return;
+        }
+
+        set({ isLoading: true, error: null });
+        const currentCart = get().cart;
+        
+        const itemToUpdate = currentCart.items.find(
+          (item) => item.id === cartItemIdToUpdate
+        );
+
+        if (!itemToUpdate) {
+          set({
+            isLoading: false,
+            error: 'Item no encontrado para actualizar.',
+          });
+          return;
+        }
+
+        // ESTRATEGIA HÍBRIDA: Intentar servidor primero, si falla usar local
+        if (currentCart.id > 0) {
+          try {
+            console.log(`updateQuantity: Intentando actualizar en servidor (carrito ID ${currentCart.id})`);
+            const response = await addProductToCart(
+              currentCart.id,
+              itemToUpdate.product.id,
+              newTotalQuantity,
+              authState.token
             );
-            let currentServerCartState = serverCart;
-
-            for (const localItem of localCartItems) {
-              console.log(
-                `mergeLocalCartToServer: Fusionando item ${localItem.product.name}, cantidad: ${localItem.quantity}`
-              );
-
-              const response = await addProductToCart(
-                currentServerCartState.id,
-                localItem.product.id,
-                localItem.quantity,
-                authState.token
-              );
-              if (response?.data?.id) {
-                currentServerCartState = response.data;
-              } else {
-                console.warn(
-                  `mergeLocalCartToServer: Fallo al fusionar item ${localItem.product.name}. Respuesta:`,
-                  response
-                );
-                // opcional reintenrar aca ? notificar...
-              }
+            
+            if (response?.data?.id) {
+              set({ cart: response.data, isLoading: false, error: null });
+              console.log('updateQuantity: Cantidad actualizada en servidor exitosamente.');
+              return;
             }
-            set({
-              cart: currentServerCartState,
-              isLoading: false,
-              error: null,
-            });
-            console.log(
-              'mergeLocalCartToServer: Carrito local fusionado con éxito al servidor.',
-              currentServerCartState
-            );
-          } catch (error: unknown) {
-            console.error('mergeLocalCartToServer: Error:', error);
-            set({
-              isLoading: false,
-              error:
-                error instanceof Error
-                  ? error.message
-                  : 'Error al fusionar carrito.',
-            });
-
-            await get().syncWithServer();
+          } catch (error) {
+            console.log('updateQuantity: Servidor falló, usando carrito local:', error);
           }
-        },
+        }
 
-        addToCart: async (product: Product, quantityToAdd: number) => {
-          set({ isLoading: true, error: null });
-          const localCartBeforeOp = get().cart ?? { ...initialCartState };
+        // CARRITO LOCAL: Siempre funciona
+        console.log(`updateQuantity: Actualizando ${itemToUpdate.product.name} a cantidad ${newTotalQuantity} en carrito local`);
+        
+        const updatedItems = currentCart.items.map(item =>
+          item.id === cartItemIdToUpdate
+            ? { ...item, quantity: newTotalQuantity }
+            : item
+        );
 
-          const existingItem = localCartBeforeOp.items.find(
-            (item) => item.product.id === product.id
-          );
-          let newQuantity = quantityToAdd;
-          if (existingItem) {
-            newQuantity = existingItem.quantity + quantityToAdd;
-          }
+        const updatedCart: Cart = {
+          ...currentCart,
+          items: updatedItems,
+          updateAt: new Date().toISOString()
+        };
 
-          let updatedItems: CartItemType[];
-          if (existingItem) {
-            updatedItems = localCartBeforeOp.items.map((item) =>
-              item.product.id === product.id
-                ? { ...item, quantity: newQuantity }
-                : item
-            );
-          } else {
-            updatedItems = [
-              ...localCartBeforeOp.items,
-              { id: generateLocalCartItemId(), quantity: newQuantity, product },
-            ];
-          }
+        set({ cart: updatedCart, isLoading: false, error: null });
+        console.log('updateQuantity: Cantidad actualizada en carrito local exitosamente.');
+      },
 
-          const updatedLocalCart: Cart = {
-            ...localCartBeforeOp,
-            updateAt: new Date().toISOString(),
-            items: updatedItems,
-          };
-          set({ cart: updatedLocalCart });
-          console.log(
-            'addToCart: Actualizado localmente:',
-            product.name,
-            'Nueva cantidad total:',
-            newQuantity,
-            updatedLocalCart
-          );
+      clearCart: async () => {
+        const authState = useAuthStore.getState();
+        const currentCart = get().cart;
 
-          // --- Lógica de Sincronización con el Servidor ---
-          const authStateForSync = useAuthStore.getState();
-          const cartStateForSync = get().cart; // Re-leer el estado del carrito por si fue actualizado
+        if (!authState.token || !authState.user?.id) {
+          // Si no está autenticado, solo limpiar local
+          set({ cart: { ...initialCartState }, isLoading: false, error: null });
+          console.log('clearCart: Carrito local limpiado.');
+          return;
+        }
 
-          if (
-            authStateForSync.token &&
-            authStateForSync.user?.id &&
-            cartStateForSync.id !== 0
-          ) {
-            console.log(
-              `addToCart: Intentando sincronizar. Cart ID: ${cartStateForSync.id}, Prod ID: ${product.id}, Cantidad Total a Enviar: ${newQuantity}`
-            );
-            try {
-              const response = await addProductToCart(
-                cartStateForSync.id,
-                product.id,
-                newQuantity,
-                authStateForSync.token
-              );
-              if (response?.data?.id) {
-                set({ cart: response.data, isLoading: false, error: null });
-                console.log(
-                  'addToCart: Sincronizado con servidor.',
-                  response.data
-                );
-              } else {
-                set({
-                  isLoading: false,
-                  error:
-                    'Respuesta inesperada del servidor al añadir producto.',
-                });
-                console.warn(
-                  'addToCart: Fallo al sincronizar (respuesta inesperada).',
-                  response
-                );
-              }
-            } catch (err: unknown) {
-              console.error(
-                'addToCart: Error sincronizando con servidor:',
-                err
-              );
-              set({
-                isLoading: false,
-                error:
-                  err instanceof Error ? err.message : 'Fallo al sincronizar.',
-              });
+        set({ isLoading: true, error: null });
+
+        // ESTRATEGIA HÍBRIDA: Intentar servidor primero, si falla usar local
+        if (currentCart.id > 0) {
+          try {
+            console.log(`clearCart: Intentando vaciar carrito del servidor ID: ${currentCart.id}`);
+            const response = await emptyCart(currentCart.id, authState.token);
+            
+            if (response?.data?.id) {
+              set({ cart: response.data, isLoading: false, error: null });
+              console.log('clearCart: Carrito del servidor vaciado exitosamente.');
+              return;
             }
-          } else {
-            set({ isLoading: false });
-            console.log(
-              `addToCart: No se sincronizará. Token: ${!!authStateForSync.token}, User: ${!!authStateForSync.user?.id}, Cart ID Servidor: ${cartStateForSync.id !== 0}`
-            );
+          } catch (error) {
+            console.log('clearCart: Servidor falló, vaciando carrito local:', error);
           }
-        },
+        }
 
-        removeFromCart: async (cartItemIdToRemove: number) => {
-          set({ isLoading: true, error: null });
-          const localCartBeforeOp = get().cart ?? { ...initialCartState };
-          const itemToRemove = localCartBeforeOp.items.find(
-            (item) => item.id === cartItemIdToRemove
-          );
+        // CARRITO LOCAL: Siempre funciona
+        const clearedCart: Cart = {
+          ...initialCartState,
+          userId: authState.user.id,
+          id: -1 // Carrito local
+        };
 
-          if (!itemToRemove) {
-            set({
-              isLoading: false,
-              error: 'Item no encontrado en carrito local.',
-            });
-            return;
-          }
+        set({ cart: clearedCart, isLoading: false, error: null });
+        console.log('clearCart: Carrito local vaciado exitosamente.');
+      },
 
-          const updatedItemsLocal = localCartBeforeOp.items.filter(
-            (item) => item.id !== cartItemIdToRemove
-          );
-          const updatedLocalCart: Cart = {
-            ...localCartBeforeOp,
-            updateAt: new Date().toISOString(),
-            items: updatedItemsLocal,
-          };
-          set({ cart: updatedLocalCart });
-          console.log(
-            'removeFromCart: Eliminado localmente. Item ID:',
-            cartItemIdToRemove,
-            updatedLocalCart
-          );
-
-          // --- Sincronización ---
-          const authStateForSync = useAuthStore.getState();
-          const cartStateForSync = get().cart; // Re-leer
-
-          if (
-            authStateForSync.token &&
-            authStateForSync.user?.id &&
-            cartStateForSync.id !== 0
-          ) {
-            console.log(
-              `removeFromCart: Intentando sincronizar. Cart ID: ${cartStateForSync.id}, Prod ID: ${itemToRemove.product.id}`
-            );
-            try {
-              const response = await removeProductFromCart(
-                cartStateForSync.id,
-                itemToRemove.product.id,
-                authStateForSync.token
-              );
-              if (response?.data?.id) {
-                set({ cart: response.data, isLoading: false, error: null });
-                console.log(
-                  'removeFromCart: Sincronizado con servidor.',
-                  response.data
-                );
-              } else {
-                set({
-                  isLoading: false,
-                  error:
-                    'Respuesta inesperada del servidor al eliminar producto.',
-                });
-                console.warn(
-                  'removeFromCart: Fallo al sincronizar (respuesta inesperada).',
-                  response
-                );
-              }
-            } catch (err: unknown) {
-              console.error(
-                'removeFromCart: Error sincronizando con servidor:',
-                err
-              );
-              set({
-                isLoading: false,
-                error:
-                  err instanceof Error ? err.message : 'Fallo al sincronizar.',
-              });
-            }
-          } else {
-            set({ isLoading: false });
-            console.log(
-              `removeFromCart: No se sincronizará. Token: ${!!authStateForSync.token}, User: ${!!authStateForSync.user?.id}, Cart ID Servidor: ${cartStateForSync.id !== 0}`
-            );
-          }
-        },
-
-        updateQuantity: async (
-          cartItemIdToUpdate: number,
-          newTotalQuantity: number
-        ) => {
-          if (newTotalQuantity <= 0) {
-            await get().removeFromCart(cartItemIdToUpdate);
-            return;
-          }
-
-          set({ isLoading: true, error: null });
-          const localCartBeforeOp = get().cart ?? { ...initialCartState };
-          const itemToUpdate = localCartBeforeOp.items.find(
-            (item) => item.id === cartItemIdToUpdate
-          );
-
-          if (!itemToUpdate) {
-            set({
-              isLoading: false,
-              error: 'Item no encontrado para actualizar.',
-            });
-            return;
-          }
-
-          const updatedItemsLocal = localCartBeforeOp.items.map((item) =>
-            item.id === cartItemIdToUpdate
-              ? { ...item, quantity: newTotalQuantity }
-              : item
-          );
-          const updatedLocalCart: Cart = {
-            ...localCartBeforeOp,
-            updateAt: new Date().toISOString(),
-            items: updatedItemsLocal,
-          };
-          set({ cart: updatedLocalCart });
-          console.log(
-            'updateQuantity: Actualizado localmente. Item ID:',
-            cartItemIdToUpdate,
-            'Nueva Cantidad:',
-            newTotalQuantity,
-            updatedLocalCart
-          );
-
-          // --- Sincronización ---
-          const authStateForSync = useAuthStore.getState();
-          const cartStateForSync = get().cart; // Re-leer
-
-          if (
-            authStateForSync.token &&
-            authStateForSync.user?.id &&
-            cartStateForSync.id !== 0
-          ) {
-            console.log(
-              `updateQuantity: Intentando sincronizar (vía addProductToCart). Cart ID: ${cartStateForSync.id}, Prod ID: ${itemToUpdate.product.id}, Nueva Cantidad Total: ${newTotalQuantity}`
-            );
-            try {
-              const response = await addProductToCart(
-                cartStateForSync.id,
-                itemToUpdate.product.id,
-                newTotalQuantity,
-                authStateForSync.token
-              );
-              if (response?.data?.id) {
-                set({ cart: response.data, isLoading: false, error: null });
-                console.log(
-                  'updateQuantity: Sincronizado con servidor.',
-                  response.data
-                );
-              } else {
-                set({
-                  isLoading: false,
-                  error:
-                    'Respuesta inesperada del servidor al actualizar cantidad.',
-                });
-                console.warn(
-                  'updateQuantity: Fallo al sincronizar (respuesta inesperada).',
-                  response
-                );
-              }
-            } catch (err: unknown) {
-              console.error(
-                'updateQuantity: Error sincronizando con servidor:',
-                err
-              );
-              set({
-                isLoading: false,
-                error:
-                  err instanceof Error ? err.message : 'Fallo al sincronizar.',
-              });
-            }
-          } else {
-            set({ isLoading: false });
-            console.log(
-              `updateQuantity: No se sincronizará. Token: ${!!authStateForSync.token}, User: ${!!authStateForSync.user?.id}, Cart ID Servidor: ${cartStateForSync.id !== 0}`
-            );
-          }
-        },
-
-        clearCart: async () => {
-          set({ isLoading: true, error: null });
-          const localCartBeforeOp = get().cart ?? { ...initialCartState };
-          const clearedLocalCart: Cart = {
-            ...initialCartState,
-            id: localCartBeforeOp.id,
-            userId: localCartBeforeOp.userId,
-          };
-          if (localCartBeforeOp.id === 0) {
-            clearedLocalCart.id = 0;
-            clearedLocalCart.userId = '';
-          }
-
-          set({ cart: clearedLocalCart });
-          console.log('clearCart: Vaciado localmente.', clearedLocalCart);
-
-          // --- Sincronización ---
-          const authStateForSync = useAuthStore.getState();
-
-          const serverCartIdToEmpty = localCartBeforeOp.id;
-
-          if (
-            authStateForSync.token &&
-            authStateForSync.user?.id &&
-            serverCartIdToEmpty !== 0
-          ) {
-            console.log(
-              `clearCart: Intentando sincronizar (vaciar) con servidor. Cart ID: ${serverCartIdToEmpty}`
-            );
-            try {
-              const response = await emptyCart(
-                serverCartIdToEmpty,
-                authStateForSync.token
-              );
-              if (response?.data?.id) {
-                // El backend devuelve el carrito vacío
-                set({ cart: response.data, isLoading: false, error: null });
-                console.log(
-                  'clearCart: Sincronizado (vaciado) con servidor.',
-                  response.data
-                );
-              } else {
-                set({
-                  isLoading: false,
-                  error: 'Respuesta inesperada del servidor al vaciar carrito.',
-                });
-                console.warn(
-                  'clearCart: Fallo al sincronizar vaciado (respuesta inesperada).',
-                  response
-                );
-              }
-            } catch (err: unknown) {
-              console.error(
-                'clearCart: Error sincronizando (vaciado) con servidor:',
-                err
-              );
-              set({
-                isLoading: false,
-                error:
-                  err instanceof Error
-                    ? err.message
-                    : 'Fallo al sincronizar vaciado.',
-              });
-            }
-          } else {
-            if (get().cart.id !== 0 || get().cart.userId !== '') {
-              set({ cart: { ...initialCartState } });
-            }
-            set({ isLoading: false });
-            console.log(
-              `clearCart: No se sincronizará con servidor. Token: ${!!authStateForSync.token}, User: ${!!authStateForSync.user?.id}, Cart ID Servidor era: ${serverCartIdToEmpty !== 0}`
-            );
-          }
-        },
-
-        // Funciones para UI del carrito (drawer)
-        toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
-        closeCart: () => set({ isCartOpen: false }),
-        openCart: () => set({ isCartOpen: true }),
-      }),
-      {
-        name: 'cart-storage',
-        storage: createJSONStorage(
-          () =>
-            isLocalStorageAvailable() ?? {
-              getItem: () => null,
-              setItem: () => null,
-              removeItem: () => null,
-            }
-        ),
-        partialize: (state) => ({ cart: state.cart }), // Solo persistir el carrito
-        onRehydrateStorage: () => () => {
-          useCartStore.setState((state) => ({}));
-          console.log('Cart Store: Rehidratación completa.');
-        },
-        // onRehydrateError no es una propiedad válida en las opciones de persist
-        // onRehydrateError: (err: unknown) => {
-        //   console.error('Cart Store: Error de rehidratación:', err);
-        //   useCartStore.setState({
-        //     cart: { ...initialCartState },
-        //     error: 'Error al cargar carrito guardado.',
-        //     isLoading: false,
-        //   });
-        // },
-      }
-    )
+      // Funciones para UI del carrito (drawer)
+      toggleCart: () => set((state) => ({ isCartOpen: !state.isCartOpen })),
+      closeCart: () => set({ isCartOpen: false }),
+      openCart: () => set({ isCartOpen: true }),
+    }),
+    {
+      name: 'cart-storage',
+      // Solo persistir el carrito, no el estado de loading/error
+      partialize: (state) => ({ cart: state.cart }),
+    }
   )
 );

@@ -4,7 +4,6 @@
 import { useState, FormEvent, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store/authStore';
-import { useCartStore } from '@/features/cart/store/cartStore';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -41,10 +40,7 @@ const validateEmail = (email: string): boolean => {
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const loginFromAuthStore = useAuthStore((state) => state.login);
-  const mergeLocalCartToServer = useCartStore(
-    (state) => state.mergeLocalCartToServer
-  );
+  const { login } = useAuthStore();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -54,7 +50,7 @@ function LoginContent() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-
+  
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value;
     setEmail(newEmail);
@@ -77,12 +73,12 @@ function LoginContent() {
     setIsLoading(true);
     setError(null);
     try {
-      await loginFromAuthStore({ email, password });
-      console.log('LoginPage: Login exitoso desde authStore.');
-
-      await mergeLocalCartToServer();
-      console.log('LoginPage: Fusión del carrito intentada después del login.');
-
+      console.log('LoginPage: Iniciando proceso de login');
+      
+      // Usar el método login del authStore que hace la llamada real a la API
+      await login({ email, password });
+      
+      console.log('LoginPage: Login exitoso, redirigiendo');
       const redirectUrl = searchParams.get('redirect') || '/productos';
       router.push(redirectUrl);
     } catch (err: unknown) {
@@ -119,7 +115,7 @@ function LoginContent() {
               priority
             />
             <h1 className="text-3xl font-bold mb-2">Bienvenido a KANSACO</h1>
-            <p className="text-lg opacity-90">Plataforma Mayorista</p>
+            <p className="text-lg opacity-90">Tu plataforma de compras</p>
           </div>
           
           <div className="space-y-6">
@@ -128,9 +124,9 @@ function LoginContent() {
                 <ShoppingCart className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-1">Catálogo Completo</h3>
+                <h3 className="text-lg font-semibold mb-1">Compra Fácil</h3>
                 <p className="opacity-80 text-sm">
-                  Accede a todos nuestros productos con precios mayoristas exclusivos.
+                  Arma tu carrito y compra con un solo click.
                 </p>
               </div>
             </div>
@@ -140,9 +136,9 @@ function LoginContent() {
                 <Users className="h-6 w-6" />
               </div>
               <div>
-                <h3 className="text-lg font-semibold mb-1">Soporte Especializado</h3>
+                <h3 className="text-lg font-semibold mb-1">Productos Exclusivos</h3>
                 <p className="opacity-80 text-sm">
-                  Asesoramiento técnico personalizado para tu negocio.
+                  Accede a nuestra línea completa de productos con precios especiales.
                 </p>
               </div>
             </div>
@@ -154,7 +150,7 @@ function LoginContent() {
               <div>
                 <h3 className="text-lg font-semibold mb-1">Entregas Rápidas</h3>
                 <p className="opacity-80 text-sm">
-                  Distribución eficiente en todo el territorio nacional.
+                  Distribución a todo el territorio nacional.
                 </p>
               </div>
             </div>
@@ -187,7 +183,7 @@ function LoginContent() {
                 Iniciar Sesión
               </CardTitle>
               <CardDescription className="text-gray-600">
-                Accede a tu cuenta mayorista
+                Accede a tu cuenta para realizar tus compras
               </CardDescription>
             </CardHeader>
 

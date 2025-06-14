@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Upload, CheckCircle, Building, Users, FileText, Star } from 'lucide-react';
+import { Send, Upload, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
@@ -123,7 +123,7 @@ export default function MayoristaPage() {
             </h1>
             <p className="mx-auto max-w-3xl text-xl text-gray-300">
               Únete a nuestra red de distribuidores y accede a precios especiales, 
-              capacitación técnica y el respaldo de más de 50 años de experiencia.
+              capacitación técnica y el respaldo de más de 15 años de experiencia.
             </p>
           </motion.div>
         </div>

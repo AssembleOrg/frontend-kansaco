@@ -6,6 +6,7 @@ import {
   RegisterPayload,
   RegisterResponse,
 } from '@/types/auth';
+import { logger, apiLogger } from './logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
 
@@ -78,7 +79,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
           .join('; ');
       }
     }
-    console.error(
+    logger.error(
       'API Error (parsed):',
       errorMsg,
       'Raw error data:',
@@ -89,14 +90,14 @@ async function handleResponse<T>(response: Response): Promise<T> {
   try {
     return await response.json();
   } catch (e) {
-    console.error('JSON Parsing Error (on success response?):', e);
+    logger.error('JSON Parsing Error (on success response?):', e);
     throw new Error('Error parsing server response');
   }
 }
 
 export async function getProducts(token: string | null): Promise<Product[]> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured. Using fallback mock products.');
+    logger.error('API URL not configured. Using fallback mock products.');
     return getMockProducts();
   }
   const url = `${API_BASE_URL}/product`;
@@ -120,14 +121,14 @@ export async function getProducts(token: string | null): Promise<Product[]> {
     if (fullResponse && Array.isArray(fullResponse.data)) {
       return fullResponse.data;
     } else {
-      console.warn(
+      logger.warn(
         'getProducts received unexpected response structure, using fallback:',
         fullResponse
       );
       return getMockProducts();
     }
   } catch (error) {
-    console.error('Error fetching products (Railway might be down), using fallback:', error);
+    logger.error('Error fetching products (Railway might be down), using fallback:', error);
     return getMockProducts();
   }
 }
@@ -391,6 +392,7 @@ export async function registerUser(
   const url = `${API_BASE_URL}/user/register`;
 
   try {
+    console.log('registerUser: Registrando usuario (sin carrito automático)');
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -399,8 +401,11 @@ export async function registerUser(
       },
       body: JSON.stringify(payload),
     });
-    return await handleResponse<RegisterResponse>(response);
+    const result = await handleResponse<RegisterResponse>(response);
+    console.log('registerUser: Usuario registrado exitosamente');
+    return result;
   } catch (error) {
+    console.error('registerUser: Error en registro:', error);
     let errorMessage = 'Ocurrió un error desconocido.';
     if (error instanceof Error) errorMessage = error.message;
     else if (typeof error === 'string') errorMessage = error;
@@ -439,22 +444,71 @@ export async function getCartById(
   }
 }
 
-export async function getUserCart(
+export async function createCart(
   userId: string,
   token: string | null
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured.');
+    logger.error('API URL not configured.');
     return null;
   }
 
   if (!token) {
-    console.warn('getUserCart called without a token.');
+    logger.warn('createCart called without a token.');
+    return null;
+  }
+
+  if (!userId) {
+    logger.warn('createCart called without a userId.');
     return null;
   }
 
   try {
-    const response = await fetch(`${API_BASE_URL}/cart/${userId}`, {
+    logger.debug(`createCart: Creando carrito para usuario ${userId}`);
+    const response = await fetch(`${API_BASE_URL}/cart/create`, {
+      method: 'POST',
+      headers: {
+        Accept: 'application/json',
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ 
+        userId
+      }),
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<CartApiResponse>(response);
+    if (result?.data?.id) {
+      logger.debug(`createCart: Carrito creado exitosamente con ID ${result.data.id}`);
+    }
+    return result;
+  } catch (error) {
+    logger.error('Error creating cart:', error);
+    return null;
+  }
+}
+
+// Nueva función para obtener carrito por userId (endpoint correcto del backend)
+export async function getUserCartByUserId(
+  userId: string,
+  token: string | null
+): Promise<CartApiResponse | null> {
+  if (!API_BASE_URL) {
+    logger.error('API URL not configured.');
+    return null;
+  }
+
+  if (!token) {
+    logger.warn('getUserCartByUserId called without a token.');
+    return null;
+  }
+
+  try {
+    const url = `${API_BASE_URL}/cart/${userId}`;
+    apiLogger.request('GET', url);
+    
+    const response = await fetch(url, {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -463,40 +517,63 @@ export async function getUserCart(
       cache: 'no-store',
     });
 
-    return await handleResponse<CartApiResponse>(response);
+    const result = await handleResponse<CartApiResponse>(response);
+    apiLogger.response('GET', url, response.status);
+    return result;
   } catch (error) {
-    console.error(`Error fetching cart for user ${userId}:`, error);
+    apiLogger.error('GET', `${API_BASE_URL}/cart/${userId}`, error);
     return null;
   }
 }
 
-export async function createCart(
+export async function getUserCart(
+  userId: string,
   token: string | null
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured.');
+    logger.error('API URL not configured.');
     return null;
   }
 
   if (!token) {
-    console.warn('createCart called without a token.');
+    logger.warn('getUserCart called without a token.');
     return null;
   }
 
+  // ESTRATEGIA MEJORADA: Primero intentar obtener carrito existente, luego crear si no existe
   try {
-    const response = await fetch(`${API_BASE_URL}/cart/create`, {
-      method: 'POST',
-      headers: {
-        Accept: 'application/json',
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
-      },
-      cache: 'no-store',
-    });
-
-    return await handleResponse<CartApiResponse>(response);
+    logger.debug(`getUserCart: Intentando obtener carrito para usuario ${userId}`);
+    
+    // Primero intentar obtener carrito existente por userId
+    try {
+      const existingCart = await getUserCartByUserId(userId, token);
+      if (existingCart?.data?.id) {
+        logger.debug(`getUserCart: Carrito existente encontrado`);
+        return existingCart;
+      }
+    } catch {
+      logger.warn(`getUserCart: Error con endpoint /api/cart/{userId} - posible problema del backend`);
+      // Continuar con la creación de carrito
+    }
+    
+    // Si no existe o falló, intentar crear uno nuevo
+    logger.debug(`getUserCart: Creando nuevo carrito`);
+    try {
+      const createResponse = await createCart(userId, token);
+      
+      if (createResponse?.data?.id) {
+        logger.debug(`getUserCart: Carrito creado exitosamente`);
+        return createResponse;
+      }
+    } catch {
+      logger.warn(`getUserCart: Error creando carrito - usando carrito local`);
+      // Si falla la creación (ej: permisos), usar carrito local
+    }
+    
+    logger.info('getUserCart: Usando carrito local');
+    return null;
   } catch (error) {
-    console.error('Error creating cart:', error);
+    logger.error(`getUserCart: Error general:`, error);
     return null;
   }
 }
@@ -508,17 +585,31 @@ export async function addProductToCart(
   token: string | null
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured.');
+    logger.error('API URL not configured.');
     return null;
   }
   if (!token) {
-    console.warn('addProductToCart called without a token.');
+    logger.warn('addProductToCart called without a token.');
+    return null;
+  }
+
+  // Validar que los IDs sean números válidos
+  if (!cartId || cartId <= 0 || isNaN(cartId)) {
+    logger.error(`addProductToCart: cartId inválido: ${cartId}`);
+    return null;
+  }
+  if (!productId || productId <= 0 || isNaN(productId)) {
+    logger.error(`addProductToCart: productId inválido: ${productId}`);
+    return null;
+  }
+  if (!quantity || quantity <= 0 || isNaN(quantity)) {
+    logger.error(`addProductToCart: quantity inválida: ${quantity}`);
     return null;
   }
 
   // Construir la URL con quantity como query parameter
   const url = `${API_BASE_URL}/cart/${cartId}/add/product/${productId}?quantity=${quantity}`;
-  console.log(`addProductToCart: Calling PUT ${url}`);
+  apiLogger.request('PUT', url);
 
   try {
     const response = await fetch(url, {
@@ -530,12 +621,11 @@ export async function addProductToCart(
       cache: 'no-store',
     });
 
-    return await handleResponse<CartApiResponse>(response);
+    const result = await handleResponse<CartApiResponse>(response);
+    apiLogger.response('PUT', url, response.status);
+    return result;
   } catch (error) {
-    console.error(
-      `Error adding/updating product ${productId} (qty: ${quantity}) to cart ${cartId}:`,
-      error
-    );
+    apiLogger.error('PUT', url, error);
     return null;
   }
 }

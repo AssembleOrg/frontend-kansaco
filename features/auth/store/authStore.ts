@@ -1,26 +1,10 @@
 // features/auth/store/authStore.ts
 import { create } from 'zustand';
-import {
-  persist,
-  createJSONStorage,
-  devtools,
-  StateStorage,
-} from 'zustand/middleware';
+import { devtools } from 'zustand/middleware';
 import { User, LoginPayload, ActualLoginApiResponse } from '@/types/auth';
 import { loginUser as apiLoginUser } from '@/lib/api';
 import { useCartStore } from '@/features/cart/store/cartStore';
-
-const isLocalStorageAvailable = (): StateStorage | undefined => {
-  if (typeof window === 'undefined') return undefined;
-  try {
-    window.localStorage.setItem('zustand-test', 'test');
-    window.localStorage.removeItem('zustand-test');
-    return localStorage;
-  } catch (e) {
-    console.warn('localStorage no disponible o restringido:', e);
-    return undefined;
-  }
-};
+import { cookieUtils, COOKIE_NAMES } from '@/lib/cookies';
 
 interface AuthState {
   token: string | null;
@@ -28,35 +12,132 @@ interface AuthState {
   isLoading: boolean;
   error: string | null;
   isAuthReady: boolean;
+  
+  // Actions
   setToken: (token: string | null) => void;
   setUser: (user: User | null) => void;
   login: (payload: LoginPayload) => Promise<ActualLoginApiResponse>;
   logout: () => Promise<void>;
+  initializeAuth: () => void;
 }
+
+// Función para inicializar desde cookies
+const initializeFromCookies = () => {
+  if (typeof window === 'undefined') {
+    console.log('AuthStore: Inicializando en servidor (SSR)');
+    return { token: null, user: null, isAuthReady: false };
+  }
+
+  console.log('=== AuthStore: Inicializando desde cookies ===');
+  console.log('Document cookies:', document.cookie);
+  console.log('Is private browsing?:', !window.indexedDB); // Heurística para detectar navegación privada
+
+  try {
+    const token = cookieUtils.get(COOKIE_NAMES.AUTH_TOKEN);
+    const userDataStr = cookieUtils.get(COOKIE_NAMES.USER_DATA);
+    
+    console.log('Token encontrado:', !!token, token ? `${token.substring(0, 20)}...` : 'null');
+    console.log('User data encontrado:', !!userDataStr, userDataStr ? `${userDataStr.substring(0, 50)}...` : 'null');
+    
+    let user: User | null = null;
+    if (userDataStr) {
+      try {
+        user = JSON.parse(userDataStr);
+        console.log('User parseado exitosamente:', { id: user?.id, email: user?.email });
+      } catch (e) {
+        console.warn('AuthStore: Error parsing user data from cookie:', e);
+        cookieUtils.remove(COOKIE_NAMES.USER_DATA);
+      }
+    }
+
+    const result = { token, user, isAuthReady: true };
+    console.log('Estado inicial calculado:', { hasToken: !!token, hasUser: !!user });
+    console.log('=== Fin inicialización ===');
+    
+    return result;
+  } catch (error) {
+    console.error('AuthStore: Error inicializando desde cookies:', error);
+    return { token: null, user: null, isAuthReady: true };
+  }
+};
 
 export const useAuthStore = create<AuthState>()(
   devtools(
-    persist(
-      (set) => ({
-        token: null,
-        user: null,
+    (set, get) => {
+      // Inicializar inmediatamente desde cookies
+      const initialState = initializeFromCookies();
+      
+      return {
+        ...initialState,
         isLoading: false,
         error: null,
-        isAuthReady: false,
 
-        setToken: (token) => set({ token }),
-        setUser: (user) => set({ user }),
+        setToken: (token) => {
+          set({ token });
+          if (token) {
+            cookieUtils.set(COOKIE_NAMES.AUTH_TOKEN, token);
+          } else {
+            cookieUtils.remove(COOKIE_NAMES.AUTH_TOKEN);
+          }
+        },
+
+        setUser: (user) => {
+          set({ user });
+          if (user) {
+            cookieUtils.set(COOKIE_NAMES.USER_DATA, JSON.stringify(user));
+          } else {
+            cookieUtils.remove(COOKIE_NAMES.USER_DATA);
+          }
+        },
 
         login: async (payload) => {
           set({ isLoading: true, error: null });
           try {
             const response = await apiLoginUser(payload);
+            
+            console.log('AuthStore: Respuesta completa del servidor:', response);
+            
+            // El servidor devuelve { status: "success", data: { token: "..." } }
+            // Necesitamos extraer el token y crear un user básico
+            const token = response.data?.token;
+            
+            if (!token) {
+              console.error('AuthStore: No se encontró token en la respuesta');
+              throw new Error('Token no encontrado en la respuesta del servidor');
+            }
+            
+            // Decodificar el JWT para obtener información del usuario
+            let user: User | null = null;
+            try {
+              const payload = JSON.parse(atob(token.split('.')[1]));
+              user = {
+                id: payload.sub,
+                email: payload.email,
+                fullName: payload.fullName || payload.name || '' // Usar fullName del JWT si existe, sino vacío
+              };
+            } catch (e) {
+              console.error('AuthStore: Error decodificando JWT:', e);
+              throw new Error('Error procesando token de autenticación');
+            }
+            
+            console.log('AuthStore: Login exitoso:', {
+              hasToken: !!token,
+              hasUser: !!user,
+              userId: user?.id
+            });
+            
+            // Establecer token y user directamente en el estado y cookies
             set({
-              token: response.access_token,
-              user: response.user,
+              token,
+              user,
               isLoading: false,
               error: null,
             });
+            
+            // Guardar en cookies
+            cookieUtils.set(COOKIE_NAMES.AUTH_TOKEN, token);
+            cookieUtils.set(COOKIE_NAMES.USER_DATA, JSON.stringify(user));
+            
             console.log('AuthStore: Login exitoso, token y user establecidos.');
 
             return response;
@@ -75,55 +156,36 @@ export const useAuthStore = create<AuthState>()(
           console.log('AuthStore: Logout iniciado.');
 
           const { cart } = useCartStore.getState();
-          const { token } = useAuthStore.getState();
+          const { token } = get();
+          
           if (token && cart.id !== 0) {
             try {
-              console.log(
-                'AuthStore: (Idealmente) Carrito del servidor vaciado.'
-              );
+              console.log('AuthStore: (Idealmente) Carrito del servidor vaciado.');
             } catch (e) {
-              console.error(
-                'AuthStore: Error vaciando carrito del servidor en logout',
-                e
-              );
+              console.error('AuthStore: Error vaciando carrito del servidor en logout', e);
             }
           }
 
           await useCartStore.getState().clearCart();
 
+          // Limpiar estado y cookies
           set({ token: null, user: null, error: null });
-          console.log(
-            'AuthStore: Estado de autenticación y carrito local limpiados.'
-          );
+          cookieUtils.remove(COOKIE_NAMES.AUTH_TOKEN);
+          cookieUtils.remove(COOKIE_NAMES.USER_DATA);
+          
+          console.log('AuthStore: Estado de autenticación y cookies limpiados.');
         },
-      }),
-      {
-        name: 'auth-storage',
-        storage: createJSONStorage(
-          () =>
-            isLocalStorageAvailable() ?? {
-              getItem: () => null,
-              setItem: () => null,
-              removeItem: () => null,
-            }
-        ),
-        partialize: (state) => ({ token: state.token, user: state.user }),
-        onRehydrateStorage: () => () => {
-          useAuthStore.setState({ isAuthReady: true });
-          console.log('Auth Store: Rehidratación completa. isAuthReady=true.');
+
+        initializeAuth: () => {
+          const newState = initializeFromCookies();
+          set(newState);
         },
-        // onRehydrateError: (err: unknown) => {
-        //   console.error('Auth Store: Error de rehidratación:', err);
-        //   // Si hay error, igual marcamos como listo para no bloquear la app,
-        //   // pero el estado será el inicial (sin token/usuario).
-        //   useAuthStore.setState({
-        //     isAuthReady: true,
-        //     token: null,
-        //     user: null,
-        //     error: 'Error cargando sesión.',
-        //   });
-        // },
-      }
-    )
+      };
+    }
   )
 );
+
+// Inicializar en el cliente
+if (typeof window !== 'undefined') {
+  useAuthStore.getState().initializeAuth();
+}

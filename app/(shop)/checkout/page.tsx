@@ -24,6 +24,7 @@ export default function CheckoutPage() {
     clearCart,
     isLoading: cartLoading,
     hasReachedMinimumPurchase,
+    getProductPrice,
   } = useCart();
 
   const [fullName, setFullName] = useState(user?.fullName || '');
@@ -118,8 +119,8 @@ export default function CheckoutPage() {
           productSlug: item.product.slug,
           productName: item.product.name,
           quantity: item.quantity,
-          unitPrice: item.product.price,
-          totalItemPrice: (item.product.price || 0) * item.quantity,
+          unitPrice: getProductPrice(item.product),
+          totalItemPrice: getProductPrice(item.product) * item.quantity,
         })),
         totalAmount: subtotal,
         notes: notes,
@@ -200,7 +201,7 @@ export default function CheckoutPage() {
                     </p>
                   </div>
                   <span className="text-lg font-semibold text-gray-700">
-                    {formatPrice((item.product.price || 0) * item.quantity)}
+                    {formatPrice(getProductPrice(item.product) * item.quantity)}
                   </span>
                 </li>
               ))}
@@ -307,7 +308,7 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Columna Lateral para Resumen o Publicidad (Opcional) */}
+        {/* Columna Lateral*/}
         <div className="md:col-span-1">
           <div className="rounded-lg bg-white p-6 shadow-md">
             <h2 className="mb-4 border-b pb-3 text-2xl font-semibold">

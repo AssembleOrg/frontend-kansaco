@@ -1,15 +1,9 @@
 // features/cart/hooks/useCart.ts
-import { useCartStore } from '../store/cartStore';
-import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCallback } from 'react';
-import { Product } from '@/types';
+import { useCartStore } from '../store/cartStore';
+import { generateConsistentPrice } from '@/lib/utils';
 
-export const MINIMUM_PURCHASE = 400000;
-
-const generateConsistentPrice = (productId: number): number => {
-  const seed = productId || 1000; // Use fixed fallback instead of random
-  return 5000 + ((seed * 937) % 45000);
-};
+const MINIMUM_PURCHASE = 50000; // $50,000 mínimo de compra
 
 export const useCart = () => {
   const {
@@ -25,7 +19,6 @@ export const useCart = () => {
     isLoading,
     error,
     syncWithServer,
-    mergeLocalCartToServer,
   } = useCartStore();
 
   const itemCount =
@@ -78,7 +71,7 @@ export const useCart = () => {
 
   const amountMissingForMinimum = Math.max(MINIMUM_PURCHASE - subtotal, 0);
 
-  const getProductPrice = (product: Product): number => {
+  const getProductPrice = (product: any): number => {
     return product.price && product.price > 0
       ? product.price
       : generateConsistentPrice(product.id);
@@ -87,10 +80,6 @@ export const useCart = () => {
   const syncCart = useCallback(async () => {
     await syncWithServer();
   }, [syncWithServer]);
-
-  const mergeCart = useCallback(async () => {
-    await mergeLocalCartToServer();
-  }, [mergeLocalCartToServer]);
 
   return {
     cart,
@@ -110,7 +99,6 @@ export const useCart = () => {
     isLoading,
     error,
     syncCart,
-    mergeCart,
     MINIMUM_PURCHASE,
     hasReachedMinimumPurchase,
     percentageToMinimum,

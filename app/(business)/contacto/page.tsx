@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { motion } from 'framer-motion';
+import Link from 'next/link';
 import { Send, MapPin, Phone, Mail, Clock, CheckCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/landing/Navbar';
@@ -223,7 +224,7 @@ export default function ContactoPage() {
               <div>
                 <h2 className="mb-6 text-3xl font-bold text-white">Información de contacto</h2>
                 <p className="mb-8 text-lg text-gray-300">
-                  Más de 50 años de experiencia nos respaldan. Estamos aquí para brindarte 
+                  Más de 15 años de experiencia nos respaldan. Estamos aquí para brindarte 
                   el mejor asesoramiento técnico en lubricación.
                 </p>
               </div>
@@ -274,9 +275,9 @@ export default function ContactoPage() {
               <div className="rounded-2xl border border-gray-800 bg-gray-900/30 p-6">
                 <h3 className="mb-4 text-xl font-semibold text-white">Enlaces rápidos</h3>
                 <div className="space-y-3">
-                  <a href="/productos" className="block text-gray-300 hover:text-[#16a245] transition-colors">
+                  <Link href="/productos" className="block text-gray-300 hover:text-[#16a245] transition-colors">
                     → Ver catálogo de productos
-                  </a>
+                  </Link>
                   <a href="/mayorista" className="block text-gray-300 hover:text-[#16a245] transition-colors">
                     → Convertirse en mayorista
                   </a>

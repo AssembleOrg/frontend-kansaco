@@ -35,7 +35,7 @@ const ArgentinaSection = () => {
               </div>
 
               <h2 className="text-4xl font-black leading-tight text-white lg:text-5xl">
-                50 AÑOS DE
+                15 AÑOS DE
                 <span className="block bg-gradient-to-r from-blue-400 via-white to-blue-400 bg-clip-text text-transparent">
                   INGENIERÍA ARGENTINA
                 </span>

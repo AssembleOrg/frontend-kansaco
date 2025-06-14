@@ -77,7 +77,7 @@ const Footer = () => {
             </Link>
 
             <p className="leading-relaxed text-gray-400">
-              Más de 50 años desarrollando tecnologías avanzadas en lubricación
+              Más de 15 años desarrollando tecnologías avanzadas en lubricación
               para maximizar el rendimiento y protección de motores y
               maquinarias.
             </p>

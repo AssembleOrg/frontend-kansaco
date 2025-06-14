@@ -706,7 +706,7 @@ export default function SobreNosotrosPage() {
               <span className="block text-[#16a245]">LA DIFERENCIA KANSACO?</span>
             </h2>
             <p className="text-xl text-gray-300 mb-8">
-              Descubre cómo nuestros más de 50 años de experiencia pueden proteger y optimizar tus motores
+              Descubre cómo nuestros más de 15 años de experiencia pueden proteger y optimizar tus motores
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/tecnologia-lubricantes">
