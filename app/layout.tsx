@@ -4,7 +4,7 @@ import './globals.css';
 export const metadata: Metadata = {
   title: 'Kansaco',
   description:
-    'Plataforma de compra online para productos de limpieza industrial',
+    'Kansaco - Plataforma ecommerce. Productos dirigidos a los sistemas de lubricación',
 };
 
 export default function RootLayout({
@@ -14,9 +14,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
-      <body className="antialiased">
-        {children}
-      </body>
+      <body className="antialiased">{children}</body>
     </html>
   );
 }
