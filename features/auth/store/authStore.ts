@@ -113,7 +113,8 @@ export const useAuthStore = create<AuthState>()(
               user = {
                 id: payload.sub,
                 email: payload.email,
-                fullName: payload.fullName || payload.name || '' // Usar fullName del JWT si existe, sino vacío
+                fullName: payload.fullName || payload.name || '', // Usar fullName del JWT si existe, sino vacío
+                role: payload.role || 'USER' // Obtener role del JWT, default 'USER'
               };
             } catch (e) {
               console.error('AuthStore: Error decodificando JWT:', e);

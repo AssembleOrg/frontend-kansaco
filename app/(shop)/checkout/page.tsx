@@ -134,10 +134,24 @@ export default function CheckoutPage() {
         JSON.stringify(orderData, null, 2)
       );
 
+      // Guardar orden en localStorage para que el admin pueda verla
+      const existingOrders = JSON.parse(
+        localStorage.getItem('pending_orders') || '[]'
+      );
+      const newOrder = {
+        ...orderData,
+        id: `order_${Date.now()}`,
+        createdAt: new Date().toISOString(),
+      };
+      existingOrders.unshift(newOrder);
+      localStorage.setItem('pending_orders', JSON.stringify(existingOrders));
+
+      console.log('Orden guardada en localStorage para el admin');
+
       await clearCart();
       router.replace('/order-success'); // replace para no permitir volver al checkout con el carrito vacío
     } catch (error) {
-      console.error('Error al simular el pedido:', error);
+      console.error('Error al procesar el pedido:', error);
       setErrorMessage(
         'Hubo un error al procesar tu pedido. Inténtalo de nuevo.'
       );

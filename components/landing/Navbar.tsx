@@ -153,6 +153,13 @@ const Navbar = () => {
             </Link>
 
             <Link
+              href="/admin/dashboard"
+              className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+            >
+              Admin
+            </Link>
+
+            <Link
               href="/contacto"
               className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
             >
@@ -299,6 +306,14 @@ const Navbar = () => {
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Sobre Nosotros
+              </Link>
+
+              <Link
+                href="/admin/dashboard"
+                className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                Admin
               </Link>
 
               <Link

@@ -698,3 +698,71 @@ export async function emptyCart(
     return null;
   }
 }
+
+// Admin Product Management
+export async function createProduct(
+  token: string,
+  productData: Omit<Product, 'id'>
+): Promise<Product> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/product/create`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(productData),
+    cache: 'no-store',
+  });
+
+  const result = await handleResponse<{ status: string; data: Product }>(response);
+  return result.data;
+}
+
+export async function updateProduct(
+  token: string,
+  productId: number,
+  productData: Partial<Product>
+): Promise<Product> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/product/${productId}/edit`, {
+    method: 'PUT',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify(productData),
+    cache: 'no-store',
+  });
+
+  const result = await handleResponse<{ status: string; data: Product }>(response);
+  return result.data;
+}
+
+export async function deleteProduct(
+  token: string,
+  productId: number
+): Promise<void> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const response = await fetch(`${API_BASE_URL}/product/${productId}`, {
+    method: 'DELETE',
+    headers: {
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    cache: 'no-store',
+  });
+
+  await handleResponse<{ status: string }>(response);
+}
