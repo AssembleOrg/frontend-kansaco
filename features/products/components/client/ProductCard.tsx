@@ -34,8 +34,6 @@ export default function ProductCard({ product }: ProductCardProps) {
     }
   };
 
-  const productPrice = getProductPrice(product);
-  const isPriceAvailable = productPrice && productPrice > 0;
 
   return (
     <Card 
@@ -71,36 +69,21 @@ export default function ProductCard({ product }: ProductCardProps) {
         <p className="mb-4 line-clamp-2 flex-1 text-sm text-gray-600">
           {product.description}
         </p>
-        {isPriceAvailable ? (
-          <p className="text-lg font-bold text-green-600">
-            {formatPrice(productPrice)}
+        <div className="space-y-2">
+          <p className="text-sm font-medium text-gray-600">
+            Consultar precio
           </p>
-        ) : (
-          <div className="space-y-2">
-            <p className="text-sm text-gray-500 italic">
-              Precio pendiente de carga
-            </p>
-            <p className="text-xs text-gray-400">
-              Consultar disponibilidad
-            </p>
-          </div>
-        )}
+        </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button
           onClick={handleAddToCart}
-          disabled={!isPriceAvailable || isAddingToCart}
+          disabled={isAddingToCart}
           className="w-full"
-          variant={isPriceAvailable ? "default" : "outline"}
+          variant="default"
         >
-          {isPriceAvailable ? (
-            <>
-              <ShoppingCart className="mr-2 h-4 w-4" />
-              Agregar al Carrito
-            </>
-          ) : (
-            "Consultar"
-          )}
+          <ShoppingCart className="mr-2 h-4 w-4" />
+          Agregar al Carrito
         </Button>
       </CardFooter>
     </Card>

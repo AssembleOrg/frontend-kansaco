@@ -104,8 +104,8 @@ export const CartDrawer = () => {
             <div className="w-full space-y-4">
               <div className="space-y-1.5">
                 <div className="flex justify-between">
-                  <span className="font-medium">Subtotal</span>
-                  <span>{formatPrice(subtotal)}</span>
+                  <span className="font-medium">Resumen</span>
+                  <span className="text-gray-600">Consultar precio</span>
                 </div>
                 <div className="flex justify-between text-sm text-gray-500">
                   <span>Cantidad de productos</span>
@@ -118,28 +118,15 @@ export const CartDrawer = () => {
               <div className="space-y-2 rounded-md bg-gray-50 p-3">
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">
-                    Monto mínimo de compra
-                  </span>
-                  <span className="text-sm font-medium">
-                    {formatPrice(MINIMUM_PURCHASE)}
+                    Información de compra
                   </span>
                 </div>
-                <Progress value={percentageToMinimum} className="h-2" />
-
-                {hasReachedMinimumPurchase ? (
-                  <div className="flex items-center rounded-md bg-green-50 p-2 text-xs text-green-600">
-                    <Check className="mr-1 h-4 w-4" />
-                    <span>¡Has alcanzado el monto mínimo de compra!</span>
-                  </div>
-                ) : (
-                  <div className="flex items-start rounded-md bg-amber-50 p-2 text-xs text-amber-600">
-                    <AlertCircle className="mr-1 mt-0.5 h-4 w-4 flex-shrink-0" />
-                    <span>
-                      Te faltan {formatPrice(amountMissingForMinimum)} para
-                      completar tu pedido
-                    </span>
-                  </div>
-                )}
+                <div className="flex items-center rounded-md bg-blue-50 p-2 text-xs text-blue-600">
+                  <AlertCircle className="mr-1 h-4 w-4 flex-shrink-0" />
+                  <span>
+                    Los precios se confirmarán al contactar con nuestro equipo
+                  </span>
+                </div>
               </div>
 
               <div className="flex flex-col gap-2">

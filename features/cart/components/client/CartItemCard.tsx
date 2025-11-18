@@ -125,10 +125,12 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
               </div>
 
               <div className="text-right">
-                <p className="text-sm font-medium">{formatPrice(totalPrice)}</p>
+                <p className="text-sm font-medium text-gray-600">
+                  Consultar precio
+                </p>
                 {quantity > 1 && (
                   <p className="text-xs text-gray-500">
-                    {formatPrice(productPrice)} x {quantity}
+                    Cantidad: {quantity}
                   </p>
                 )}
               </div>

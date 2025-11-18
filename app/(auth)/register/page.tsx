@@ -6,6 +6,7 @@ import { registerUser } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { UserRole } from '@/types/auth';
 import {
   Card,
   CardContent,
@@ -24,15 +25,21 @@ import {
   User as UserIcon,
   Mail,
   Lock,
+  Building2,
+  Store,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function RegisterPage() {
-  const [fullName, setFullName] = useState('');
+  const [nombre, setNombre] = useState('');
+  const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [direccion, setDireccion] = useState('');
+  const [rol, setRol] = useState<UserRole>('CLIENTE_MINORISTA');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -42,7 +49,7 @@ export default function RegisterPage() {
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  // Validación simple de contraseña en el frontend
+  // Password validation
   const validatePassword = (): boolean => {
     setPasswordError(null);
     if (password.length < 8) {
@@ -74,20 +81,28 @@ export default function RegisterPage() {
     setIsRegistering(true);
 
     try {
-      const payload = { email, password, fullName };
+      const payload = {
+        email,
+        password,
+        nombre,
+        apellido,
+        telefono,
+        direccion: direccion || undefined,
+        rol,
+      };
       const response = await registerUser(payload);
 
-      if (response.status === 'success') {
-        setSuccessMessage(
-          '¡Registro exitoso! Revisa tu correo electrónico para verificar tu cuenta antes de iniciar sesión.'
-        );
-        setEmail('');
-        setPassword('');
-        setConfirmPassword('');
-        setFullName('');
-      } else {
-        setError('Ocurrió un error inesperado durante el registro.');
-      }
+      setSuccessMessage(
+        '¡Registro exitoso! Ya puedes iniciar sesión con tus credenciales.'
+      );
+      setEmail('');
+      setPassword('');
+      setConfirmPassword('');
+      setNombre('');
+      setApellido('');
+      setTelefono('');
+      setDireccion('');
+      setRol('CLIENTE_MINORISTA');
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -139,7 +154,7 @@ export default function RegisterPage() {
                 <div className="h-px bg-gradient-to-r from-transparent via-[#16a245] to-transparent w-16"></div>
               </div>
               <CardDescription className="text-gray-600 text-lg">
-                Únete a nuestra red de distribuidores mayoristas
+                Únete a nuestra comunidad de clientes
               </CardDescription>
             </CardHeader>
           </div>
@@ -166,20 +181,120 @@ export default function RegisterPage() {
                 </Alert>
               )}
 
-              {/* Full Name */}
+              {/* Tipo de Cliente - Toggle */}
               <div className="space-y-2">
-                <Label htmlFor="fullName" className="text-gray-700 font-medium">
-                  Nombre Completo
+                <Label className="text-gray-700 font-medium">
+                  Tipo de Cliente
+                </Label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setRol('CLIENTE_MINORISTA')}
+                    disabled={isRegistering}
+                    className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                      rol === 'CLIENTE_MINORISTA'
+                        ? 'border-[#16a245] bg-[#16a245]/10 text-[#16a245]'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <Store className="h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-semibold">Minorista</div>
+                      <div className="text-xs">Compra individual</div>
+                    </div>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRol('CLIENTE_MAYORISTA')}
+                    disabled={isRegistering}
+                    className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 transition-all ${
+                      rol === 'CLIENTE_MAYORISTA'
+                        ? 'border-[#16a245] bg-[#16a245]/10 text-[#16a245]'
+                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                    }`}
+                  >
+                    <Building2 className="h-5 w-5" />
+                    <div className="text-left">
+                      <div className="font-semibold">Mayorista</div>
+                      <div className="text-xs">Compra al por mayor</div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Nombre */}
+              <div className="space-y-2">
+                <Label htmlFor="nombre" className="text-gray-700 font-medium">
+                  Nombre
                 </Label>
                 <div className="relative">
                   <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
-                    id="fullName"
+                    id="nombre"
                     type="text"
-                    placeholder="Tu nombre completo"
+                    placeholder="Tu nombre"
                     required
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
+                    value={nombre}
+                    onChange={(e) => setNombre(e.target.value)}
+                    disabled={isRegistering}
+                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                  />
+                </div>
+              </div>
+
+              {/* Apellido */}
+              <div className="space-y-2">
+                <Label htmlFor="apellido" className="text-gray-700 font-medium">
+                  Apellido
+                </Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="apellido"
+                    type="text"
+                    placeholder="Tu apellido"
+                    required
+                    value={apellido}
+                    onChange={(e) => setApellido(e.target.value)}
+                    disabled={isRegistering}
+                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                  />
+                </div>
+              </div>
+
+              {/* Teléfono */}
+              <div className="space-y-2">
+                <Label htmlFor="telefono" className="text-gray-700 font-medium">
+                  Teléfono
+                </Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="telefono"
+                    type="tel"
+                    placeholder="+5491112345678"
+                    required
+                    value={telefono}
+                    onChange={(e) => setTelefono(e.target.value)}
+                    disabled={isRegistering}
+                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                  />
+                </div>
+              </div>
+
+              {/* Dirección */}
+              <div className="space-y-2">
+                <Label htmlFor="direccion" className="text-gray-700 font-medium">
+                  Dirección (Opcional)
+                </Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="direccion"
+                    type="text"
+                    placeholder="Tu dirección"
+                    value={direccion}
+                    onChange={(e) => setDireccion(e.target.value)}
                     disabled={isRegistering}
                     className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
                   />

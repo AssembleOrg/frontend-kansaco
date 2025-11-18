@@ -2,9 +2,9 @@
 import { Product, Cart } from '@/types';
 import {
   LoginPayload,
-  ActualLoginApiResponse,
+  LoginApiResponse,
   RegisterPayload,
-  RegisterResponse,
+  RegisterApiResponse,
 } from '@/types/auth';
 import { logger, apiLogger } from './logger';
 
@@ -363,7 +363,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
 
 export async function loginUser(
   payload: LoginPayload
-): Promise<ActualLoginApiResponse> {
+): Promise<LoginApiResponse> {
   if (!API_BASE_URL) throw new Error('API URL not configured.');
   const url = `${API_BASE_URL}/user/login`;
 
@@ -375,10 +375,20 @@ export async function loginUser(
         Accept: 'application/json',
       },
       body: JSON.stringify(payload),
+      credentials: 'include', // Include cookies in request
     });
-    return await handleResponse<ActualLoginApiResponse>(response);
+    
+    const apiResponse = await handleResponse<LoginApiResponse>(response);
+    
+    // Validate response structure
+    if (!apiResponse.data || !apiResponse.data.token || !apiResponse.data.user) {
+      logger.error('Login: Invalid response structure', apiResponse);
+      throw new Error('Invalid response from server');
+    }
+    
+    return apiResponse;
   } catch (error) {
-    let errorMessage = 'Ocurrió un error desconocido.';
+    let errorMessage = 'An unknown error occurred.';
     if (error instanceof Error) errorMessage = error.message;
     else if (typeof error === 'string') errorMessage = error;
     throw new Error(errorMessage);
@@ -387,12 +397,12 @@ export async function loginUser(
 
 export async function registerUser(
   payload: RegisterPayload
-): Promise<RegisterResponse> {
+): Promise<RegisterApiResponse> {
   if (!API_BASE_URL) throw new Error('API URL not configured.');
   const url = `${API_BASE_URL}/user/register`;
 
   try {
-    console.log('registerUser: Registrando usuario (sin carrito automático)');
+    logger.debug('registerUser: Registering user');
     const response = await fetch(url, {
       method: 'POST',
       headers: {
@@ -400,13 +410,14 @@ export async function registerUser(
         Accept: 'application/json',
       },
       body: JSON.stringify(payload),
+      credentials: 'include', // Include cookies in request
     });
-    const result = await handleResponse<RegisterResponse>(response);
-    console.log('registerUser: Usuario registrado exitosamente');
+    const result = await handleResponse<RegisterApiResponse>(response);
+    logger.debug('registerUser: User registered successfully');
     return result;
   } catch (error) {
-    console.error('registerUser: Error en registro:', error);
-    let errorMessage = 'Ocurrió un error desconocido.';
+    logger.error('registerUser: Registration error:', error);
+    let errorMessage = 'An unknown error occurred.';
     if (error instanceof Error) errorMessage = error.message;
     else if (typeof error === 'string') errorMessage = error;
     throw new Error(errorMessage);
@@ -458,13 +469,13 @@ export async function createCart(
     return null;
   }
 
-  if (!userId) {
-    logger.warn('createCart called without a userId.');
+  if (!userId || userId.trim() === '') {
+    logger.warn('createCart called with invalid userId.');
     return null;
   }
 
   try {
-    logger.debug(`createCart: Creando carrito para usuario ${userId}`);
+    logger.debug(`createCart: Creating cart for user ${userId}`);
     const response = await fetch(`${API_BASE_URL}/cart/create`, {
       method: 'POST',
       headers: {
@@ -476,15 +487,17 @@ export async function createCart(
         userId
       }),
       cache: 'no-store',
+      credentials: 'include',
     });
 
     const result = await handleResponse<CartApiResponse>(response);
     if (result?.data?.id) {
-      logger.debug(`createCart: Carrito creado exitosamente con ID ${result.data.id}`);
+      logger.debug(`createCart: Cart created successfully with ID ${result.data.id}`);
     }
     return result;
   } catch (error) {
-    logger.error('Error creating cart:', error);
+    // Silently fail - cart creation might not be available or might fail
+    logger.debug('createCart: Error creating cart, will use local cart', error);
     return null;
   }
 }
@@ -504,8 +517,13 @@ export async function getUserCartByUserId(
     return null;
   }
 
+  if (!userId || userId.trim() === '') {
+    logger.warn('getUserCartByUserId called with invalid userId.');
+    return null;
+  }
+
   try {
-    const url = `${API_BASE_URL}/cart/${userId}`;
+    const url = `${API_BASE_URL}/cart/${encodeURIComponent(userId)}`;
     apiLogger.request('GET', url);
     
     const response = await fetch(url, {
@@ -515,12 +533,15 @@ export async function getUserCartByUserId(
         Authorization: `Bearer ${token}`,
       },
       cache: 'no-store',
+      credentials: 'include',
     });
 
     const result = await handleResponse<CartApiResponse>(response);
     apiLogger.response('GET', url, response.status);
     return result;
   } catch (error) {
+    // Silently fail - this endpoint might not be available or might expect different format
+    logger.debug('getUserCartByUserId: Error fetching cart by userId, will try alternative method', error);
     apiLogger.error('GET', `${API_BASE_URL}/cart/${userId}`, error);
     return null;
   }
@@ -540,40 +561,39 @@ export async function getUserCart(
     return null;
   }
 
-  // ESTRATEGIA MEJORADA: Primero intentar obtener carrito existente, luego crear si no existe
+  if (!userId || userId.trim() === '') {
+    logger.warn('getUserCart called with invalid userId.');
+    return null;
+  }
+
+  // IMPROVED STRATEGY: Try to get existing cart, then create if it doesn't exist
   try {
-    logger.debug(`getUserCart: Intentando obtener carrito para usuario ${userId}`);
+    logger.debug(`getUserCart: Attempting to get cart for user ${userId}`);
     
-    // Primero intentar obtener carrito existente por userId
-    try {
-      const existingCart = await getUserCartByUserId(userId, token);
-      if (existingCart?.data?.id) {
-        logger.debug(`getUserCart: Carrito existente encontrado`);
-        return existingCart;
-      }
-    } catch {
-      logger.warn(`getUserCart: Error con endpoint /api/cart/{userId} - posible problema del backend`);
-      // Continuar con la creación de carrito
+    // First try to get existing cart by userId
+    // Note: This endpoint might not be available or might expect different format
+    // If it fails, we'll silently continue to create a new cart
+    const existingCart = await getUserCartByUserId(userId, token);
+    if (existingCart?.data?.id) {
+      logger.debug(`getUserCart: Existing cart found`);
+      return existingCart;
     }
     
-    // Si no existe o falló, intentar crear uno nuevo
-    logger.debug(`getUserCart: Creando nuevo carrito`);
-    try {
-      const createResponse = await createCart(userId, token);
-      
-      if (createResponse?.data?.id) {
-        logger.debug(`getUserCart: Carrito creado exitosamente`);
-        return createResponse;
-      }
-    } catch {
-      logger.warn(`getUserCart: Error creando carrito - usando carrito local`);
-      // Si falla la creación (ej: permisos), usar carrito local
+    // If cart doesn't exist or endpoint failed, try to create a new one
+    logger.debug(`getUserCart: Creating new cart`);
+    const createResponse = await createCart(userId, token);
+    
+    if (createResponse?.data?.id) {
+      logger.debug(`getUserCart: Cart created successfully`);
+      return createResponse;
     }
     
-    logger.info('getUserCart: Usando carrito local');
+    // If creation also fails, return null to use local cart
+    logger.info('getUserCart: Using local cart');
     return null;
   } catch (error) {
-    logger.error(`getUserCart: Error general:`, error);
+    // Silently fail and use local cart
+    logger.debug(`getUserCart: Error, using local cart:`, error);
     return null;
   }
 }

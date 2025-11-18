@@ -73,17 +73,14 @@ function ProductDetailView({ product }: { product: Product }) {
             </div>
 
             <div className="space-y-4">
-              {isPriceAvailable ? (
-                <p className="text-3xl font-bold text-green-600">
-                  {formatPrice(price)}
+              <div className="rounded-lg bg-gray-50 p-4">
+                <p className="text-gray-700 font-medium">
+                  Consultar precio
                 </p>
-              ) : (
-                <div className="rounded-lg bg-amber-50 p-4">
-                  <p className="text-amber-800">
-                    Precio pendiente de carga. Por favor, consultar disponibilidad.
-                  </p>
-                </div>
-              )}
+                <p className="text-sm text-gray-600 mt-1">
+                  Contacta con nosotros para conocer el precio y disponibilidad
+                </p>
+              </div>
 
               <div className="flex items-center space-x-2">
                 <Badge

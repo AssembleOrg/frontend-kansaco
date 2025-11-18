@@ -242,19 +242,8 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
                       </h3>
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-black text-white">
-                        {formatPrice(productPrice)}
-                      </div>
-                      <div className="flex items-center gap-1">
-                        {[...Array(5)].map((_, i) => (
-                          <Star
-                            key={i}
-                            className="h-3 w-3 fill-yellow-400 text-yellow-400"
-                          />
-                        ))}
-                        <span className="ml-1 text-xs text-gray-500">
-                          (4.8)
-                        </span>
+                      <div className="text-sm font-medium text-gray-400">
+                        Consultar precio
                       </div>
                     </div>
                   </div>

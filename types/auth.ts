@@ -1,32 +1,53 @@
 // types/auth.ts
 
+export type UserRole = 'ADMIN' | 'CLIENTE_MINORISTA' | 'CLIENTE_MAYORISTA' | 'ASISTENTE';
+
+export interface Discount {
+  id: number;
+  porcentaje: number;
+}
+
 export interface User {
   id: string;
   email: string;
-  fullName: string;
-  role?: 'USER' | 'EMPLOYEE' | 'ADMIN';
+  nombre: string;
+  apellido: string;
+  direccion?: string;
+  telefono: string;
+  rol: UserRole;
+  descuentosAplicados: Discount[];
 }
 
 export interface LoginPayload {
   email: string;
-  password?: string;
+  password: string;
 }
 
-export interface ActualLoginApiResponse {
+export interface LoginApiResponse {
   status: string;
   data: {
     token: string;
+    user: User;
   };
-  message?: string;
 }
 
 export interface RegisterPayload {
   email: string;
   password: string;
-  fullName: string;
+  nombre: string;
+  apellido: string;
+  direccion?: string;
+  telefono: string;
+  rol?: UserRole;
 }
 
-export interface RegisterResponse {
-  status: string;
-  message: string;
+export interface RegisterApiResponse {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  direccion?: string;
+  telefono: string;
+  rol: UserRole;
+  descuentosAplicados: Discount[];
 }

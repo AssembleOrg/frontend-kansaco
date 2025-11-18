@@ -37,7 +37,27 @@ const initialCartState: Cart = {
   items: [],
 };
 
-// Función para generar ID único para items del carrito local
+// Mutex-like lock to prevent race conditions in cart operations
+let cartLock = false;
+const cartLockTimeout = 5000; // 5 seconds max lock time
+
+const acquireCartLock = async (): Promise<boolean> => {
+  if (cartLock) {
+    return false;
+  }
+  cartLock = true;
+  // Auto-release lock after timeout to prevent deadlocks
+  setTimeout(() => {
+    cartLock = false;
+  }, cartLockTimeout);
+  return true;
+};
+
+const releaseCartLock = () => {
+  cartLock = false;
+};
+
+// Function to generate unique ID for local cart items
 const generateLocalItemId = () => Date.now() + Math.random();
 
 export const useCartStore = create<CartState>()(
@@ -47,22 +67,27 @@ export const useCartStore = create<CartState>()(
       isLoading: false,
       error: null,
       isCartOpen: false,
-      //syncWithServer test manejar con Zustand ?
       syncWithServer: async () => {
-        const authState = useAuthStore.getState();
-        if (!authState.token || !authState.user?.id) {
-          console.log('syncWithServer: No autenticado, usando carrito local.');
-          set({
-            isLoading: false,
-            error: null,
-            cart: { ...initialCartState },
-          });
+        if (!acquireCartLock()) {
+          logger.warn('syncWithServer: Operation already in progress, skipping');
           return;
         }
 
-        set({ isLoading: true, error: null });
         try {
-          // Intentar obtener carrito del servidor
+          const authState = useAuthStore.getState();
+          if (!authState.token || !authState.user?.id) {
+            logger.debug('syncWithServer: Not authenticated, using local cart.');
+            set({
+              isLoading: false,
+              error: null,
+              cart: { ...initialCartState },
+            });
+            return;
+          }
+
+          set({ isLoading: true, error: null });
+          
+          // Try to get cart from server
           const userCartResponse = await getUserCart(
             authState.user.id,
             authState.token
@@ -74,42 +99,51 @@ export const useCartStore = create<CartState>()(
               isLoading: false,
               error: null,
             });
-            console.log('syncWithServer: Carrito sincronizado con servidor.', userCartResponse.data);
+            logger.debug('syncWithServer: Cart synchronized with server.', userCartResponse.data);
           } else {
-            console.log('syncWithServer: Servidor no disponible, continuando con carrito local.');
+            logger.info('syncWithServer: Server unavailable, continuing with local cart.');
             set({
               isLoading: false,
               error: null,
               cart: { 
-                ...get().cart, // Mantener carrito local existente
+                ...get().cart, // Keep existing local cart
                 userId: authState.user.id,
               },
             });
           }
         } catch (error: unknown) {
-          // Si falla el servidor, continuar con carrito local
-          logger.info('syncWithServer: Servidor no disponible, continuando con carrito local.');
+          // If server fails, continue with local cart
+          logger.info('syncWithServer: Server unavailable, continuing with local cart.');
+          const authState = useAuthStore.getState();
           set({
             isLoading: false,
             error: null,
             cart: { 
-              ...get().cart, // Mantener carrito local existente
-              userId: authState.user.id,
+              ...get().cart, // Keep existing local cart
+              userId: authState.user?.id || '',
             },
           });
+        } finally {
+          releaseCartLock();
         }
       },
 
-      // CARRITO LOCAL ROBUSTO: Funciona siempre, con o sin servidor
+      // ROBUST LOCAL CART: Always works, with or without server
       addToCart: async (product: Product, quantityToAdd: number) => {
-        const authState = useAuthStore.getState();
-        if (!authState.token || !authState.user?.id) {
-          console.log('addToCart: Usuario no autenticado.');
+        if (!acquireCartLock()) {
+          logger.warn('addToCart: Operation already in progress, skipping');
           return;
         }
 
-        set({ isLoading: true, error: null });
-        const currentCart = get().cart;
+        try {
+          const authState = useAuthStore.getState();
+          if (!authState.token || !authState.user?.id) {
+            logger.debug('addToCart: User not authenticated.');
+            return;
+          }
+
+          set({ isLoading: true, error: null });
+          const currentCart = get().cart;
 
         // ESTRATEGIA HÍBRIDA: Intentar servidor primero, si falla usar local
         if (currentCart.id > 0) {
@@ -120,7 +154,7 @@ export const useCartStore = create<CartState>()(
             );
             const newQuantity = existingItem ? existingItem.quantity + quantityToAdd : quantityToAdd;
 
-            console.log(`addToCart: Intentando agregar al servidor (carrito ID ${currentCart.id})`);
+            logger.debug(`addToCart: Attempting to add to server (cart ID ${currentCart.id})`);
             const response = await addProductToCart(
               currentCart.id,
               product.id,
@@ -130,16 +164,16 @@ export const useCartStore = create<CartState>()(
             
             if (response?.data?.id) {
               set({ cart: response.data, isLoading: false, error: null });
-              console.log('addToCart: Producto agregado al servidor exitosamente.');
+              logger.debug('addToCart: Product added to server successfully.');
               return;
             }
           } catch (error) {
-            console.log('addToCart: Servidor falló, usando carrito local:', error);
+            logger.info('addToCart: Server failed, using local cart:', error);
           }
         }
 
-        // CARRITO LOCAL: Siempre funciona
-        console.log(`addToCart: Agregando ${quantityToAdd} de ${product.name} al carrito local`);
+        // LOCAL CART: Always works
+        logger.debug(`addToCart: Adding ${quantityToAdd} of ${product.name} to local cart`);
         
         const existingItemIndex = currentCart.items.findIndex(
           (item) => item.product.id === product.id
@@ -148,13 +182,13 @@ export const useCartStore = create<CartState>()(
         let updatedItems = [...currentCart.items];
         
         if (existingItemIndex >= 0) {
-          // Actualizar cantidad del item existente
+          // Update quantity of existing item
           updatedItems[existingItemIndex] = {
             ...updatedItems[existingItemIndex],
             quantity: updatedItems[existingItemIndex].quantity + quantityToAdd
           };
         } else {
-          // Agregar nuevo item
+          // Add new item
           const newItem: CartItemType = {
             id: generateLocalItemId(),
             quantity: quantityToAdd,
@@ -168,22 +202,31 @@ export const useCartStore = create<CartState>()(
           items: updatedItems,
           updateAt: new Date().toISOString(),
           userId: authState.user.id,
-          id: currentCart.id || -1 // -1 indica carrito local
+          id: currentCart.id || -1 // -1 indicates local cart
         };
 
         set({ cart: updatedCart, isLoading: false, error: null });
-        console.log('addToCart: Producto agregado al carrito local exitosamente.');
+        logger.debug('addToCart: Product added to local cart successfully.');
+        } finally {
+          releaseCartLock();
+        }
       },
 
       removeFromCart: async (cartItemIdToRemove: number) => {
-        const authState = useAuthStore.getState();
-        if (!authState.token || !authState.user?.id) {
-          console.log('removeFromCart: Usuario no autenticado.');
+        if (!acquireCartLock()) {
+          logger.warn('removeFromCart: Operation already in progress, skipping');
           return;
         }
 
-        set({ isLoading: true, error: null });
-        const currentCart = get().cart;
+        try {
+          const authState = useAuthStore.getState();
+          if (!authState.token || !authState.user?.id) {
+            logger.debug('removeFromCart: User not authenticated.');
+            return;
+          }
+
+          set({ isLoading: true, error: null });
+          const currentCart = get().cart;
         
         const itemToRemove = currentCart.items.find(
           (item) => item.id === cartItemIdToRemove
@@ -192,15 +235,15 @@ export const useCartStore = create<CartState>()(
         if (!itemToRemove) {
           set({
             isLoading: false,
-            error: 'Item no encontrado en carrito.',
+            error: 'Item not found in cart.',
           });
           return;
         }
 
-        // ESTRATEGIA HÍBRIDA: Intentar servidor primero, si falla usar local
+        // HYBRID STRATEGY: Try server first, if fails use local
         if (currentCart.id > 0) {
           try {
-            console.log(`removeFromCart: Intentando eliminar del servidor (carrito ID ${currentCart.id})`);
+            logger.debug(`removeFromCart: Attempting to remove from server (cart ID ${currentCart.id})`);
             const response = await removeProductFromCart(
               currentCart.id,
               itemToRemove.product.id,
@@ -209,16 +252,16 @@ export const useCartStore = create<CartState>()(
             
             if (response?.data?.id) {
               set({ cart: response.data, isLoading: false, error: null });
-              console.log('removeFromCart: Producto eliminado del servidor exitosamente.');
+              logger.debug('removeFromCart: Product removed from server successfully.');
               return;
             }
           } catch (error) {
-            console.log('removeFromCart: Servidor falló, usando carrito local:', error);
+            logger.info('removeFromCart: Server failed, using local cart:', error);
           }
         }
 
-        // CARRITO LOCAL: Siempre funciona
-        console.log(`removeFromCart: Eliminando ${itemToRemove.product.name} del carrito local`);
+        // LOCAL CART: Always works
+        logger.debug(`removeFromCart: Removing ${itemToRemove.product.name} from local cart`);
         
         const updatedItems = currentCart.items.filter(
           (item) => item.id !== cartItemIdToRemove
@@ -231,7 +274,10 @@ export const useCartStore = create<CartState>()(
         };
 
         set({ cart: updatedCart, isLoading: false, error: null });
-        console.log('removeFromCart: Producto eliminado del carrito local exitosamente.');
+        logger.debug('removeFromCart: Product removed from local cart successfully.');
+        } finally {
+          releaseCartLock();
+        }
       },
 
       updateQuantity: async (cartItemIdToUpdate: number, newTotalQuantity: number) => {
@@ -240,14 +286,20 @@ export const useCartStore = create<CartState>()(
           return;
         }
 
-        const authState = useAuthStore.getState();
-        if (!authState.token || !authState.user?.id) {
-          console.log('updateQuantity: Usuario no autenticado.');
+        if (!acquireCartLock()) {
+          logger.warn('updateQuantity: Operation already in progress, skipping');
           return;
         }
 
-        set({ isLoading: true, error: null });
-        const currentCart = get().cart;
+        try {
+          const authState = useAuthStore.getState();
+          if (!authState.token || !authState.user?.id) {
+            logger.debug('updateQuantity: User not authenticated.');
+            return;
+          }
+
+          set({ isLoading: true, error: null });
+          const currentCart = get().cart;
         
         const itemToUpdate = currentCart.items.find(
           (item) => item.id === cartItemIdToUpdate
@@ -256,15 +308,15 @@ export const useCartStore = create<CartState>()(
         if (!itemToUpdate) {
           set({
             isLoading: false,
-            error: 'Item no encontrado para actualizar.',
+            error: 'Item not found for update.',
           });
           return;
         }
 
-        // ESTRATEGIA HÍBRIDA: Intentar servidor primero, si falla usar local
+        // HYBRID STRATEGY: Try server first, if fails use local
         if (currentCart.id > 0) {
           try {
-            console.log(`updateQuantity: Intentando actualizar en servidor (carrito ID ${currentCart.id})`);
+            logger.debug(`updateQuantity: Attempting to update on server (cart ID ${currentCart.id})`);
             const response = await addProductToCart(
               currentCart.id,
               itemToUpdate.product.id,
@@ -274,16 +326,16 @@ export const useCartStore = create<CartState>()(
             
             if (response?.data?.id) {
               set({ cart: response.data, isLoading: false, error: null });
-              console.log('updateQuantity: Cantidad actualizada en servidor exitosamente.');
+              logger.debug('updateQuantity: Quantity updated on server successfully.');
               return;
             }
           } catch (error) {
-            console.log('updateQuantity: Servidor falló, usando carrito local:', error);
+            logger.info('updateQuantity: Server failed, using local cart:', error);
           }
         }
 
-        // CARRITO LOCAL: Siempre funciona
-        console.log(`updateQuantity: Actualizando ${itemToUpdate.product.name} a cantidad ${newTotalQuantity} en carrito local`);
+        // LOCAL CART: Always works
+        logger.debug(`updateQuantity: Updating ${itemToUpdate.product.name} to quantity ${newTotalQuantity} in local cart`);
         
         const updatedItems = currentCart.items.map(item =>
           item.id === cartItemIdToUpdate
@@ -298,47 +350,59 @@ export const useCartStore = create<CartState>()(
         };
 
         set({ cart: updatedCart, isLoading: false, error: null });
-        console.log('updateQuantity: Cantidad actualizada en carrito local exitosamente.');
+        logger.debug('updateQuantity: Quantity updated in local cart successfully.');
+        } finally {
+          releaseCartLock();
+        }
       },
 
       clearCart: async () => {
-        const authState = useAuthStore.getState();
-        const currentCart = get().cart;
-
-        if (!authState.token || !authState.user?.id) {
-          // Si no está autenticado, solo limpiar local
-          set({ cart: { ...initialCartState }, isLoading: false, error: null });
-          console.log('clearCart: Carrito local limpiado.');
+        if (!acquireCartLock()) {
+          logger.warn('clearCart: Operation already in progress, skipping');
           return;
         }
 
-        set({ isLoading: true, error: null });
+        try {
+          const authState = useAuthStore.getState();
+          const currentCart = get().cart;
 
-        // ESTRATEGIA HÍBRIDA: Intentar servidor primero, si falla usar local
-        if (currentCart.id > 0) {
-          try {
-            console.log(`clearCart: Intentando vaciar carrito del servidor ID: ${currentCart.id}`);
-            const response = await emptyCart(currentCart.id, authState.token);
-            
-            if (response?.data?.id) {
-              set({ cart: response.data, isLoading: false, error: null });
-              console.log('clearCart: Carrito del servidor vaciado exitosamente.');
-              return;
-            }
-          } catch (error) {
-            console.log('clearCart: Servidor falló, vaciando carrito local:', error);
+          if (!authState.token || !authState.user?.id) {
+            // If not authenticated, only clear local
+            set({ cart: { ...initialCartState }, isLoading: false, error: null });
+            logger.debug('clearCart: Local cart cleared.');
+            return;
           }
+
+          set({ isLoading: true, error: null });
+
+          // HYBRID STRATEGY: Try server first, if fails use local
+          if (currentCart.id > 0) {
+            try {
+              logger.debug(`clearCart: Attempting to empty server cart ID: ${currentCart.id}`);
+              const response = await emptyCart(currentCart.id, authState.token);
+              
+              if (response?.data?.id) {
+                set({ cart: response.data, isLoading: false, error: null });
+                logger.debug('clearCart: Server cart emptied successfully.');
+                return;
+              }
+            } catch (error) {
+              logger.info('clearCart: Server failed, emptying local cart:', error);
+            }
+          }
+
+          // LOCAL CART: Always works
+          const clearedCart: Cart = {
+            ...initialCartState,
+            userId: authState.user.id,
+            id: -1 // Local cart
+          };
+
+          set({ cart: clearedCart, isLoading: false, error: null });
+          logger.debug('clearCart: Local cart emptied successfully.');
+        } finally {
+          releaseCartLock();
         }
-
-        // CARRITO LOCAL: Siempre funciona
-        const clearedCart: Cart = {
-          ...initialCartState,
-          userId: authState.user.id,
-          id: -1 // Carrito local
-        };
-
-        set({ cart: clearedCart, isLoading: false, error: null });
-        console.log('clearCart: Carrito local vaciado exitosamente.');
       },
 
       // Funciones para UI del carrito (drawer)

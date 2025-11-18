@@ -7,7 +7,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { User, ShoppingCart, Menu, X, ChevronDown, LogOut } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
-import { useCart } from '@/features/cart/hooks/useCart';
+import { useCartStore } from '@/features/cart/store/cartStore';
 import { useRouter, usePathname } from 'next/navigation';
 
 const Navbar = () => {
@@ -20,21 +20,14 @@ const Navbar = () => {
   const router = useRouter();
   const pathname = usePathname();
   
-  // Manejar useCart con fallback para cuando no hay CartProvider
-  let cart, openCart, totalItems = 0;
-  try {
-    const cartHook = useCart();
-    cart = cartHook.cart;
-    openCart = cartHook.openCart;
-    totalItems = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-  } catch {
-    cart = null;
-    openCart = () => {}; 
-    totalItems = 0;
-  }
+  // Use cart store directly to avoid hook order issues
+  const cart = useCartStore((state) => state.cart);
+  const openCart = useCartStore((state) => state.openCart);
+  const totalItems = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
   
   // Solo mostrar estado de autenticación después de la hidratación
   const isAuthenticated = isHydrated && isAuthReady && !!token;
+  const isAdmin = isAuthenticated && user?.rol === 'ADMIN';
 
   useEffect(() => {
     // Marcar como hidratado después del primer render en el cliente
@@ -152,12 +145,14 @@ const Navbar = () => {
               Sobre Nosotros
             </Link>
 
-            <Link
-              href="/admin/dashboard"
-              className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-            >
-              Admin
-            </Link>
+            {isAdmin && (
+              <Link
+                href="/admin/dashboard"
+                className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+              >
+                Admin
+              </Link>
+            )}
 
             <Link
               href="/contacto"
@@ -182,7 +177,7 @@ const Navbar = () => {
                 >
                   <User className="h-5 w-5" />
                   <span className="ml-2 hidden text-sm font-medium sm:block">
-                    {user?.fullName?.split(' ')[0]}
+                    {user?.nombre || user?.email?.split('@')[0]}
                   </span>
                 </Link>
                 <button
@@ -308,13 +303,15 @@ const Navbar = () => {
                 Sobre Nosotros
               </Link>
 
-              <Link
-                href="/admin/dashboard"
-                className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Admin
-              </Link>
+              {isAdmin && (
+                <Link
+                  href="/admin/dashboard"
+                  className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                  onClick={() => setIsMobileMenuOpen(false)}
+                >
+                  Admin
+                </Link>
+              )}
 
               <Link
                 href="/contacto"
@@ -333,7 +330,7 @@ const Navbar = () => {
                 ) : isAuthenticated ? (
                   <div className="space-y-2">
                     <p className="text-sm text-gray-300">
-                      Hola, {user?.fullName?.split(' ')[0]}
+                      Hola, {user?.nombre || user?.email?.split('@')[0]}
                     </p>
                     <Link
                       href="/cuenta"

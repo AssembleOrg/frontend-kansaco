@@ -214,15 +214,18 @@ export default function CheckoutPage() {
                       Cantidad: {item.quantity}
                     </p>
                   </div>
-                  <span className="text-lg font-semibold text-gray-700">
-                    {formatPrice(getProductPrice(item.product) * item.quantity)}
+                  <span className="text-sm font-medium text-gray-600">
+                    Consultar precio
                   </span>
                 </li>
               ))}
             </ul>
             <div className="mt-6 border-t pt-4 text-right">
-              <p className="text-xl font-bold">
-                Total: {formatPrice(subtotal)}
+              <p className="text-lg font-medium text-gray-700">
+                Total: Consultar precio
+              </p>
+              <p className="text-sm text-gray-500 mt-1">
+                Los precios se confirmarán al contactar con nuestro equipo
               </p>
             </div>
           </div>

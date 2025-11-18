@@ -175,7 +175,7 @@ export default function ProductFilters({
         </div>
       </div>
 
-      <div>
+      {/* <div>
         <h3 className="mb-2 text-sm font-medium text-gray-900">Precio</h3>
         <div className="space-y-3">
           <div className="rounded-md bg-yellow-50 p-4">
@@ -198,7 +198,7 @@ export default function ProductFilters({
             </div>
           </div>
         </div>
-      </div>
+      </div> */}
     </div>
   );
 

@@ -22,15 +22,18 @@ export const useCart = () => {
   } = useCartStore();
 
   const itemCount =
-    cart?.items.reduce((total, item) => total + item.quantity, 0) || 0;
+    cart?.items?.reduce((total, item) => (total + (item?.quantity || 0)), 0) || 0;
 
   const subtotal =
-    cart?.items.reduce((total, item) => {
+    cart?.items?.reduce((total, item) => {
+      if (!item || !item.product) {
+        return total;
+      }
       const price =
         item.product.price && item.product.price > 0
           ? item.product.price
           : generateConsistentPrice(item.product.id);
-      return total + price * item.quantity;
+      return total + price * (item.quantity || 0);
     }, 0) || 0;
 
   const formatPrice = (price: number | string | null | undefined): string => {
@@ -54,12 +57,12 @@ export const useCart = () => {
   };
 
   const isInCart = (productId: number): boolean => {
-    return cart?.items.some((item) => item.product.id === productId) || false;
+    return cart?.items?.some((item) => item?.product?.id === productId) || false;
   };
 
   const getQuantity = (productId: number): number => {
-    const item = cart?.items.find((item) => item.product.id === productId);
-    return item ? item.quantity : 0;
+    const item = cart?.items?.find((item) => item?.product?.id === productId);
+    return item?.quantity || 0;
   };
 
   const hasReachedMinimumPurchase = subtotal >= MINIMUM_PURCHASE;
@@ -72,6 +75,9 @@ export const useCart = () => {
   const amountMissingForMinimum = Math.max(MINIMUM_PURCHASE - subtotal, 0);
 
   const getProductPrice = (product: any): number => {
+    if (!product) {
+      return 0;
+    }
     return product.price && product.price > 0
       ? product.price
       : generateConsistentPrice(product.id);
