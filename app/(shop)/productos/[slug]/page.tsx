@@ -15,10 +15,9 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 
 function ProductDetailView({ product }: { product: Product }) {
-  const { formatPrice, getProductPrice } = useCart();
+  const { getProductPrice } = useCart();
   const imageUrl = product.imageUrl || '/sauberatras.jpg';
-  const price = getProductPrice(product);
-  const isPriceAvailable = price && price > 0;
+  getProductPrice(product); // Price calculation for future use
 
   return (
     <div className="container mx-auto px-4 py-8 mt-20">

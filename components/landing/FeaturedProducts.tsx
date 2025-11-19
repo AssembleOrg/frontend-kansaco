@@ -7,7 +7,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingCart, Star, ArrowRight, Zap } from 'lucide-react';
+import { ShoppingCart, ArrowRight, Zap } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/types';
 import { NeonBorders } from './HeroBanner';
@@ -19,11 +19,6 @@ interface FeaturedProductsProps {
 const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
   const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
-  // Función simple para formatear precios (solo para display)
-  const formatPrice = (price: number): string => {
-    return `$${price.toLocaleString('es-AR', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
-  };
 
   useEffect(() => {
     const mockFeaturedProducts: Product[] = [
@@ -198,8 +193,6 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
 
         <div className="mb-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
           {featuredProducts.map((product) => {
-            const productPrice = product.price || 8500; // Precio mock para display
-
             return (
               <div
                 key={product.id}

@@ -51,11 +51,11 @@ export const formatDateForDisplay = (
   }
   
   const formats = {
-    short: { month: 'short', day: 'numeric', year: 'numeric' },
-    long: { month: 'long', day: 'numeric', year: 'numeric' },
-    datetime: { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' },
+    short: { month: 'short', day: 'numeric', year: 'numeric' } as const,
+    long: { month: 'long', day: 'numeric', year: 'numeric' } as const,
+    datetime: { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' } as const,
   };
-  
+
   return dateTime.setLocale('es-AR').toLocaleString(formats[format]);
 };
 

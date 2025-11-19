@@ -90,7 +90,7 @@ export default function RegisterPage() {
         direccion: direccion || undefined,
         rol,
       };
-      const response = await registerUser(payload);
+      await registerUser(payload);
 
       setSuccessMessage(
         '¡Registro exitoso! Ya puedes iniciar sesión con tus credenciales.'

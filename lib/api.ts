@@ -6,6 +6,7 @@ import {
   RegisterPayload,
   RegisterApiResponse,
 } from '@/types/auth';
+import { SendOrderEmailData, OrderEmailResponse } from '@/types/order';
 import { logger, apiLogger } from './logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -523,9 +524,9 @@ export async function getUserCartByUserId(
   }
 
   try {
-    const url = `${API_BASE_URL}/cart/${encodeURIComponent(userId)}`;
+    const url = `${API_BASE_URL}/cart/user/${encodeURIComponent(userId)}`;
     apiLogger.request('GET', url);
-    
+
     const response = await fetch(url, {
       method: 'GET',
       headers: {
@@ -542,7 +543,7 @@ export async function getUserCartByUserId(
   } catch (error) {
     // Silently fail - this endpoint might not be available or might expect different format
     logger.debug('getUserCartByUserId: Error fetching cart by userId, will try alternative method', error);
-    apiLogger.error('GET', `${API_BASE_URL}/cart/${userId}`, error);
+    apiLogger.error('GET', `${API_BASE_URL}/cart/user/${userId}`, error);
     return null;
   }
 }
@@ -785,4 +786,43 @@ export async function deleteProduct(
   });
 
   await handleResponse<{ status: string }>(response);
+}
+
+// Email - Envío de pedidos
+export async function sendOrderEmail(
+  token: string,
+  orderData: SendOrderEmailData
+): Promise<OrderEmailResponse> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/email/send-order`;
+  apiLogger.request('POST', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(orderData),
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<OrderEmailResponse>(response);
+    apiLogger.response('POST', url, response.status);
+    logger.info('sendOrderEmail: Pedido enviado correctamente');
+    return result;
+  } catch (error) {
+    apiLogger.error('POST', url, error);
+    logger.error('sendOrderEmail: Error enviando pedido:', error);
+    throw error;
+  }
 }

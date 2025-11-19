@@ -1,5 +1,4 @@
 // app/(shop)/checkout/page.tsx
-//Todavia no aplicado los endpoints so placeholder
 'use client';
 
 import React, { useState, useEffect, FormEvent } from 'react';
@@ -11,8 +10,10 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import Image from 'next/image';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Building2, Store } from 'lucide-react';
 import Link from 'next/link';
+import { sendOrderEmail } from '@/lib/api';
+import { SendOrderEmailData, BusinessInfo } from '@/types/order';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -20,20 +21,38 @@ export default function CheckoutPage() {
   const {
     cart,
     subtotal,
-    formatPrice,
     clearCart,
     isLoading: cartLoading,
     hasReachedMinimumPurchase,
     getProductPrice,
   } = useCart();
 
-  const [fullName, setFullName] = useState(user?.fullName || '');
+  // Datos básicos (ambos tipos de cliente)
+  const [fullName, setFullName] = useState(
+    user ? `${user.nombre} ${user.apellido}`.trim() : ''
+  );
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState('');
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
+
+  // Datos adicionales para mayoristas
+  const [cuit, setCuit] = useState('');
+  const [razonSocial, setRazonSocial] = useState('');
+  const [situacionAfip, setSituacionAfip] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+
+  const isMayorista = user?.rol === 'CLIENTE_MAYORISTA';
+
+  const situacionesAfip = [
+    'No Inscripto',
+    'Monotributista',
+    'Responsable Inscripto',
+    'Persona Jurídica'
+  ];
 
   useEffect(() => {
     if (!isAuthReady || cartLoading) {
@@ -61,7 +80,7 @@ export default function CheckoutPage() {
     }
 
     if (user) {
-      if (!fullName) setFullName(user.fullName || '');
+      if (!fullName) setFullName(`${user.nombre} ${user.apellido}`.trim());
       if (!email) setEmail(user.email || '');
     }
   }, [
@@ -94,7 +113,7 @@ export default function CheckoutPage() {
       return;
     }
     if (!hasReachedMinimumPurchase) {
-      setErrorMessage('No has alcanzado el mínimo de compra mayorista.');
+      setErrorMessage('No has alcanzado el mínimo de compra.');
       setIsSubmitting(false);
       return;
     }
@@ -104,10 +123,19 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Validaciones adicionales para mayoristas
+    if (isMayorista) {
+      if (!cuit || !situacionAfip) {
+        setErrorMessage('Por favor, completa los datos fiscales requeridos (CUIT y Situación AFIP).');
+        setIsSubmitting(false);
+        return;
+      }
+    }
+
     try {
-      const orderData = {
-        userId: user.id,
-        userEmail: user.email,
+      // Preparar datos para el email
+      const orderEmailData: SendOrderEmailData = {
+        customerType: isMayorista ? 'CLIENTE_MAYORISTA' : 'CLIENTE_MINORISTA',
         contactInfo: {
           fullName,
           email,
@@ -116,44 +144,44 @@ export default function CheckoutPage() {
         },
         items: cart.items.map((item) => ({
           productId: item.product.id,
-          productSlug: item.product.slug,
           productName: item.product.name,
           quantity: item.quantity,
           unitPrice: getProductPrice(item.product),
-          totalItemPrice: getProductPrice(item.product) * item.quantity,
         })),
         totalAmount: subtotal,
-        notes: notes,
+        notes: notes || undefined,
+      };
+
+      // Agregar datos de negocio si es mayorista
+      if (isMayorista) {
+        const businessInfo: BusinessInfo = {
+          cuit,
+          situacionAfip,
+          razonSocial: razonSocial || undefined,
+          codigoPostal: codigoPostal || undefined,
+        };
+        orderEmailData.businessInfo = businessInfo;
+      }
+
+      // Enviar email
+      await sendOrderEmail(token, orderEmailData);
+
+      // Guardar datos del pedido en sessionStorage para order-success
+      const orderSuccessData = {
+        ...orderEmailData,
         orderDate: new Date().toISOString(),
-        paymentMethodSuggestion:
-          'Efectivo/Transferencia (a coordinar con administrativa)',
       };
+      sessionStorage.setItem('lastOrder', JSON.stringify(orderSuccessData));
 
-      console.log(
-        'PEDIDO SIMULADO (para administrativa):',
-        JSON.stringify(orderData, null, 2)
-      );
-
-      // Guardar orden en localStorage para que el admin pueda verla
-      const existingOrders = JSON.parse(
-        localStorage.getItem('pending_orders') || '[]'
-      );
-      const newOrder = {
-        ...orderData,
-        id: `order_${Date.now()}`,
-        createdAt: new Date().toISOString(),
-      };
-      existingOrders.unshift(newOrder);
-      localStorage.setItem('pending_orders', JSON.stringify(existingOrders));
-
-      console.log('Orden guardada en localStorage para el admin');
-
+      // Vaciar carrito y redirigir
       await clearCart();
-      router.replace('/order-success'); // replace para no permitir volver al checkout con el carrito vacío
+      router.replace('/order-success');
     } catch (error) {
       console.error('Error al procesar el pedido:', error);
       setErrorMessage(
-        'Hubo un error al procesar tu pedido. Inténtalo de nuevo.'
+        error instanceof Error
+          ? error.message
+          : 'Hubo un error al procesar tu pedido. Inténtalo de nuevo.'
       );
     } finally {
       setIsSubmitting(false);
@@ -182,6 +210,29 @@ export default function CheckoutPage() {
       <h1 className="mb-6 text-3xl font-bold text-gray-800">
         Finalizar Compra
       </h1>
+
+      {/* Indicador de tipo de cliente */}
+      <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
+        isMayorista
+          ? 'bg-amber-50 border border-amber-200'
+          : 'bg-blue-50 border border-blue-200'
+      }`}>
+        {isMayorista ? (
+          <>
+            <Building2 className="h-5 w-5 text-amber-600" />
+            <span className="font-medium text-amber-800">
+              Estás comprando como Cliente Mayorista
+            </span>
+          </>
+        ) : (
+          <>
+            <Store className="h-5 w-5 text-blue-600" />
+            <span className="font-medium text-blue-800">
+              Estás comprando como Cliente Minorista
+            </span>
+          </>
+        )}
+      </div>
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {/* Resumen del Pedido */}
@@ -230,51 +281,72 @@ export default function CheckoutPage() {
             </div>
           </div>
 
-          {/* Información de Contacto y Envío */}
+          {/* Formulario de Contacto y Envío */}
           <div className="rounded-lg bg-white p-6 shadow-md">
             <h2 className="mb-4 border-b pb-3 text-2xl font-semibold">
               Datos de Contacto y Envío
             </h2>
             <form onSubmit={handleSubmit} className="space-y-6">
-              <div>
-                <Label htmlFor="fullName" className="mb-2 block">
-                  Nombre Completo <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="fullName"
-                  type="text"
-                  value={fullName}
-                  onChange={(e) => setFullName(e.target.value)}
-                  placeholder="Tu nombre completo"
-                  required
-                />
+              {/* Campos básicos */}
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="fullName" className="mb-2 block">
+                    Nombre Completo <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="fullName"
+                    type="text"
+                    value={fullName}
+                    onChange={(e) => setFullName(e.target.value)}
+                    placeholder="Tu nombre completo"
+                    required
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="email" className="mb-2 block">
+                    Email <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu.email@ejemplo.com"
+                    required
+                  />
+                </div>
               </div>
-              <div>
-                <Label htmlFor="email" className="mb-2 block">
-                  Email <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  placeholder="tu.email@ejemplo.com"
-                  required
-                />
+
+              <div className="grid gap-4 md:grid-cols-2">
+                <div>
+                  <Label htmlFor="phone" className="mb-2 block">
+                    Teléfono <span className="text-red-500">*</span>
+                  </Label>
+                  <Input
+                    id="phone"
+                    type="tel"
+                    value={phone}
+                    onChange={(e) => setPhone(e.target.value)}
+                    placeholder="Ej: 1123456789"
+                    required
+                  />
+                </div>
+                {isMayorista && (
+                  <div>
+                    <Label htmlFor="codigoPostal" className="mb-2 block">
+                      Código Postal
+                    </Label>
+                    <Input
+                      id="codigoPostal"
+                      type="text"
+                      value={codigoPostal}
+                      onChange={(e) => setCodigoPostal(e.target.value)}
+                      placeholder="CP"
+                    />
+                  </div>
+                )}
               </div>
-              <div>
-                <Label htmlFor="phone" className="mb-2 block">
-                  Número de Teléfono <span className="text-red-500">*</span>
-                </Label>
-                <Input
-                  id="phone"
-                  type="tel"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Ej: 1123456789"
-                  required
-                />
-              </div>
+
               <div>
                 <Label htmlFor="address" className="mb-2 block">
                   Dirección de Envío <span className="text-red-500">*</span>
@@ -283,11 +355,70 @@ export default function CheckoutPage() {
                   id="address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Calle, número, piso, departamento, localidad, provincia, código postal"
+                  placeholder="Calle, número, piso, departamento, localidad, provincia"
                   rows={3}
                   required
                 />
               </div>
+
+              {/* Campos adicionales para mayoristas */}
+              {isMayorista && (
+                <div className="border-t pt-6 mt-6">
+                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
+                    <Building2 className="h-5 w-5 text-amber-600" />
+                    Datos Fiscales
+                  </h3>
+
+                  <div className="grid gap-4 md:grid-cols-2">
+                    <div>
+                      <Label htmlFor="cuit" className="mb-2 block">
+                        CUIT <span className="text-red-500">*</span>
+                      </Label>
+                      <Input
+                        id="cuit"
+                        type="text"
+                        value={cuit}
+                        onChange={(e) => setCuit(e.target.value)}
+                        placeholder="XX-XXXXXXXX-X"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <Label htmlFor="razonSocial" className="mb-2 block">
+                        Razón Social
+                      </Label>
+                      <Input
+                        id="razonSocial"
+                        type="text"
+                        value={razonSocial}
+                        onChange={(e) => setRazonSocial(e.target.value)}
+                        placeholder="Nombre de la empresa"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="mt-4">
+                    <Label htmlFor="situacionAfip" className="mb-2 block">
+                      Situación ante AFIP <span className="text-red-500">*</span>
+                    </Label>
+                    <select
+                      id="situacionAfip"
+                      value={situacionAfip}
+                      onChange={(e) => setSituacionAfip(e.target.value)}
+                      required
+                      className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
+                    >
+                      <option value="">Selecciona tu situación</option>
+                      {situacionesAfip.map((situacion) => (
+                        <option key={situacion} value={situacion}>
+                          {situacion}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
+
               <div>
                 <Label htmlFor="notes" className="mb-2 block">
                   Notas del Pedido (Opcional)
@@ -325,22 +456,30 @@ export default function CheckoutPage() {
           </div>
         </div>
 
-        {/* Columna Lateral*/}
+        {/* Columna Lateral */}
         <div className="md:col-span-1">
           <div className="rounded-lg bg-white p-6 shadow-md">
             <h2 className="mb-4 border-b pb-3 text-2xl font-semibold">
               Información Importante
             </h2>
             <p className="mb-4 text-gray-700">
-              Actualmente, los pagos se coordinan directamente con nuestra
-              administración. Después de confirmar tu pedido, un miembro de
-              nuestro equipo se comunicará contigo por teléfono o email para
-              finalizar los detalles de pago (efectivo, tarjeta, o link de
-              Mercado Pago) y coordinar el envío.
+              Después de confirmar tu pedido, recibirás un email de confirmación
+              y un miembro de nuestro equipo se comunicará contigo para
+              finalizar los detalles de pago y coordinar el envío.
             </p>
             <p className="text-gray-700">
               Asegúrate de que tus datos de contacto sean correctos.
             </p>
+
+            {isMayorista && (
+              <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
+                <p className="text-sm text-amber-800">
+                  <strong>Nota para mayoristas:</strong> Los precios mayoristas
+                  serán confirmados por nuestro equipo comercial según volumen
+                  y condiciones de pago.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       </div>
