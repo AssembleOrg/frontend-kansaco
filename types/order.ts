@@ -1,12 +1,8 @@
-import { CartItem } from './cartItem';
-
 export interface OrderItem {
   productId: number;
-  productSlug: string;
   productName: string;
   quantity: number;
-  unitPrice: number;
-  totalItemPrice: number;
+  unitPrice?: number;
 }
 
 export interface OrderContactInfo {
@@ -16,17 +12,21 @@ export interface OrderContactInfo {
   address: string;
 }
 
+// Estados de orden
+export type OrderStatus = 'PENDIENTE' | 'PROCESANDO' | 'ENVIADO' | 'COMPLETADO' | 'CANCELADO';
+
 export interface Order {
   id: string;
   userId: string;
-  userEmail: string;
+  customerType: CustomerType;
+  status: OrderStatus;
   contactInfo: OrderContactInfo;
+  businessInfo?: BusinessInfo;
   items: OrderItem[];
-  totalAmount: number;
-  notes: string;
-  orderDate: string;
-  paymentMethodSuggestion: string;
+  totalAmount?: number;
+  notes?: string;
   createdAt: string;
+  updatedAt: string;
 }
 
 // Tipos para envío de email de pedido
@@ -55,4 +55,5 @@ export interface SendOrderEmailData {
 
 export interface OrderEmailResponse {
   message: string;
+  orderId: string;
 }

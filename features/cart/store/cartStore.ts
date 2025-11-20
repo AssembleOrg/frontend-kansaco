@@ -19,8 +19,8 @@ interface CartState {
   isCartOpen: boolean;
 
   addToCart: (product: Product, quantity: number) => Promise<void>;
-  removeFromCart: (itemId: number) => Promise<void>;
-  updateQuantity: (itemId: number, newQuantity: number) => Promise<void>;
+  removeFromCart: (productId: number) => Promise<void>;
+  updateQuantity: (productId: number, newQuantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
   syncWithServer: () => Promise<void>;
 
@@ -37,28 +37,37 @@ const initialCartState: Cart = {
   items: [],
 };
 
-// Mutex-like lock to prevent race conditions in cart operations
+// Queue-based lock to handle concurrent cart operations properly
 let cartLock = false;
-const cartLockTimeout = 5000; // 5 seconds max lock time
+const lockQueue: Array<() => void> = [];
 
 const acquireCartLock = async (): Promise<boolean> => {
-  if (cartLock) {
-    return false;
+  if (!cartLock) {
+    cartLock = true;
+    return true;
   }
-  cartLock = true;
-  // Auto-release lock after timeout to prevent deadlocks
-  setTimeout(() => {
-    cartLock = false;
-  }, cartLockTimeout);
-  return true;
+
+  // Wait in queue for lock to be released
+  return new Promise((resolve) => {
+    lockQueue.push(() => {
+      cartLock = true;
+      resolve(true);
+    });
+  });
 };
 
 const releaseCartLock = () => {
-  cartLock = false;
+  if (lockQueue.length > 0) {
+    // Give lock to next in queue
+    const next = lockQueue.shift();
+    if (next) next();
+  } else {
+    cartLock = false;
+  }
 };
 
 // Function to generate unique ID for local cart items
-const generateLocalItemId = () => Date.now() + Math.random();
+const generateLocalItemId = () => Math.floor(Date.now() + Math.random() * 1000);
 
 export const useCartStore = create<CartState>()(
   persist(
@@ -68,10 +77,7 @@ export const useCartStore = create<CartState>()(
       error: null,
       isCartOpen: false,
       syncWithServer: async () => {
-        if (!acquireCartLock()) {
-          logger.warn('syncWithServer: Operation already in progress, skipping');
-          return;
-        }
+        await acquireCartLock();
 
         try {
           const authState = useAuthStore.getState();
@@ -130,15 +136,13 @@ export const useCartStore = create<CartState>()(
 
       // ROBUST LOCAL CART: Always works, with or without server
       addToCart: async (product: Product, quantityToAdd: number) => {
-        if (!acquireCartLock()) {
-          logger.warn('addToCart: Operation already in progress, skipping');
-          return;
-        }
+        await acquireCartLock();
 
         try {
           const authState = useAuthStore.getState();
           if (!authState.token || !authState.user?.id) {
             logger.debug('addToCart: User not authenticated.');
+            releaseCartLock();
             return;
           }
 
@@ -212,24 +216,23 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      removeFromCart: async (cartItemIdToRemove: number) => {
-        if (!acquireCartLock()) {
-          logger.warn('removeFromCart: Operation already in progress, skipping');
-          return;
-        }
+      removeFromCart: async (productIdToRemove: number) => {
+        await acquireCartLock();
 
         try {
           const authState = useAuthStore.getState();
           if (!authState.token || !authState.user?.id) {
             logger.debug('removeFromCart: User not authenticated.');
+            releaseCartLock();
             return;
           }
 
           set({ isLoading: true, error: null });
           const currentCart = get().cart;
-        
+
+        // Find item by product.id instead of item.id
         const itemToRemove = currentCart.items.find(
-          (item) => item.id === cartItemIdToRemove
+          (item) => item.product.id === productIdToRemove
         );
 
         if (!itemToRemove) {
@@ -237,6 +240,7 @@ export const useCartStore = create<CartState>()(
             isLoading: false,
             error: 'Item not found in cart.',
           });
+          releaseCartLock();
           return;
         }
 
@@ -246,10 +250,10 @@ export const useCartStore = create<CartState>()(
             logger.debug(`removeFromCart: Attempting to remove from server (cart ID ${currentCart.id})`);
             const response = await removeProductFromCart(
               currentCart.id,
-              itemToRemove.product.id,
+              productIdToRemove,
               authState.token
             );
-            
+
             if (response?.data?.id) {
               set({ cart: response.data, isLoading: false, error: null });
               logger.debug('removeFromCart: Product removed from server successfully.');
@@ -262,9 +266,10 @@ export const useCartStore = create<CartState>()(
 
         // LOCAL CART: Always works
         logger.debug(`removeFromCart: Removing ${itemToRemove.product.name} from local cart`);
-        
+
+        // Filter by product.id instead of item.id
         const updatedItems = currentCart.items.filter(
-          (item) => item.id !== cartItemIdToRemove
+          (item) => item.product.id !== productIdToRemove
         );
 
         const updatedCart: Cart = {
@@ -280,29 +285,28 @@ export const useCartStore = create<CartState>()(
         }
       },
 
-      updateQuantity: async (cartItemIdToUpdate: number, newTotalQuantity: number) => {
+      updateQuantity: async (productIdToUpdate: number, newTotalQuantity: number) => {
         if (newTotalQuantity <= 0) {
-          await get().removeFromCart(cartItemIdToUpdate);
+          await get().removeFromCart(productIdToUpdate);
           return;
         }
 
-        if (!acquireCartLock()) {
-          logger.warn('updateQuantity: Operation already in progress, skipping');
-          return;
-        }
+        await acquireCartLock();
 
         try {
           const authState = useAuthStore.getState();
           if (!authState.token || !authState.user?.id) {
             logger.debug('updateQuantity: User not authenticated.');
+            releaseCartLock();
             return;
           }
 
           set({ isLoading: true, error: null });
           const currentCart = get().cart;
-        
+
+        // Find item by product.id instead of item.id
         const itemToUpdate = currentCart.items.find(
-          (item) => item.id === cartItemIdToUpdate
+          (item) => item.product.id === productIdToUpdate
         );
 
         if (!itemToUpdate) {
@@ -310,6 +314,7 @@ export const useCartStore = create<CartState>()(
             isLoading: false,
             error: 'Item not found for update.',
           });
+          releaseCartLock();
           return;
         }
 
@@ -319,11 +324,11 @@ export const useCartStore = create<CartState>()(
             logger.debug(`updateQuantity: Attempting to update on server (cart ID ${currentCart.id})`);
             const response = await addProductToCart(
               currentCart.id,
-              itemToUpdate.product.id,
+              productIdToUpdate,
               newTotalQuantity,
               authState.token
             );
-            
+
             if (response?.data?.id) {
               set({ cart: response.data, isLoading: false, error: null });
               logger.debug('updateQuantity: Quantity updated on server successfully.');
@@ -336,9 +341,10 @@ export const useCartStore = create<CartState>()(
 
         // LOCAL CART: Always works
         logger.debug(`updateQuantity: Updating ${itemToUpdate.product.name} to quantity ${newTotalQuantity} in local cart`);
-        
+
+        // Update by product.id instead of item.id
         const updatedItems = currentCart.items.map(item =>
-          item.id === cartItemIdToUpdate
+          item.product.id === productIdToUpdate
             ? { ...item, quantity: newTotalQuantity }
             : item
         );
@@ -357,10 +363,7 @@ export const useCartStore = create<CartState>()(
       },
 
       clearCart: async () => {
-        if (!acquireCartLock()) {
-          logger.warn('clearCart: Operation already in progress, skipping');
-          return;
-        }
+        await acquireCartLock();
 
         try {
           const authState = useAuthStore.getState();

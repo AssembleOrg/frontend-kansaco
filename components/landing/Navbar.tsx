@@ -171,15 +171,12 @@ const Navbar = () => {
               </div>
             ) : isAuthenticated ? (
               <div className="flex items-center space-x-2">
-                <Link
-                  href="/cuenta"
-                  className="flex items-center p-2 text-white transition-colors duration-200 hover:text-[#16a245]"
-                >
+                <div className="flex items-center p-2 text-white">
                   <User className="h-5 w-5" />
                   <span className="ml-2 hidden text-sm font-medium sm:block">
                     {user?.nombre || user?.email?.split('@')[0]}
                   </span>
-                </Link>
+                </div>
                 <button
                   onClick={async () => {
                     await logout();
@@ -332,13 +329,6 @@ const Navbar = () => {
                     <p className="text-sm text-gray-300">
                       Hola, {user?.nombre || user?.email?.split('@')[0]}
                     </p>
-                    <Link
-                      href="/cuenta"
-                      className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      Mi Cuenta
-                    </Link>
                     <button
                       onClick={async () => {
                         await logout();

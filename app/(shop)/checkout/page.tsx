@@ -54,6 +54,33 @@ export default function CheckoutPage() {
     'Persona Jurídica'
   ];
 
+  // Validar formato CUIT: XX-XXXXXXXX-X
+  const validateCUIT = (cuitValue: string): boolean => {
+    const cuitRegex = /^\d{2}-\d{8}-\d{1}$/;
+    return cuitRegex.test(cuitValue);
+  };
+
+  // Formatear CUIT mientras se escribe
+  const handleCuitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    let value = e.target.value.replace(/\D/g, ''); // Solo números
+    if (value.length > 11) value = value.substring(0, 11);
+
+    // Aplicar formato XX-XXXXXXXX-X
+    if (value.length <= 2) {
+      setCuit(value);
+    } else if (value.length <= 10) {
+      setCuit(`${value.substring(0, 2)}-${value.substring(2)}`);
+    } else {
+      setCuit(`${value.substring(0, 2)}-${value.substring(2, 10)}-${value.substring(10)}`);
+    }
+  };
+
+  // Validar teléfono (solo números, mínimo 8 dígitos)
+  const validatePhone = (phoneValue: string): boolean => {
+    const phoneDigits = phoneValue.replace(/\D/g, '');
+    return phoneDigits.length >= 8;
+  };
+
   useEffect(() => {
     if (!isAuthReady || cartLoading) {
       return;
@@ -73,9 +100,9 @@ export default function CheckoutPage() {
 
     if (!hasReachedMinimumPurchase) {
       console.log(
-        'Checkout: No se ha alcanzado el mínimo de compra, redirigiendo al carrito.'
+        'Checkout: No se ha alcanzado el mínimo de compra, redirigiendo a productos.'
       );
-      router.replace('/cart');
+      router.replace('/productos?openCart=true');
       return;
     }
 
@@ -123,10 +150,23 @@ export default function CheckoutPage() {
       return;
     }
 
+    // Validar teléfono
+    if (!validatePhone(phone)) {
+      setErrorMessage('El teléfono debe tener al menos 8 dígitos.');
+      setIsSubmitting(false);
+      return;
+    }
+
     // Validaciones adicionales para mayoristas
     if (isMayorista) {
       if (!cuit || !situacionAfip) {
         setErrorMessage('Por favor, completa los datos fiscales requeridos (CUIT y Situación AFIP).');
+        setIsSubmitting(false);
+        return;
+      }
+
+      if (!validateCUIT(cuit)) {
+        setErrorMessage('El formato del CUIT no es válido. Debe ser XX-XXXXXXXX-X');
         setIsSubmitting(false);
         return;
       }
@@ -163,19 +203,12 @@ export default function CheckoutPage() {
         orderEmailData.businessInfo = businessInfo;
       }
 
-      // Enviar email
-      await sendOrderEmail(token, orderEmailData);
+      // Enviar email y crear orden en BD
+      const response = await sendOrderEmail(token, orderEmailData);
 
-      // Guardar datos del pedido en sessionStorage para order-success
-      const orderSuccessData = {
-        ...orderEmailData,
-        orderDate: new Date().toISOString(),
-      };
-      sessionStorage.setItem('lastOrder', JSON.stringify(orderSuccessData));
-
-      // Vaciar carrito y redirigir
+      // Vaciar carrito y redirigir con orderId en URL
       await clearCart();
-      router.replace('/order-success');
+      router.replace(`/order-success?orderId=${response.orderId}`);
     } catch (error) {
       console.error('Error al procesar el pedido:', error);
       setErrorMessage(
@@ -265,18 +298,12 @@ export default function CheckoutPage() {
                       Cantidad: {item.quantity}
                     </p>
                   </div>
-                  <span className="text-sm font-medium text-gray-600">
-                    Consultar precio
-                  </span>
                 </li>
               ))}
             </ul>
             <div className="mt-6 border-t pt-4 text-right">
-              <p className="text-lg font-medium text-gray-700">
-                Total: Consultar precio
-              </p>
-              <p className="text-sm text-gray-500 mt-1">
-                Los precios se confirmarán al contactar con nuestro equipo
+              <p className="text-sm text-gray-500">
+                {cart.items.reduce((acc, item) => acc + item.quantity, 0)} productos en tu pedido
               </p>
             </div>
           </div>
@@ -378,8 +405,9 @@ export default function CheckoutPage() {
                         id="cuit"
                         type="text"
                         value={cuit}
-                        onChange={(e) => setCuit(e.target.value)}
+                        onChange={handleCuitChange}
                         placeholder="XX-XXXXXXXX-X"
+                        maxLength={13}
                         required
                       />
                     </div>

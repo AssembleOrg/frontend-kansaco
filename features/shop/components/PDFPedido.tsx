@@ -12,7 +12,7 @@ import {
 } from '@react-pdf/renderer';
 import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
-import { SendOrderEmailData } from '@/types/order';
+import { Order, SendOrderEmailData } from '@/types/order';
 
 const styles = StyleSheet.create({
   page: {
@@ -169,12 +169,19 @@ const styles = StyleSheet.create({
   },
 });
 
-interface OrderData extends SendOrderEmailData {
-  orderDate: string;
-}
+// Tipo que acepta tanto Order (del backend) como SendOrderEmailData con orderDate (legacy)
+type OrderData = Order | (SendOrderEmailData & { orderDate: string });
 
 interface PDFPedidoProps {
   order: OrderData;
+}
+
+// Helper para obtener la fecha
+function getOrderDate(order: OrderData): string {
+  if ('createdAt' in order) {
+    return order.createdAt;
+  }
+  return order.orderDate;
 }
 
 const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
@@ -224,7 +231,7 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
               Comprobante de Pedido
             </Text>
             <Text style={{ marginTop: 3, fontSize: 8 }}>
-              Fecha: {new Date(order.orderDate).toLocaleDateString('es-AR', {
+              Fecha: {new Date(getOrderDate(order)).toLocaleDateString('es-AR', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
@@ -370,7 +377,7 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
 };
 
 export function PDFPedidoDownloadButton({ order }: { order: OrderData }) {
-  const fileName = `Pedido_Kansaco_${order.contactInfo.fullName.replace(/\s+/g, '_')}_${new Date(order.orderDate).toLocaleDateString('es-AR').replace(/\//g, '-')}.pdf`;
+  const fileName = `Pedido_Kansaco_${order.contactInfo.fullName.replace(/\s+/g, '_')}_${new Date(getOrderDate(order)).toLocaleDateString('es-AR').replace(/\//g, '-')}.pdf`;
 
   return (
     <PDFDownloadLink

@@ -11,9 +11,8 @@ import {
   SheetFooter,
 } from '@/components/ui/sheet';
 import { Button } from '@/components/ui/button';
-import { Progress } from '@/components/ui/progress';
 import { CartItemCard } from './CartItemCard';
-import { ShoppingCart, AlertCircle, Check, LogIn } from 'lucide-react';
+import { ShoppingCart, LogIn } from 'lucide-react';
 import Link from 'next/link';
 
 export const CartDrawer = () => {
@@ -23,20 +22,14 @@ export const CartDrawer = () => {
     isCartOpen,
     closeCart,
     itemCount,
-    subtotal,
-    formatPrice,
     isLoading,
     error,
     syncCart,
-    MINIMUM_PURCHASE,
-    hasReachedMinimumPurchase,
-    percentageToMinimum,
-    amountMissingForMinimum,
     clearCart,
   } = useCart();
 
   const isAuthenticated = !!token;
-  const canProceedToCheckout = isAuthenticated && hasReachedMinimumPurchase;
+  const canProceedToCheckout = isAuthenticated && itemCount > 0;
 
   useEffect(() => {
     if (isCartOpen) {
@@ -102,37 +95,17 @@ export const CartDrawer = () => {
         {!isLoading && cart && cart.items.length > 0 && (
           <SheetFooter className="border-t border-gray-200 pt-4">
             <div className="w-full space-y-4">
-              <div className="space-y-1.5">
-                <div className="flex justify-between">
-                  <span className="font-medium">Resumen</span>
-                  <span className="text-gray-600">Consultar precio</span>
-                </div>
-                <div className="flex justify-between text-sm text-gray-500">
-                  <span>Cantidad de productos</span>
-                  <span>
-                    {itemCount} {itemCount === 1 ? 'item' : 'items'}
-                  </span>
-                </div>
-              </div>
-
-              <div className="space-y-2 rounded-md bg-gray-50 p-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">
-                    Información de compra
-                  </span>
-                </div>
-                <div className="flex items-center rounded-md bg-blue-50 p-2 text-xs text-blue-600">
-                  <AlertCircle className="mr-1 h-4 w-4 flex-shrink-0" />
-                  <span>
-                    Los precios se confirmarán al contactar con nuestro equipo
-                  </span>
-                </div>
+              <div className="flex justify-between text-sm text-gray-600">
+                <span>Cantidad de productos</span>
+                <span className="font-medium">
+                  {itemCount} {itemCount === 1 ? 'item' : 'items'}
+                </span>
               </div>
 
               <div className="flex flex-col gap-2">
                 {canProceedToCheckout ? (
                   <Link href="/checkout" className="w-full">
-                    <Button 
+                    <Button
                       className="w-full bg-green-600 hover:bg-green-700"
                       onClick={handleProceedToCheckout}
                     >
@@ -144,28 +117,13 @@ export const CartDrawer = () => {
                     {!isAuthenticated && (
                       <div className="flex items-center rounded-md bg-blue-50 p-2 text-xs text-blue-600">
                         <LogIn className="mr-1 h-4 w-4" />
-                        <span>
-                          Debes iniciar sesión para proceder al pago
-                        </span>
-                      </div>
-                    )}
-                    {!hasReachedMinimumPurchase && (
-                      <div className="flex items-start rounded-md bg-amber-50 p-2 text-xs text-amber-600">
-                        <AlertCircle className="mr-1 mt-0.5 h-4 w-4 flex-shrink-0" />
-                        <span>
-                          Te faltan {formatPrice(amountMissingForMinimum)} para
-                          alcanzar el mínimo de compra mayorista
-                        </span>
+                        <span>Debes iniciar sesión para proceder al pago</span>
                       </div>
                     )}
                     <Button
                       className="w-full cursor-not-allowed bg-gray-400 hover:bg-gray-500"
                       disabled
-                      title={
-                        !isAuthenticated
-                          ? "Debes iniciar sesión para proceder al pago"
-                          : "Debes alcanzar el mínimo de compra"
-                      }
+                      title="Debes iniciar sesión para proceder al pago"
                     >
                       Proceder al pago
                     </Button>

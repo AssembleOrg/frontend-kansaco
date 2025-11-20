@@ -16,20 +16,20 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
   const {
     removeFromCart,
     updateQuantity,
-    formatPrice,
     isLoading,
     getProductPrice,
+    getQuantity,
   } = useCart();
-  const { product, quantity, id } = item;
+  const { product, quantity } = item;
   const [localLoading, setLocalLoading] = useState(false);
 
   const productPrice = getProductPrice(product);
-  const totalPrice = productPrice * quantity;
 
+  // Use product.id for all operations (consistent across server/local)
   const handleRemove = async () => {
     setLocalLoading(true);
     try {
-      await removeFromCart(id);
+      await removeFromCart(product.id);
     } finally {
       setLocalLoading(false);
     }
@@ -38,7 +38,9 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
   const handleIncrement = async () => {
     setLocalLoading(true);
     try {
-      await updateQuantity(id, quantity + 1);
+      // Get current quantity from store to avoid stale closure
+      const currentQuantity = getQuantity(product.id);
+      await updateQuantity(product.id, currentQuantity + 1);
     } finally {
       setLocalLoading(false);
     }
@@ -47,10 +49,12 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
   const handleDecrement = async () => {
     setLocalLoading(true);
     try {
-      if (quantity > 1) {
-        await updateQuantity(id, quantity - 1);
+      // Get current quantity from store to avoid stale closure
+      const currentQuantity = getQuantity(product.id);
+      if (currentQuantity > 1) {
+        await updateQuantity(product.id, currentQuantity - 1);
       } else {
-        await removeFromCart(id);
+        await removeFromCart(product.id);
       }
     } finally {
       setLocalLoading(false);
@@ -125,14 +129,9 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
               </div>
 
               <div className="text-right">
-                <p className="text-sm font-medium text-gray-600">
-                  Consultar precio
+                <p className="text-xs text-gray-500">
+                  Cant: {quantity}
                 </p>
-                {quantity > 1 && (
-                  <p className="text-xs text-gray-500">
-                    Cantidad: {quantity}
-                  </p>
-                )}
               </div>
             </div>
           </div>

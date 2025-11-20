@@ -69,11 +69,6 @@ export default function ProductCard({ product }: ProductCardProps) {
         <p className="mb-4 line-clamp-2 flex-1 text-sm text-gray-600">
           {product.description}
         </p>
-        <div className="space-y-2">
-          <p className="text-sm font-medium text-gray-600">
-            Consultar precio
-          </p>
-        </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button

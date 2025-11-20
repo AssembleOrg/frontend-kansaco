@@ -66,12 +66,6 @@ export default function ProductCard({ product }: { product: Product }) {
           </p>
         )}
 
-        {/* Price hidden - contact for pricing */}
-        <div className="mb-3">
-          <p className="text-sm font-medium text-gray-600">
-            Consultar precio
-          </p>
-        </div>
 
         {/* Botón de añadir al carrito y ver detalles */}
         <div className="mt-auto space-y-2">

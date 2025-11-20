@@ -3,7 +3,6 @@
 import { Order } from '@/types/order';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { formatPrice } from '@/lib/utils';
 
 interface OrderDetailModalProps {
   order: Order;
@@ -83,12 +82,9 @@ export default function OrderDetailModal({
                       {item.productName}
                     </p>
                     <p className="text-sm text-gray-600">
-                      Cantidad: {item.quantity} × {formatPrice(item.unitPrice)}
+                      Cantidad: {item.quantity}
                     </p>
                   </div>
-                  <p className="font-semibold text-gray-900">
-                    {formatPrice(item.totalItemPrice)}
-                  </p>
                 </div>
               ))}
             </div>
@@ -96,21 +92,39 @@ export default function OrderDetailModal({
 
           <hr className="border-gray-200" />
 
-          {/* Resumen */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <span className="text-gray-700">Subtotal:</span>
-              <span className="font-medium">{formatPrice(order.totalAmount)}</span>
-            </div>
-            <div className="border-t border-gray-200 pt-2">
-              <div className="flex items-center justify-between">
-                <span className="font-semibold text-gray-900">Total:</span>
-                <span className="text-lg font-bold text-green-600">
-                  {formatPrice(order.totalAmount)}
-                </span>
+          {/* Información de Negocio */}
+          {order.businessInfo && (
+            <>
+              <hr className="border-gray-200" />
+              <div>
+                <h3 className="text-sm font-semibold text-gray-500 uppercase">
+                  Información Fiscal
+                </h3>
+                <div className="mt-4 space-y-2">
+                  <p>
+                    <span className="font-medium text-gray-700">CUIT:</span>{' '}
+                    {order.businessInfo.cuit}
+                  </p>
+                  {order.businessInfo.razonSocial && (
+                    <p>
+                      <span className="font-medium text-gray-700">Razón Social:</span>{' '}
+                      {order.businessInfo.razonSocial}
+                    </p>
+                  )}
+                  <p>
+                    <span className="font-medium text-gray-700">Situación AFIP:</span>{' '}
+                    {order.businessInfo.situacionAfip}
+                  </p>
+                  {order.businessInfo.codigoPostal && (
+                    <p>
+                      <span className="font-medium text-gray-700">Código Postal:</span>{' '}
+                      {order.businessInfo.codigoPostal}
+                    </p>
+                  )}
+                </div>
               </div>
-            </div>
-          </div>
+            </>
+          )}
 
           {/* Notas */}
           {order.notes && (
@@ -130,7 +144,7 @@ export default function OrderDetailModal({
           <div className="space-y-2 text-sm text-gray-600">
             <p>
               <span className="font-medium">Fecha de Orden:</span>{' '}
-              {new Date(order.orderDate).toLocaleDateString('es-AR', {
+              {new Date(order.createdAt).toLocaleDateString('es-AR', {
                 year: 'numeric',
                 month: 'long',
                 day: 'numeric',
@@ -139,8 +153,12 @@ export default function OrderDetailModal({
               })}
             </p>
             <p>
-              <span className="font-medium">Método de Pago:</span>{' '}
-              {order.paymentMethodSuggestion}
+              <span className="font-medium">Tipo de Cliente:</span>{' '}
+              {order.customerType === 'CLIENTE_MAYORISTA' ? 'Mayorista' : 'Minorista'}
+            </p>
+            <p>
+              <span className="font-medium">Estado:</span>{' '}
+              {order.status}
             </p>
             <p>
               <span className="font-medium">ID de Orden:</span>{' '}

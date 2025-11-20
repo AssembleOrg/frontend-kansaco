@@ -234,11 +234,6 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
                         {product.name}
                       </h3>
                     </div>
-                    <div className="text-right">
-                      <div className="text-sm font-medium text-gray-400">
-                        Consultar precio
-                      </div>
-                    </div>
                   </div>
 
                   <p className="text-sm leading-relaxed text-gray-400">

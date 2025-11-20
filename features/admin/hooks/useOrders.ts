@@ -1,79 +1,89 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Order } from '@/types/order';
-
-const ORDERS_STORAGE_KEY = 'pending_orders';
+import { Order, OrderStatus } from '@/types/order';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { getOrders, updateOrderStatus, deleteOrder as deleteOrderApi } from '@/lib/api';
 
 export function useOrders() {
+  const { token } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  // Cargar órdenes del localStorage
-  useEffect(() => {
+  // Cargar órdenes desde la API
+  const fetchOrders = useCallback(async () => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+
     try {
-      const stored = localStorage.getItem(ORDERS_STORAGE_KEY);
-      const parsedOrders = stored ? JSON.parse(stored) : [];
-      setOrders(parsedOrders);
-    } catch (error) {
-      console.error('Error loading orders from localStorage:', error);
+      setIsLoading(true);
+      setError(null);
+      const data = await getOrders(token);
+      setOrders(data);
+    } catch (err) {
+      console.error('Error loading orders:', err);
+      setError(err instanceof Error ? err.message : 'Error loading orders');
       setOrders([]);
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [token]);
 
-  // Agregar nueva orden
-  const addOrder = useCallback((order: Omit<Order, 'id' | 'createdAt'>) => {
-    try {
-      const newOrder: Order = {
-        ...order,
-        id: `order_${Date.now()}`,
-        createdAt: new Date().toISOString(),
-      };
-
-      const updated = [newOrder, ...orders];
-      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updated));
-      setOrders(updated);
-      return newOrder;
-    } catch (error) {
-      console.error('Error adding order:', error);
-      throw error;
-    }
-  }, [orders]);
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   // Obtener orden por ID
   const getOrder = useCallback((id: string): Order | undefined => {
     return orders.find((order) => order.id === id);
   }, [orders]);
 
-  // Eliminar orden
-  const deleteOrder = useCallback((id: string) => {
-    try {
-      const updated = orders.filter((order) => order.id !== id);
-      localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(updated));
-      setOrders(updated);
-    } catch (error) {
-      console.error('Error deleting order:', error);
-      throw error;
+  // Actualizar estado de una orden
+  const updateStatus = useCallback(async (id: string, status: OrderStatus) => {
+    if (!token) {
+      throw new Error('Authentication required');
     }
-  }, [orders]);
 
-  // Limpiar todas las órdenes
-  const clearAllOrders = useCallback(() => {
     try {
-      localStorage.removeItem(ORDERS_STORAGE_KEY);
-      setOrders([]);
-    } catch (error) {
-      console.error('Error clearing orders:', error);
-      throw error;
+      const updatedOrder = await updateOrderStatus(token, id, status);
+      setOrders(prev =>
+        prev.map(order => order.id === id ? updatedOrder : order)
+      );
+      return updatedOrder;
+    } catch (err) {
+      console.error('Error updating order status:', err);
+      throw err;
     }
-  }, []);
+  }, [token]);
+
+  // Eliminar orden
+  const deleteOrder = useCallback(async (id: string) => {
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    try {
+      await deleteOrderApi(token, id);
+      setOrders(prev => prev.filter(order => order.id !== id));
+    } catch (err) {
+      console.error('Error deleting order:', err);
+      throw err;
+    }
+  }, [token]);
+
+  // Refrescar órdenes
+  const refresh = useCallback(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   return {
     orders,
     isLoading,
-    addOrder,
+    error,
     getOrder,
+    updateStatus,
     deleteOrder,
-    clearAllOrders,
+    refresh,
   };
 }

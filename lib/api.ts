@@ -6,7 +6,7 @@ import {
   RegisterPayload,
   RegisterApiResponse,
 } from '@/types/auth';
-import { SendOrderEmailData, OrderEmailResponse } from '@/types/order';
+import { SendOrderEmailData, OrderEmailResponse, Order, OrderStatus } from '@/types/order';
 import { logger, apiLogger } from './logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -789,6 +789,14 @@ export async function deleteProduct(
 }
 
 // Email - Envío de pedidos
+interface SendOrderEmailApiResponse {
+  status: string;
+  data: {
+    message: string;
+    orderId: string;
+  };
+}
+
 export async function sendOrderEmail(
   token: string,
   orderData: SendOrderEmailData
@@ -816,13 +824,163 @@ export async function sendOrderEmail(
       cache: 'no-store',
     });
 
-    const result = await handleResponse<OrderEmailResponse>(response);
+    const result = await handleResponse<SendOrderEmailApiResponse>(response);
     apiLogger.response('POST', url, response.status);
-    logger.info('sendOrderEmail: Pedido enviado correctamente');
-    return result;
+
+    // Validate that orderId was returned (response is wrapped by TransformInterceptor)
+    if (!result.data?.orderId) {
+      logger.error('sendOrderEmail: Backend no devolvió orderId válido', result);
+      throw new Error('El servidor no devolvió el ID del pedido. Por favor, contacta a soporte.');
+    }
+
+    logger.info('sendOrderEmail: Pedido enviado correctamente, orderId:', result.data.orderId);
+    return {
+      message: result.data.message,
+      orderId: result.data.orderId,
+    };
   } catch (error) {
     apiLogger.error('POST', url, error);
     logger.error('sendOrderEmail: Error enviando pedido:', error);
+    throw error;
+  }
+}
+
+// Order Management
+interface OrdersApiResponse {
+  status: string;
+  data: Order[];
+}
+
+interface OrderApiResponse {
+  status: string;
+  data: Order;
+}
+
+export async function getOrders(token: string): Promise<Order[]> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/order`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<OrdersApiResponse>(response);
+    apiLogger.response('GET', url, response.status);
+    return result.data;
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
+export async function getOrderById(token: string, orderId: string): Promise<Order> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/order/${orderId}`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<OrderApiResponse>(response);
+    apiLogger.response('GET', url, response.status);
+    return result.data;
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
+export async function updateOrderStatus(
+  token: string,
+  orderId: string,
+  status: OrderStatus
+): Promise<Order> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/order/${orderId}/status`;
+  apiLogger.request('PATCH', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ status }),
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<OrderApiResponse>(response);
+    apiLogger.response('PATCH', url, response.status);
+    return result.data;
+  } catch (error) {
+    apiLogger.error('PATCH', url, error);
+    throw error;
+  }
+}
+
+export async function deleteOrder(token: string, orderId: string): Promise<void> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/order/${orderId}`;
+  apiLogger.request('DELETE', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    await handleResponse<{ status: string; message: string }>(response);
+    apiLogger.response('DELETE', url, response.status);
+  } catch (error) {
+    apiLogger.error('DELETE', url, error);
     throw error;
   }
 }
