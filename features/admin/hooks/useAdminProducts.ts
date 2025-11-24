@@ -2,9 +2,11 @@ import { useState, useCallback, useEffect } from 'react';
 import { Product } from '@/types/product';
 import {
   getProducts,
+  getProductsPaginated,
   createProduct,
   updateProduct,
   deleteProduct,
+  PaginatedProductsResponse,
 } from '@/lib/api';
 
 const MOCK_PRODUCTS: Product[] = [
@@ -183,44 +185,127 @@ export function useAdminProducts(token: string | null) {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    limit: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  }>({
+    page: 1,
+    limit: 20,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string>('all');
 
-  // Cargar productos
-  const loadProducts = useCallback(async () => {
-    setIsLoading(true);
-    setError(null);
-    try {
-      // Si no hay token, usar mock data
+  // Cargar productos con paginación y filtros
+  const loadProducts = useCallback(
+    async (page = 1, search = '', category = 'all') => {
       if (!token) {
-        setProducts(MOCK_PRODUCTS);
+        setIsLoading(false);
+        setProducts([]);
         return;
       }
 
-      const data = await getProducts(token);
-      setProducts(data);
-    } catch (err) {
-      // Si falla la carga, mostrar mock data como fallback
-      console.warn('Error loading products, using mock data:', err);
-      setProducts(MOCK_PRODUCTS);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [token]);
+      setIsLoading(true);
+      setError(null);
+      try {
+        const filters: {
+          page: number;
+          limit: number;
+          name?: string;
+          category?: string[];
+        } = {
+          page,
+          limit: pagination.limit,
+        };
 
-  // Cargar productos al montar el componente
+        // Solo aplicar búsqueda si tiene 3 o más caracteres
+        if (search && search.length >= 3) {
+          filters.name = search;
+        }
+
+        // Aplicar filtro de categoría si no es 'all'
+        if (category && category !== 'all') {
+          filters.category = [category];
+        }
+
+        const result = await getProductsPaginated(token, filters);
+        setProducts(result.data);
+        setPagination({
+          page: result.page,
+          limit: result.limit,
+          total: result.total,
+          totalPages: result.totalPages,
+          hasNext: result.hasNext,
+          hasPrev: result.hasPrev,
+        });
+      } catch (err) {
+        console.error('Error loading products:', err);
+        setError(err instanceof Error ? err.message : 'Error loading products');
+        setProducts([]);
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [token, pagination.limit]
+  );
+
+  // Cargar productos al montar o cuando cambia el token
   useEffect(() => {
-    loadProducts();
-  }, [loadProducts]);
+    if (token) {
+      loadProducts(1, '', 'all');
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token]); // Solo cargar cuando cambia el token
+
+  // Función para cambiar de página
+  const goToPage = useCallback(
+    (page: number) => {
+      loadProducts(page, searchQuery, selectedCategory);
+    },
+    [loadProducts, searchQuery, selectedCategory]
+  );
+
+  // Función para buscar (con mínimo 3 caracteres)
+  const search = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      // Si tiene menos de 3 caracteres, limpiar búsqueda y recargar
+      if (query.length < 3) {
+        loadProducts(1, '', selectedCategory);
+      } else {
+        loadProducts(1, query, selectedCategory);
+      }
+    },
+    [loadProducts, selectedCategory]
+  );
+
+  // Función para cambiar categoría
+  const filterByCategory = useCallback(
+    (category: string) => {
+      setSelectedCategory(category);
+      loadProducts(1, searchQuery, category);
+    },
+    [loadProducts, searchQuery]
+  );
 
   // Crear producto
   const createNewProduct = useCallback(
-    async (productData: Omit<Product, 'id'>) => {
+    async (productData: Omit<Product, 'id' | 'slug'>) => {
       setError(null);
       try {
         if (!token) {
           throw new Error('Requiere autenticación para crear productos');
         }
         const newProduct = await createProduct(token, productData);
-        setProducts((prev) => [newProduct, ...prev]);
+        // Recargar productos después de crear
+        await loadProducts(pagination.page, searchQuery, selectedCategory);
         return newProduct;
       } catch (err) {
         const errorMessage =
@@ -230,7 +315,7 @@ export function useAdminProducts(token: string | null) {
         throw err;
       }
     },
-    [token]
+    [token, loadProducts, pagination.page, searchQuery, selectedCategory]
   );
 
   // Editar producto
@@ -242,9 +327,8 @@ export function useAdminProducts(token: string | null) {
           throw new Error('Requiere autenticación para editar productos');
         }
         const updatedProduct = await updateProduct(token, productId, productData);
-        setProducts((prev) =>
-          prev.map((p) => (p.id === productId ? updatedProduct : p))
-        );
+        // Recargar productos después de editar
+        await loadProducts(pagination.page, searchQuery, selectedCategory);
         return updatedProduct;
       } catch (err) {
         const errorMessage =
@@ -254,7 +338,7 @@ export function useAdminProducts(token: string | null) {
         throw err;
       }
     },
-    [token]
+    [token, loadProducts, pagination.page, searchQuery, selectedCategory]
   );
 
   // Eliminar producto
@@ -266,7 +350,8 @@ export function useAdminProducts(token: string | null) {
           throw new Error('Requiere autenticación para eliminar productos');
         }
         await deleteProduct(token, productId);
-        setProducts((prev) => prev.filter((p) => p.id !== productId));
+        // Recargar productos después de eliminar
+        await loadProducts(pagination.page, searchQuery, selectedCategory);
       } catch (err) {
         const errorMessage =
           err instanceof Error ? err.message : 'Error deleting product';
@@ -275,7 +360,7 @@ export function useAdminProducts(token: string | null) {
         throw err;
       }
     },
-    [token]
+    [token, loadProducts, pagination.page, searchQuery, selectedCategory]
   );
 
   // Actualizar precios en masa
@@ -338,7 +423,13 @@ export function useAdminProducts(token: string | null) {
     products,
     isLoading,
     error,
+    pagination,
+    searchQuery,
+    selectedCategory,
     loadProducts,
+    goToPage,
+    search,
+    filterByCategory,
     createNewProduct,
     editProduct,
     removeProduct,

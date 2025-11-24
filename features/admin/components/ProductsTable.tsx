@@ -7,7 +7,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Trash2, Edit, Search, Plus, Percent, ArrowUpDown } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect, useRef } from 'react';
+import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
 import {
   ColumnDef,
   flexRender,
@@ -26,6 +27,17 @@ interface ProductsTableProps {
   onSelectionChange?: (selectedIds: number[]) => void;
   onBulkUpdateClick?: () => void;
   onCategoryChange?: (category: string) => void;
+  onSearch?: (query: string) => void;
+  onPageChange?: (page: number) => void;
+  pagination?: {
+    page: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  };
+  searchQuery?: string;
+  selectedCategory?: string;
 }
 
 export default function ProductsTable({
@@ -37,28 +49,58 @@ export default function ProductsTable({
   onSelectionChange,
   onBulkUpdateClick,
   onCategoryChange,
+  onSearch,
+  onPageChange,
+  pagination,
+  searchQuery = '',
+  selectedCategory: propSelectedCategory = 'all',
 }: ProductsTableProps) {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(searchQuery);
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
+  const [selectedCategory, setSelectedCategory] = useState<string>(propSelectedCategory);
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
-  // Filtrar productos
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const searchLower = searchTerm.toLowerCase();
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchLower) ||
-        product.sku.toLowerCase().includes(searchLower) ||
-        product.slug.toLowerCase().includes(searchLower);
+  // Sincronizar searchTerm con prop
+  useEffect(() => {
+    setSearchTerm(searchQuery);
+  }, [searchQuery]);
 
-      const matchesCategory =
-        selectedCategory === 'all' ||
-        product.category.includes(selectedCategory);
+  // Sincronizar selectedCategory con prop
+  useEffect(() => {
+    setSelectedCategory(propSelectedCategory);
+  }, [propSelectedCategory]);
 
-      return matchesSearch && matchesCategory;
-    });
-  }, [products, searchTerm, selectedCategory]);
+  // Debounce para búsqueda (solo si tiene 3+ caracteres)
+  useEffect(() => {
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    // Si tiene menos de 3 caracteres, limpiar búsqueda inmediatamente
+    if (searchTerm.length < 3) {
+      if (searchTerm.length === 0 && onSearch) {
+        onSearch('');
+      }
+      return;
+    }
+
+    // Si tiene 3+ caracteres, hacer debounce de 500ms
+    debounceTimer.current = setTimeout(() => {
+      if (onSearch) {
+        onSearch(searchTerm);
+      }
+    }, 500);
+
+    return () => {
+      if (debounceTimer.current) {
+        clearTimeout(debounceTimer.current);
+      }
+    };
+  }, [searchTerm, onSearch]);
+
+  // Usar productos directamente (ya vienen filtrados del servidor)
+  const filteredProducts = products;
 
   const handleDelete = (productId: number) => {
     if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
@@ -251,11 +293,16 @@ export default function ProductsTable({
           <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
           <Input
             type="text"
-            placeholder="Buscar por nombre, SKU o slug..."
+            placeholder="Buscar por nombre, SKU o slug... (mín. 3 caracteres)"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10 text-sm"
           />
+          {searchTerm.length > 0 && searchTerm.length < 3 && (
+            <p className="absolute -bottom-5 left-0 text-xs text-gray-500">
+              Escribe al menos 3 caracteres para buscar
+            </p>
+          )}
         </div>
         <select
           value={selectedCategory}
@@ -266,10 +313,11 @@ export default function ProductsTable({
           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
         >
           <option value="all">Todas las categorías</option>
-          <option value="Motos">Motos</option>
-          <option value="Industrial">Industrial</option>
-          <option value="Grasas">Grasas</option>
-          <option value="Derivados y Aditivos">Derivados y Aditivos</option>
+          {ALLOWED_PRODUCT_CATEGORIES.map((category) => (
+            <option key={category} value={category}>
+              {category}
+            </option>
+          ))}
         </select>
         <Button
           onClick={onCreate}
@@ -502,6 +550,42 @@ export default function ProductsTable({
             ))}
           </div>
         </>
+      )}
+
+      {/* Pagination Controls */}
+      {pagination && onPageChange && (
+        <div className="flex flex-col items-center gap-4 border-t border-gray-200 pt-4 sm:flex-row sm:justify-between">
+          <div className="text-sm text-gray-600">
+            Mostrando {products.length} de {pagination.total} productos
+            {searchTerm.length >= 3 && ` (buscando: "${searchTerm}")`}
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page - 1)}
+              disabled={!pagination.hasPrev || isLoading}
+              className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700 disabled:opacity-50"
+            >
+              Anterior
+            </Button>
+            <div className="flex items-center gap-1 text-sm text-gray-600">
+              <span>Página</span>
+              <span className="font-medium">{pagination.page}</span>
+              <span>de</span>
+              <span className="font-medium">{pagination.totalPages || 1}</span>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => onPageChange(pagination.page + 1)}
+              disabled={!pagination.hasNext || isLoading}
+              className="bg-green-50 hover:bg-green-100 border-green-200 text-green-700 disabled:opacity-50"
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, ShoppingCart } from 'lucide-react';
+import { LayoutDashboard, Package, ShoppingCart, Image } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AdminSidebarProps {
@@ -28,6 +28,11 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
       label: 'Productos',
       href: '/admin/products',
       icon: Package,
+    },
+    {
+      label: 'Imágenes',
+      href: '/admin/images',
+      icon: Image,
     },
   ];
 

@@ -2,16 +2,19 @@
 
 import { useState, useEffect } from 'react';
 import { Product } from '@/types/product';
-import { X, Loader2 } from 'lucide-react';
+import { X, Loader2, Image as ImageIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import ImageSelectionModal from './ImageSelectionModal';
+import { ImageListItem, getProductImages } from '@/lib/api';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 
 interface ProductFormModalProps {
   product?: Product;
-  onSubmit: (data: Omit<Product, 'id'>) => Promise<void>;
+  onSubmit: (data: Omit<Product, 'id' | 'slug'>, selectedImages?: ImageListItem[]) => Promise<void>;
   onClose: () => void;
   isLoading?: boolean;
 }
@@ -39,8 +42,12 @@ export default function ProductFormModal({
     price: 0,
   });
 
+  const { token } = useAuth();
   const [categoryInput, setCategoryInput] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [selectedImages, setSelectedImages] = useState<ImageListItem[]>([]);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
+  const [isLoadingImages, setIsLoadingImages] = useState(false);
 
   useEffect(() => {
     if (product) {
@@ -50,8 +57,45 @@ export default function ProductFormModal({
         stock: product.stock ?? 0,
         imageUrl: product.imageUrl ?? '',
       });
+      
+      // Cargar imágenes existentes del producto
+      if (product.id && token) {
+        setIsLoadingImages(true);
+        getProductImages(token, product.id)
+          .then((productImages) => {
+            // Convertir ProductImage[] a ImageListItem[]
+            const imageListItems: ImageListItem[] = productImages.map((img) => ({
+              key: img.imageKey,
+              url: img.imageUrl,
+              lastModified: img.createdAt,
+              size: 0, // No tenemos el tamaño en ProductImage
+            }));
+            // Ordenar por order y luego por id
+            const sorted = imageListItems.sort((a, b) => {
+              const imgA = productImages.find((img) => img.imageKey === a.key);
+              const imgB = productImages.find((img) => img.imageKey === b.key);
+              if (imgA && imgB) {
+                if (imgA.order !== imgB.order) {
+                  return imgA.order - imgB.order;
+                }
+                return imgA.id - imgB.id;
+              }
+              return 0;
+            });
+            setSelectedImages(sorted);
+          })
+          .catch((err) => {
+            console.error('Error loading product images:', err);
+          })
+          .finally(() => {
+            setIsLoadingImages(false);
+          });
+      }
+    } else {
+      // Resetear imágenes al crear nuevo producto
+      setSelectedImages([]);
     }
-  }, [product]);
+  }, [product, token]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -105,13 +149,27 @@ export default function ProductFormModal({
       setError('El SKU es requerido');
       return;
     }
-    if (formData.price <= 0) {
+    
+    // Convertir precio a número y validar
+    const priceValue = typeof formData.price === 'string' 
+      ? parseFloat(formData.price) 
+      : formData.price;
+    const finalPrice = isNaN(priceValue) || priceValue <= 0 ? 1 : priceValue;
+    
+    if (finalPrice <= 0) {
       setError('El precio debe ser mayor a 0');
       return;
     }
 
     try {
-      await onSubmit(formData);
+      // Preparar datos sin slug (este no debe enviarse al backend, el id ya no está en formData)
+      const { slug, ...dataToSubmit } = formData;
+      const submitData = {
+        ...dataToSubmit,
+        price: finalPrice,
+      };
+      
+      await onSubmit(submitData, selectedImages);
       onClose();
     } catch (err) {
       const errorMessage =
@@ -294,18 +352,59 @@ export default function ProductFormModal({
             </div>
           </div>
 
-          {/* Imagen URL */}
-          {/* <div>
-            <Label htmlFor="imageUrl">URL de Imagen</Label>
-            <Input
-              id="imageUrl"
-              name="imageUrl"
-              value={formData.imageUrl}
-              onChange={handleInputChange}
-              placeholder="https://..."
-              disabled={isLoading}
-            />
-          </div> */}
+          {/* Selección de Imágenes */}
+          <div>
+            <Label>Imágenes del Producto</Label>
+            <div className="mt-2 space-y-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsImageModalOpen(true)}
+                disabled={isLoading}
+                className="w-full gap-2"
+              >
+                <ImageIcon className="h-4 w-4" />
+                {selectedImages.length > 0
+                  ? `Editar Imágenes (${selectedImages.length} seleccionada${selectedImages.length > 1 ? 's' : ''})`
+                  : 'Seleccionar Imágenes'}
+              </Button>
+              
+              {selectedImages.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-sm text-gray-600">
+                    {selectedImages.length} imagen{selectedImages.length > 1 ? 'es' : ''} seleccionada{selectedImages.length > 1 ? 's' : ''}
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
+                    {selectedImages.map((img, index) => (
+                      <div
+                        key={img.key}
+                        className="group relative overflow-hidden rounded-lg border-2 border-gray-200"
+                      >
+                        <div className="relative aspect-square bg-gray-100">
+                          <img
+                            src={img.url}
+                            alt={img.key}
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="absolute top-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
+                          {index + 1}
+                        </div>
+                        {index === 0 && (
+                          <div className="absolute bottom-0 left-0 right-0 bg-green-600/90 px-2 py-1 text-center text-xs font-medium text-white">
+                            Portada
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-500">
+                    La primera imagen será la portada del producto. Las demás aparecerán en el carrusel de detalles.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
 
           {/* Whole Saler */}
           <div>
@@ -372,6 +471,14 @@ export default function ProductFormModal({
           </Button>
         </div>
       </div>
+
+      {/* Image Selection Modal */}
+      <ImageSelectionModal
+        open={isImageModalOpen}
+        onOpenChange={setIsImageModalOpen}
+        onSelect={setSelectedImages}
+        initialSelected={selectedImages}
+      />
     </div>
   );
 }

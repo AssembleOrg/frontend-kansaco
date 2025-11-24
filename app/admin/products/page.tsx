@@ -8,6 +8,7 @@ import ProductFormModal from '@/features/admin/components/ProductFormModal';
 import BulkUpdateModal from '@/features/admin/components/BulkUpdateModal';
 import { Product } from '@/types/product';
 import { Percent } from 'lucide-react';
+import { ImageListItem, associateProductImage, getProductImages, deleteProductImage, reorderProductImages } from '@/lib/api';
 
 export default function ProductsPage() {
   const { token } = useAuth();
@@ -15,6 +16,12 @@ export default function ProductsPage() {
     products,
     isLoading,
     error,
+    pagination,
+    searchQuery,
+    selectedCategory,
+    search,
+    filterByCategory,
+    goToPage,
     createNewProduct,
     editProduct,
     removeProduct,
@@ -26,17 +33,64 @@ export default function ProductsPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isBulkModalOpen, setIsBulkModalOpen] = useState(false);
   const [selectedProductIds, setSelectedProductIds] = useState<number[]>([]);
-  const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [isApplyingBulk, setIsApplyingBulk] = useState(false);
   const [toast, setToast] = useState<{
     message: string;
     type: 'success' | 'error';
   } | null>(null);
 
-  const handleCreateProduct = async (data: Omit<Product, 'id'>) => {
+  const handleCreateProduct = async (data: Omit<Product, 'id' | 'slug'>, selectedImages?: ImageListItem[]) => {
     setIsSubmitting(true);
     try {
-      await createNewProduct(data);
+      const newProduct = await createNewProduct(data);
+      
+      // Subir imágenes si hay seleccionadas
+      if (selectedImages && selectedImages.length > 0 && token) {
+        try {
+          console.log('🖼️ Iniciando gestión de imágenes para nuevo producto:', newProduct.id);
+          console.log('🖼️ Imágenes seleccionadas:', selectedImages.length);
+          
+          // Asociar nuevas imágenes en el orden seleccionado (no re-subirlas)
+          const uploadedImages = [];
+          for (let i = 0; i < selectedImages.length; i++) {
+            const img = selectedImages[i];
+            try {
+              console.log(`🔗 Asociando imagen ${i + 1}/${selectedImages.length}:`, img.key);
+              
+              const isPrimary = i === 0;
+              
+              // Intentar asociar la imagen existente por key
+              try {
+                const associated = await associateProductImage(token, newProduct.id, img.key, isPrimary);
+                console.log('✅ Imagen asociada exitosamente:', associated.id);
+                uploadedImages.push(associated);
+              } catch (associateError) {
+                // Si el endpoint de asociar no existe, el backend debería implementarlo
+                console.error(`❌ Error associating image ${img.key}:`, associateError);
+                throw associateError;
+              }
+            } catch (err) {
+              console.error(`❌ Error processing image ${img.key}:`, err);
+              // Continuar con las siguientes imágenes aunque una falle
+            }
+          }
+          
+          console.log('🖼️ Total de imágenes subidas:', uploadedImages.length);
+          
+          // Reordenar imágenes según el orden seleccionado
+          if (uploadedImages.length > 0) {
+            const imageIds = uploadedImages.map((img) => img.id);
+            console.log('🔄 Reordenando imágenes con IDs:', imageIds);
+            await reorderProductImages(token, newProduct.id, imageIds);
+            console.log('✅ Imágenes reordenadas exitosamente');
+          }
+        } catch (imgError) {
+          console.error('❌ Error managing product images:', imgError);
+          showToast('Producto creado, pero hubo un error con las imágenes', 'error');
+          // No fallar la creación del producto si hay error con imágenes
+        }
+      }
+      
       setIsModalOpen(false);
       showToast('Producto creado correctamente', 'success');
     } catch {
@@ -46,15 +100,117 @@ export default function ProductsPage() {
     }
   };
 
-  const handleEditProduct = async (data: Omit<Product, 'id'>) => {
-    if (!selectedProduct) return;
+  const handleEditProduct = async (data: Omit<Product, 'id' | 'slug'>, selectedImages?: ImageListItem[]) => {
+    if (!selectedProduct || !token) return;
     setIsSubmitting(true);
     try {
       await editProduct(selectedProduct.id, data);
+      
+      // Manejar imágenes si hay seleccionadas
+      if (selectedImages !== undefined) {
+        try {
+          console.log('🖼️ Iniciando gestión de imágenes para producto:', selectedProduct.id);
+          console.log('🖼️ Imágenes seleccionadas:', selectedImages.length);
+          
+          const existingImages = await getProductImages(token, selectedProduct.id);
+          console.log('🖼️ Imágenes existentes:', existingImages.length);
+          
+          // Crear un mapa de imageKey -> ProductImage para buscar imágenes existentes
+          const existingImagesByKey = new Map(
+            existingImages.map((img) => [img.imageKey, img])
+          );
+          
+          // Determinar qué imágenes mantener y desasociar
+          const selectedKeys = new Set(selectedImages.map((img) => img.key));
+          
+          // IMPORTANTE: Solo desasociar las imágenes que ya NO están seleccionadas
+          // NO tocar las que siguen seleccionadas para evitar borrarlas del bucket
+          // NOTA: Si el backend elimina del bucket al desasociar, hay que corregirlo en el backend
+          for (const existingImg of existingImages) {
+            if (!selectedKeys.has(existingImg.imageKey)) {
+              try {
+                console.log('🔗 Desasociando imagen del producto (NO debería eliminar del bucket):', existingImg.id, existingImg.imageKey);
+                // ADVERTENCIA: Este endpoint NO debería eliminar del bucket, solo desasociar
+                await deleteProductImage(token, selectedProduct.id, existingImg.id);
+              } catch (err) {
+                console.error('❌ Error desasociando imagen:', err);
+              }
+            } else {
+              console.log('✅ Manteniendo imagen asociada (no se toca):', existingImg.id, existingImg.imageKey);
+            }
+          }
+          
+          // Asociar solo las imágenes nuevas (las que no existían antes)
+          if (selectedImages.length > 0) {
+            const newlyAssociatedImages: Array<{ id: number }> = [];
+            
+            // Asociar solo las imágenes que no existían antes
+            for (let i = 0; i < selectedImages.length; i++) {
+              const img = selectedImages[i];
+              const existingImg = existingImagesByKey.get(img.key);
+              
+              if (!existingImg) {
+                // Es una imagen nueva, asociarla
+                try {
+                  console.log(`🔗 Asociando nueva imagen ${i + 1}/${selectedImages.length}:`, img.key);
+                  
+                  // Determinar si debe ser principal (solo si es la primera y no hay otras imágenes)
+                  const hasOtherImages = existingImages.length > 0;
+                  const isPrimary = i === 0 && !hasOtherImages;
+                  
+                  // Intentar asociar la imagen existente por key
+                  try {
+                    const { associateProductImage } = await import('@/lib/api');
+                    const associated = await associateProductImage(token, selectedProduct.id, img.key, isPrimary);
+                    console.log('✅ Imagen asociada exitosamente:', associated.id);
+                    newlyAssociatedImages.push(associated);
+                  } catch (associateError) {
+                    // Si el endpoint de asociar no existe, el backend debería implementarlo
+                    console.error(`❌ Error associating image ${img.key}:`, associateError);
+                    throw associateError;
+                  }
+                } catch (err) {
+                  console.error(`❌ Error processing image ${img.key}:`, err);
+                  // Continuar con las siguientes imágenes aunque una falle
+                }
+              }
+            }
+            
+            console.log('🖼️ Total de nuevas imágenes asociadas:', newlyAssociatedImages.length);
+            
+            // Reordenar imágenes según el orden seleccionado
+            // Obtener todas las imágenes actualizadas para tener los IDs correctos
+            const allCurrentImages = await getProductImages(token, selectedProduct.id);
+            const finalImageIds: number[] = [];
+            
+            // Crear el orden final basado en selectedImages
+            for (const selectedImg of selectedImages) {
+              const currentImg = allCurrentImages.find((img) => img.imageKey === selectedImg.key);
+              if (currentImg) {
+                finalImageIds.push(currentImg.id);
+              }
+            }
+            
+            if (finalImageIds.length > 0) {
+              console.log('🔄 Reordenando imágenes con IDs:', finalImageIds);
+              await reorderProductImages(token, selectedProduct.id, finalImageIds);
+              console.log('✅ Imágenes reordenadas exitosamente');
+            }
+          } else {
+            console.log('ℹ️ No hay imágenes seleccionadas, se desasociaron todas (NO se eliminaron del bucket)');
+          }
+        } catch (imgError) {
+          console.error('❌ Error managing product images:', imgError);
+          showToast('Producto actualizado, pero hubo un error con las imágenes', 'error');
+          // No fallar la edición del producto si hay error con imágenes
+        }
+      }
+      
       setIsModalOpen(false);
       setSelectedProduct(null);
       showToast('Producto actualizado correctamente', 'success');
-    } catch {
+    } catch (err) {
+      console.error('❌ Error al actualizar el producto:', err);
       showToast('Error al actualizar el producto', 'error');
     } finally {
       setIsSubmitting(false);
@@ -182,7 +338,12 @@ export default function ProductsPage() {
         onCreate={() => handleOpenModal()}
         onSelectionChange={handleSelectionChange}
         onBulkUpdateClick={handleOpenBulkModal}
-        onCategoryChange={setSelectedCategory}
+        onCategoryChange={filterByCategory}
+        onSearch={search}
+        onPageChange={goToPage}
+        pagination={pagination}
+        searchQuery={searchQuery}
+        selectedCategory={selectedCategory}
       />
 
       {/* Modal - Crear/Editar Producto */}

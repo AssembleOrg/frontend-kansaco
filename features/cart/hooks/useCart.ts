@@ -2,6 +2,7 @@
 import { useCallback } from 'react';
 import { useCartStore } from '../store/cartStore';
 import { generateConsistentPrice } from '@/lib/utils';
+import { Product } from '@/types/product';
 
 const MINIMUM_PURCHASE = 50000; // $50,000 mínimo de compra
 
@@ -74,7 +75,7 @@ export const useCart = () => {
 
   const amountMissingForMinimum = Math.max(MINIMUM_PURCHASE - subtotal, 0);
 
-  const getProductPrice = (product: any): number => {
+  const getProductPrice = (product: Product | null | undefined): number => {
     if (!product) {
       return 0;
     }

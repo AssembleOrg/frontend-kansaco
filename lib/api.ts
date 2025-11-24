@@ -30,13 +30,70 @@ interface ActualProductsApiResponse {
   data: Product[];
 }
 
+export interface PaginatedProductsResponse {
+  data: Product[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
 interface CartApiResponse {
   status: string;
   data: Cart;
 }
 
+// Helper function to handle 401 Unauthorized
+function handleUnauthorized() {
+  if (typeof window === 'undefined') return;
+  
+  try {
+    // Import authStore dynamically to avoid circular dependencies
+    // This will only execute on the client side
+    import('@/features/auth/store/authStore').then((module) => {
+      const { useAuthStore } = module;
+      const { logout } = useAuthStore.getState();
+      
+      // Clear authentication
+      logout();
+      
+      // Redirect to login with current path as redirect
+      const currentPath = window.location.pathname;
+      const redirectUrl = currentPath !== '/login' 
+        ? `/login?redirect=${encodeURIComponent(currentPath)}`
+        : '/login';
+      
+      // Use setTimeout to ensure logout completes before redirect
+      setTimeout(() => {
+        window.location.href = redirectUrl;
+      }, 100);
+    }).catch((err) => {
+      logger.error('Error handling unauthorized:', err);
+      // Fallback: clear cookies and redirect to login
+      if (typeof document !== 'undefined') {
+        // Clear auth cookies manually as fallback
+        document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        document.cookie = 'user_data=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+      }
+      window.location.href = '/login';
+    });
+  } catch (err) {
+    logger.error('Error in handleUnauthorized:', err);
+    // Final fallback: just redirect
+    window.location.href = '/login';
+  }
+}
+
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    // Handle 401 Unauthorized - logout and redirect
+    if (response.status === 401) {
+      handleUnauthorized();
+      throw new Error('Unauthorized - Please login again');
+    }
+
     let errorMsg = `Error ${response.status}: ${response.statusText}`;
     let errorData: BackendErrorResponse | string | undefined;
 
@@ -131,6 +188,85 @@ export async function getProducts(token: string | null): Promise<Product[]> {
   } catch (error) {
     logger.error('Error fetching products (Railway might be down), using fallback:', error);
     return getMockProducts();
+  }
+}
+
+export async function getProductsPaginated(
+  token: string | null,
+  options?: {
+    page?: number;
+    limit?: number;
+    name?: string;
+    slug?: string;
+    sku?: string;
+    category?: string[];
+    stock?: number;
+    wholeSaler?: string;
+    isVisible?: boolean;
+  }
+): Promise<PaginatedProductsResponse> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const params = new URLSearchParams();
+  if (options?.page) params.append('page', options.page.toString());
+  if (options?.limit) params.append('limit', options.limit.toString());
+  if (options?.name) params.append('name', options.name);
+  if (options?.slug) params.append('slug', options.slug);
+  if (options?.sku) params.append('sku', options.sku);
+  if (options?.category) {
+    options.category.forEach((cat) => params.append('category', cat));
+  }
+  if (options?.stock !== undefined) params.append('stock', options.stock.toString());
+  if (options?.wholeSaler) params.append('wholeSaler', options.wholeSaler);
+  if (options?.isVisible !== undefined) params.append('isVisible', options.isVisible.toString());
+
+  const url = `${API_BASE_URL}/product?${params.toString()}`;
+  apiLogger.request('GET', url);
+
+  try {
+    const headers: HeadersInit = {
+      Accept: 'application/json',
+    };
+    
+    // Agregar token si está disponible
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<PaginatedProductsResponse | { status: string; data: PaginatedProductsResponse }>(response);
+    apiLogger.response('GET', url, response.status);
+    
+    // Manejar respuesta envuelta (con status y data) o directa
+    let paginatedData: PaginatedProductsResponse;
+    if ('status' in result && 'data' in result) {
+      // Respuesta envuelta: { status: "success", data: { data: [...], total: ... } }
+      paginatedData = result.data;
+    } else {
+      // Respuesta directa
+      paginatedData = result as PaginatedProductsResponse;
+    }
+    
+    // Asegurar que siempre devolvemos una estructura válida
+    return {
+      data: Array.isArray(paginatedData.data) ? paginatedData.data : [],
+      total: paginatedData.total || 0,
+      page: paginatedData.page || 1,
+      limit: paginatedData.limit || 20,
+      totalPages: paginatedData.totalPages || 0,
+      hasNext: paginatedData.hasNext || false,
+      hasPrev: paginatedData.hasPrev || false,
+    };
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
   }
 }
 
@@ -723,10 +859,19 @@ export async function emptyCart(
 // Admin Product Management
 export async function createProduct(
   token: string,
-  productData: Omit<Product, 'id'>
+  productData: Omit<Product, 'id' | 'slug'>
 ): Promise<Product> {
   if (!API_BASE_URL) {
     throw new Error('API URL not configured.');
+  }
+
+  // Asegurar que price sea un número válido
+  const cleanData: Omit<Product, 'id' | 'slug'> = { ...productData };
+  if (cleanData.price !== undefined && cleanData.price !== null) {
+    const priceValue = typeof cleanData.price === 'string' 
+      ? parseFloat(cleanData.price) 
+      : cleanData.price;
+    cleanData.price = isNaN(priceValue) || priceValue <= 0 ? 1 : priceValue;
   }
 
   const response = await fetch(`${API_BASE_URL}/product/create`, {
@@ -736,7 +881,7 @@ export async function createProduct(
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(productData),
+    body: JSON.stringify(cleanData),
     cache: 'no-store',
   });
 
@@ -753,6 +898,21 @@ export async function updateProduct(
     throw new Error('API URL not configured.');
   }
 
+  // Limpiar campos que no deben enviarse al backend
+  // Omitir id y slug del tipo Product
+  type ProductDataWithoutId = Omit<Product, 'id' | 'slug'>;
+  const cleanData: Partial<ProductDataWithoutId> = { ...productData };
+  delete (cleanData as Partial<Product>).id;
+  delete (cleanData as Partial<Product>).slug;
+  
+  // Asegurar que price sea un número válido
+  if (cleanData.price !== undefined) {
+    const priceValue = typeof cleanData.price === 'string' 
+      ? parseFloat(cleanData.price) 
+      : cleanData.price;
+    cleanData.price = isNaN(priceValue!) || priceValue! <= 0 ? 1 : priceValue ?? 1;
+  }
+
   const response = await fetch(`${API_BASE_URL}/product/${productId}/edit`, {
     method: 'PUT',
     headers: {
@@ -760,7 +920,7 @@ export async function updateProduct(
       Accept: 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify(productData),
+    body: JSON.stringify(cleanData),
     cache: 'no-store',
   });
 
@@ -981,6 +1141,560 @@ export async function deleteOrder(token: string, orderId: string): Promise<void>
     apiLogger.response('DELETE', url, response.status);
   } catch (error) {
     apiLogger.error('DELETE', url, error);
+    throw error;
+  }
+}
+
+// Image Management
+export interface ImageUploadResponse {
+  key: string;
+  url: string;
+  size: number;
+  lastModified: string;
+}
+
+export interface ImageListItem {
+  key: string;
+  url: string;
+  lastModified: string;
+  size: number;
+}
+
+export interface ImageListResponse {
+  images: ImageListItem[];
+  total: number;
+  page: number;
+  limit: number;
+  hasMore: boolean;
+  nextToken?: string;
+}
+
+export async function uploadImage(
+  token: string,
+  file: File,
+  folder?: string
+): Promise<ImageUploadResponse> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const formData = new FormData();
+  formData.append('image', file);
+  if (folder) {
+    formData.append('folder', folder);
+  }
+
+  const url = `${API_BASE_URL}/image/upload`;
+  apiLogger.request('POST', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<ImageUploadResponse>(response);
+    apiLogger.response('POST', url, response.status);
+    return result;
+  } catch (error) {
+    apiLogger.error('POST', url, error);
+    throw error;
+  }
+}
+
+export async function uploadMultipleImages(
+  token: string,
+  files: File[],
+  folder?: string
+): Promise<ImageUploadResponse[]> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const formData = new FormData();
+  files.forEach((file) => {
+    formData.append('images', file);
+  });
+  if (folder) {
+    formData.append('folder', folder);
+  }
+
+  const url = `${API_BASE_URL}/image/upload-multiple`;
+  apiLogger.request('POST', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      body: formData,
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<ImageUploadResponse[]>(response);
+    apiLogger.response('POST', url, response.status);
+    return result;
+  } catch (error) {
+    apiLogger.error('POST', url, error);
+    throw error;
+  }
+}
+
+export async function listImages(
+  token: string,
+  options?: {
+    page?: number;
+    limit?: number;
+    prefix?: string;
+    continuationToken?: string;
+  }
+): Promise<ImageListResponse> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const params = new URLSearchParams();
+  if (options?.page) params.append('page', options.page.toString());
+  if (options?.limit) params.append('limit', options.limit.toString());
+  if (options?.prefix) params.append('prefix', options.prefix);
+  if (options?.continuationToken) params.append('continuationToken', options.continuationToken);
+
+  const url = `${API_BASE_URL}/image/list?${params.toString()}`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    // Si la respuesta no es exitosa, intentar parsear el JSON para ver si contiene datos válidos
+    if (!response.ok) {
+      try {
+        const errorData = await response.json();
+        // Si el error contiene datos válidos con estructura de respuesta exitosa, usarlos
+        if (errorData && typeof errorData === 'object') {
+          let data = errorData;
+          // Si viene envuelto en status/data
+          if ('data' in errorData && errorData.data) {
+            data = errorData.data;
+          }
+          // Si tiene la estructura de ImageListResponse
+          if (data && typeof data === 'object' && ('images' in data || Array.isArray(data.images))) {
+            apiLogger.response('GET', url, response.status);
+            return {
+              images: Array.isArray(data.images) ? data.images : [],
+              total: data.total || 0,
+              page: data.page || 1,
+              limit: data.limit || 20,
+              hasMore: data.hasMore || false,
+              nextToken: data.nextToken,
+            };
+          }
+        }
+      } catch {
+        // Si no se puede parsear, continuar con el manejo de error normal
+      }
+    }
+
+    const result = await handleResponse<ImageListResponse | { status: string; data: ImageListResponse }>(response);
+    apiLogger.response('GET', url, response.status);
+    
+    // Manejar respuesta envuelta (con status y data) o directa
+    let imageData: ImageListResponse;
+    if ('status' in result && 'data' in result) {
+      // Respuesta envuelta
+      imageData = result.data;
+    } else {
+      // Respuesta directa
+      imageData = result as ImageListResponse;
+    }
+    
+    // Asegurar que siempre devolvemos una estructura válida
+    return {
+      images: Array.isArray(imageData.images) ? imageData.images : [],
+      total: imageData.total || 0,
+      page: imageData.page || 1,
+      limit: imageData.limit || 20,
+      hasMore: imageData.hasMore || false,
+      nextToken: imageData.nextToken,
+    };
+  } catch (error) {
+    // Si hay un error pero es porque no hay imágenes, devolver respuesta vacía
+    // en lugar de lanzar error y romper la aplicación
+    logger.warn('Error listing images, returning empty response:', error);
+    apiLogger.error('GET', url, error);
+    
+    // Devolver respuesta vacía en lugar de lanzar error
+    return {
+      images: [],
+      total: 0,
+      page: 1,
+      limit: options?.limit || 20,
+      hasMore: false,
+    };
+  }
+}
+
+export async function getImageUrl(
+  token: string,
+  key: string
+): Promise<{ url: string }> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const url = `${API_BASE_URL}/image/${encodeURIComponent(key)}`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<{ url: string }>(response);
+    apiLogger.response('GET', url, response.status);
+    return result;
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
+export async function deleteImage(
+  token: string,
+  key: string
+): Promise<void> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const url = `${API_BASE_URL}/image/${encodeURIComponent(key)}`;
+  apiLogger.request('DELETE', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    await handleResponse<{ message: string }>(response);
+    apiLogger.response('DELETE', url, response.status);
+  } catch (error) {
+    apiLogger.error('DELETE', url, error);
+    throw error;
+  }
+}
+
+// Product Images Management
+export interface ProductImage {
+  id: number;
+  productId: number;
+  imageUrl: string;
+  imageKey: string;
+  order: number;
+  isPrimary: boolean;
+  createdAt: string;
+}
+
+export async function associateProductImage(
+  token: string,
+  productId: number,
+  imageKey: string,
+  isPrimary?: boolean
+): Promise<ProductImage> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication token is required to associate product images.');
+  }
+
+  const url = `${API_BASE_URL}/product/${productId}/image/associate${isPrimary ? '?isPrimary=true' : ''}`;
+  apiLogger.request('POST', url);
+  console.log(`🔗 Associating image to product ${productId}, isPrimary: ${isPrimary}, imageKey: ${imageKey}`);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ imageKey }),
+      cache: 'no-store',
+    });
+
+    console.log(`📥 Response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      // Si el endpoint no existe (404), intentar con upload
+      if (response.status === 404) {
+        console.log('⚠️ Associate endpoint not available, falling back to upload');
+        throw new Error('ASSOCIATE_ENDPOINT_NOT_AVAILABLE');
+      }
+      const errorText = await response.text();
+      console.error(`❌ Error response body:`, errorText);
+      throw new Error(`Failed to associate image: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await handleResponse<ProductImage>(response);
+    apiLogger.response('POST', url, response.status);
+    console.log(`✅ Image associated successfully:`, result);
+    return result;
+  } catch (error) {
+    apiLogger.error('POST', url, error);
+    if (error instanceof Error && error.message === 'ASSOCIATE_ENDPOINT_NOT_AVAILABLE') {
+      throw error; // Re-throw para que el caller pueda manejar el fallback
+    }
+    console.error(`❌ Error associating product image:`, error);
+    throw error;
+  }
+}
+
+export async function uploadProductImage(
+  token: string,
+  productId: number,
+  file: File,
+  isPrimary?: boolean
+): Promise<ProductImage> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication token is required to upload product images.');
+  }
+
+  const formData = new FormData();
+  formData.append('image', file);
+
+  const url = `${API_BASE_URL}/product/${productId}/image${isPrimary ? '?isPrimary=true' : ''}`;
+  apiLogger.request('POST', url);
+  console.log(`📤 Uploading image to product ${productId}, isPrimary: ${isPrimary}, file: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        // NO incluir Content-Type, el navegador lo establecerá automáticamente con el boundary para FormData
+      },
+      body: formData,
+      cache: 'no-store',
+    });
+
+    console.log(`📥 Response status: ${response.status} ${response.statusText}`);
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      console.error(`❌ Error response body:`, errorText);
+      throw new Error(`Failed to upload image: ${response.status} ${response.statusText}`);
+    }
+
+    const result = await handleResponse<ProductImage>(response);
+    apiLogger.response('POST', url, response.status);
+    console.log(`✅ Image uploaded successfully:`, result);
+    return result;
+  } catch (error) {
+    apiLogger.error('POST', url, error);
+    console.error(`❌ Error uploading product image:`, error);
+    throw error;
+  }
+}
+
+export async function getProductImages(
+  token: string | null,
+  productId: number
+): Promise<ProductImage[]> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const url = `${API_BASE_URL}/product/${productId}/images`;
+  apiLogger.request('GET', url);
+
+  try {
+    const headers: HeadersInit = {
+      Accept: 'application/json',
+    };
+    
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
+
+    const response = await fetch(url, {
+      method: 'GET',
+      headers,
+      cache: 'no-store',
+    });
+
+    // Si es una petición pública (sin token) y recibe 401, no redirigir al login
+    // Simplemente devolver array vacío ya que las imágenes deberían ser públicas
+    if (response.status === 401 && !token) {
+      apiLogger.response('GET', url, response.status);
+      // Si el endpoint requiere autenticación pero estamos en vista pública,
+      // devolver array vacío (las imágenes deberían ser accesibles públicamente)
+      return [];
+    }
+
+    // Si hay token y recibe 401, dejar que handleResponse maneje la redirección
+    if (response.status === 401 && token) {
+      const result = await handleResponse<ProductImage[] | { status: string; data: ProductImage[] }>(response);
+      apiLogger.response('GET', url, response.status);
+      
+      if (Array.isArray(result)) {
+        return result;
+      } else if ('data' in result && Array.isArray(result.data)) {
+        return result.data;
+      }
+      return [];
+    }
+
+    // Para otros códigos de estado, usar handleResponse normalmente
+    if (!response.ok) {
+      const result = await handleResponse<ProductImage[] | { status: string; data: ProductImage[] }>(response);
+      apiLogger.response('GET', url, response.status);
+      
+      if (Array.isArray(result)) {
+        return result;
+      } else if ('data' in result && Array.isArray(result.data)) {
+        return result.data;
+      }
+      return [];
+    }
+
+    // Respuesta exitosa
+    const jsonResponse = await response.json();
+    apiLogger.response('GET', url, response.status);
+    
+    // Manejar respuesta envuelta o directa
+    let images: ProductImage[] = [];
+    if (Array.isArray(jsonResponse)) {
+      images = jsonResponse;
+    } else if ('data' in jsonResponse && Array.isArray(jsonResponse.data)) {
+      images = jsonResponse.data;
+    } else if (jsonResponse && typeof jsonResponse === 'object' && 'status' in jsonResponse && 'data' in jsonResponse) {
+      images = Array.isArray(jsonResponse.data) ? jsonResponse.data : [];
+    }
+    
+    return images;
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    // En caso de error, devolver array vacío para no romper la vista pública
+    return [];
+  }
+}
+
+export async function deleteProductImage(
+  token: string,
+  productId: number,
+  imageId: number
+): Promise<void> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const url = `${API_BASE_URL}/product/${productId}/image/${imageId}`;
+  apiLogger.request('DELETE', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    await handleResponse<{ message: string }>(response);
+    apiLogger.response('DELETE', url, response.status);
+  } catch (error) {
+    apiLogger.error('DELETE', url, error);
+    throw error;
+  }
+}
+
+export async function setProductImageAsPrimary(
+  token: string,
+  productId: number,
+  imageId: number
+): Promise<ProductImage> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const url = `${API_BASE_URL}/product/${productId}/image/${imageId}/primary`;
+  apiLogger.request('PATCH', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<ProductImage>(response);
+    apiLogger.response('PATCH', url, response.status);
+    return result;
+  } catch (error) {
+    apiLogger.error('PATCH', url, error);
+    throw error;
+  }
+}
+
+export async function reorderProductImages(
+  token: string,
+  productId: number,
+  imageIds: number[]
+): Promise<void> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const url = `${API_BASE_URL}/product/${productId}/images/reorder`;
+  apiLogger.request('PATCH', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify({ imageIds }),
+      cache: 'no-store',
+    });
+
+    await handleResponse<{ message: string }>(response);
+    apiLogger.response('PATCH', url, response.status);
+  } catch (error) {
+    apiLogger.error('PATCH', url, error);
     throw error;
   }
 }

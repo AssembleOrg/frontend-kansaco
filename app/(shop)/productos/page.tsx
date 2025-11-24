@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getProducts } from '@/lib/api';
+import { getProducts, getProductsPaginated } from '@/lib/api';
 import { Product } from '@/types';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
@@ -11,51 +11,116 @@ import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import { useCart } from '@/features/cart/hooks/useCart';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
 // import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-const ITEMS_PER_PAGE = 12;
+const ITEMS_PER_PAGE = 20;
 
 function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
-  const [uniqueCategories, setUniqueCategories] = useState<string[]>([]);
+  const [pagination, setPagination] = useState<{
+    total: number;
+    page: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  }>({
+    total: 0,
+    page: 1,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
   const router = useRouter();
   const searchParams = useSearchParams();
+  const { token } = useAuth();
+  const { openCart } = useCart();
   
   const currentPage = Number(searchParams.get('page')) || 1;
   const currentCategoryFilter = searchParams.get('category');
   const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
   const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
-  const { openCart } = useCart();
 
+  // Usar categorías permitidas directamente (no necesitamos cargar del backend)
+  const uniqueCategories = [...ALLOWED_PRODUCT_CATEGORIES];
+
+  // Cargar productos con paginación y filtros del servidor
   useEffect(() => {
     const fetchProducts = async () => {
       setIsLoading(true);
       setError(null);
 
       try {
-        const fetchedProducts = await getProducts(null);
-        setProducts(fetchedProducts);
+        // Usar endpoint paginado (intenta con o sin token)
+        const filters: {
+          page: number;
+          limit: number;
+          category?: string[];
+          isVisible?: boolean;
+        } = {
+          page: currentPage,
+          limit: ITEMS_PER_PAGE,
+          isVisible: true, // Solo productos visibles para usuarios comunes
+        };
 
-        const categories = Array.from(
-          new Set(fetchedProducts.flatMap((p) => p.category ?? []))
-        ).sort();
-        setUniqueCategories(categories);
+        // Aplicar filtro de categoría si existe
+        if (currentCategoryFilter) {
+          filters.category = [currentCategoryFilter];
+        }
+
+        try {
+          const result = await getProductsPaginated(token, filters);
+          setProducts(result.data);
+          setPagination({
+            total: result.total,
+            page: result.page,
+            totalPages: result.totalPages,
+            hasNext: result.hasNext,
+            hasPrev: result.hasPrev,
+          });
+        } catch (paginatedError) {
+          // Si falla el endpoint paginado (puede requerir auth), usar fallback
+          console.warn('Error using paginated endpoint, falling back to all products:', paginatedError);
+          const fetchedProducts = await getProducts(null);
+          // Filtrar localmente por visibilidad y categoría
+          let filtered = fetchedProducts.filter((p) => p.isVisible);
+          
+          if (currentCategoryFilter) {
+            filtered = filtered.filter((p) =>
+              p.category?.includes(currentCategoryFilter)
+            );
+          }
+
+          // Paginación local
+          const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+          const endIndex = startIndex + ITEMS_PER_PAGE;
+          const paginated = filtered.slice(startIndex, endIndex);
+          
+          setProducts(paginated);
+          setPagination({
+            total: filtered.length,
+            page: currentPage,
+            totalPages: Math.ceil(filtered.length / ITEMS_PER_PAGE),
+            hasNext: endIndex < filtered.length,
+            hasPrev: currentPage > 1,
+          });
+        }
       } catch (err) {
         setError(
           err instanceof Error ? err.message : 'Error al cargar productos.'
         );
         setProducts([]);
-        setUniqueCategories([]);
       } finally {
         setIsLoading(false);
       }
     };
 
     fetchProducts();
-  }, []);
+  }, [currentPage, currentCategoryFilter, token]);
 
   const openCartParam = searchParams.get('openCart');
   
@@ -73,20 +138,14 @@ function ProductsContent() {
     }
   }, [openCartParam, openCart, router, searchParams]);
 
+  // Filtrar por precio (filtro local ya que el backend no lo soporta directamente)
   const filteredProducts = useMemo(() => {
     let result = products;
-    
-    // Filtrar por categoría
-    if (currentCategoryFilter) {
-      result = result.filter((p) =>
-        p.category?.includes(currentCategoryFilter)
-      );
-    }
 
-    // Filtrar por precio
+    // Filtrar por precio (solo si hay filtros de precio)
     if (minPrice !== undefined || maxPrice !== undefined) {
       result = result.filter((p) => {
-        const price = p.price ?? 0;
+        const price = typeof p.price === 'string' ? parseFloat(p.price) : (p.price ?? 0);
         
         // Si hay precio mínimo y máximo
         if (minPrice !== undefined && maxPrice !== undefined) {
@@ -108,12 +167,11 @@ function ProductsContent() {
     }
 
     return result;
-  }, [products, currentCategoryFilter, minPrice, maxPrice]);
+  }, [products, minPrice, maxPrice]);
 
-  const totalPages = Math.ceil(filteredProducts.length / ITEMS_PER_PAGE);
-  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
-  const endIndex = startIndex + ITEMS_PER_PAGE;
-  const currentProducts = filteredProducts.slice(startIndex, endIndex);
+  // Los productos ya vienen paginados del servidor, solo aplicar filtro de precio si existe
+  const currentProducts = filteredProducts;
+  const totalPages = pagination.totalPages;
 
   const handlePageChange = (page: number) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
@@ -196,7 +254,7 @@ function ProductsContent() {
           variant="outline"
           size="sm"
           onClick={() => handlePageChange(currentPage - 1)}
-          disabled={currentPage === 1}
+          disabled={!pagination.hasPrev || currentPage === 1}
           className="min-w-[2rem]"
         >
           &lt;
@@ -206,7 +264,7 @@ function ProductsContent() {
           variant="outline"
           size="sm"
           onClick={() => handlePageChange(currentPage + 1)}
-          disabled={currentPage === totalPages}
+          disabled={!pagination.hasNext || currentPage === totalPages}
           className="min-w-[2rem]"
         >
           &gt;
@@ -215,24 +273,33 @@ function ProductsContent() {
     );
   };
 
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8 text-center">
-        <div className="flex items-center justify-center space-x-2">
-          <div className="h-8 w-8 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-          <span>Cargando productos...</span>
+  // Componente Skeleton para productos
+  const ProductSkeleton = () => (
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-gray-200 bg-white shadow-md">
+      <div className="aspect-square w-full animate-pulse bg-gray-100"></div>
+      <div className="flex flex-grow flex-col bg-white p-4">
+        {/* Badges skeleton */}
+        <div className="mb-2 flex gap-1">
+          <div className="h-5 w-16 animate-pulse rounded bg-gray-200"></div>
+          <div className="h-5 w-20 animate-pulse rounded bg-gray-200"></div>
+        </div>
+        {/* Nombre skeleton */}
+        <div className="mb-2 h-6 w-3/4 animate-pulse rounded bg-gray-200"></div>
+        {/* SKU skeleton */}
+        <div className="mb-1 h-3 w-1/2 animate-pulse rounded bg-gray-200"></div>
+        {/* Aplicación skeleton */}
+        <div className="mb-3 space-y-1">
+          <div className="h-3 w-full animate-pulse rounded bg-gray-200"></div>
+          <div className="h-3 w-2/3 animate-pulse rounded bg-gray-200"></div>
+        </div>
+        {/* Botones skeleton */}
+        <div className="mt-auto space-y-2">
+          <div className="h-10 w-full animate-pulse rounded bg-gray-200"></div>
+          <div className="h-10 w-full animate-pulse rounded bg-gray-200"></div>
         </div>
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container mx-auto px-4 py-8 text-center text-red-600">
-        Error: {error}
-      </div>
-    );
-  }
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -242,22 +309,27 @@ function ProductsContent() {
       
       <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
         <aside className="md:col-span-1">
-          <Suspense fallback={
-            <div className="flex items-center justify-center space-x-2 p-4">
-              <div className="h-6 w-6 animate-spin rounded-full border-4 border-primary border-t-transparent"></div>
-              <span>Cargando filtros...</span>
-            </div>
-          }>
-            <ProductFilters
-              availableCategories={uniqueCategories}
-              currentCategory={currentCategoryFilter ?? undefined}
-              minPrice={minPrice}
-              maxPrice={maxPrice}
-            />
-          </Suspense>
+          <ProductFilters
+            availableCategories={uniqueCategories}
+            currentCategory={currentCategoryFilter ?? undefined}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+          />
         </aside>
         <main className="md:col-span-3">
-          {filteredProducts.length > 0 ? (
+          {error ? (
+            <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-center text-red-600">
+              Error: {error}
+            </div>
+          ) : isLoading ? (
+            <>
+              <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
+                {Array.from({ length: ITEMS_PER_PAGE }).map((_, index) => (
+                  <ProductSkeleton key={index} />
+                ))}
+              </div>
+            </>
+          ) : filteredProducts.length > 0 ? (
             <>
               <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3">
                 {currentProducts.map((product) => (

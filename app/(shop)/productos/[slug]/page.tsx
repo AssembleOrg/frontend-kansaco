@@ -6,18 +6,63 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, useParams } from 'next/navigation';
 import { Product } from '@/types/product';
-import { getProductBySlug } from '@/lib/api';
+import { getProductBySlug, getProductImages, ProductImage } from '@/lib/api';
 import { AddToCartButton } from '@/features/cart/components/client/AddToCartButton';
 import { useCart } from '@/features/cart/hooks/useCart';
-import { Loader2, ArrowLeft, Info, Droplet, Box } from 'lucide-react';
+import { Loader2, ArrowLeft, Info, Droplet, Box, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 
 function ProductDetailView({ product }: { product: Product }) {
   const { getProductPrice } = useCart();
-  const imageUrl = product.imageUrl || '/sauberatras.jpg';
+  const [productImages, setProductImages] = useState<ProductImage[]>([]);
+  const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const [isLoadingImages, setIsLoadingImages] = useState(true);
+
   getProductPrice(product); // Price calculation for future use
+
+  // Cargar imágenes del producto
+  useEffect(() => {
+    const loadImages = async () => {
+      if (product.id) {
+        setIsLoadingImages(true);
+        try {
+          const images = await getProductImages(null, product.id);
+          // Ordenar por order y luego por id
+          const sorted = images.sort((a, b) => {
+            if (a.order !== b.order) {
+              return a.order - b.order;
+            }
+            return a.id - b.id;
+          });
+          setProductImages(sorted);
+        } catch (err) {
+          console.error('Error loading product images:', err);
+        } finally {
+          setIsLoadingImages(false);
+        }
+      }
+    };
+    loadImages();
+  }, [product.id]);
+
+  // Determinar la imagen a mostrar
+  const displayImage = productImages.length > 0 
+    ? productImages[currentImageIndex]?.imageUrl 
+    : product.imageUrl || '/sauberatras.jpg';
+
+  const handlePreviousImage = () => {
+    if (productImages.length > 0) {
+      setCurrentImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1));
+    }
+  };
+
+  const handleNextImage = () => {
+    if (productImages.length > 0) {
+      setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
+    }
+  };
 
   return (
     <div className="container mx-auto px-4 py-8 mt-20">
@@ -38,16 +83,78 @@ function ProductDetailView({ product }: { product: Product }) {
 
       <div className="overflow-hidden rounded-xl bg-white shadow-lg">
         <div className="grid grid-cols-1 gap-8 p-8 md:grid-cols-2">
-          {/* Imagen del Producto */}
-          <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-gray-50">
-            <Image
-              src={imageUrl}
-              alt={product.name}
-              fill
-              className="object-contain p-4 transition-transform duration-300 hover:scale-105"
-              sizes="(max-width: 768px) 100vw, 50vw"
-              priority
-            />
+          {/* Imagen del Producto con Carrusel */}
+          <div className="space-y-4">
+            <div className="relative aspect-square w-full overflow-hidden rounded-lg bg-gray-50">
+              {isLoadingImages ? (
+                <div className="flex h-full items-center justify-center">
+                  <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
+                </div>
+              ) : (
+                <>
+                  <Image
+                    src={displayImage}
+                    alt={product.name}
+                    fill
+                    className="object-contain p-4 transition-transform duration-300 hover:scale-105"
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority
+                  />
+                  
+                  {/* Controles del carrusel (solo si hay más de una imagen) */}
+                  {productImages.length > 1 && (
+                    <>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute left-2 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full bg-white/90 shadow-lg hover:bg-white"
+                        onClick={handlePreviousImage}
+                      >
+                        <ChevronLeft className="h-5 w-5" />
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="icon"
+                        className="absolute right-2 top-1/2 h-10 w-10 -translate-y-1/2 rounded-full bg-white/90 shadow-lg hover:bg-white"
+                        onClick={handleNextImage}
+                      >
+                        <ChevronRight className="h-5 w-5" />
+                      </Button>
+                      
+                      {/* Indicador de imagen actual */}
+                      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
+                        {currentImageIndex + 1} / {productImages.length}
+                      </div>
+                    </>
+                  )}
+                </>
+              )}
+            </div>
+            
+            {/* Miniaturas (solo si hay más de una imagen) */}
+            {productImages.length > 1 && (
+              <div className="flex gap-2 overflow-x-auto pb-2">
+                {productImages.map((img, index) => (
+                  <button
+                    key={img.id}
+                    onClick={() => setCurrentImageIndex(index)}
+                    className={`relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border-2 transition-all ${
+                      index === currentImageIndex
+                        ? 'border-green-600 ring-2 ring-green-200'
+                        : 'border-gray-200 hover:border-green-300'
+                    }`}
+                  >
+                    <Image
+                      src={img.imageUrl}
+                      alt={`${product.name} - Imagen ${index + 1}`}
+                      fill
+                      className="object-cover"
+                      sizes="80px"
+                    />
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Información del Producto */}
