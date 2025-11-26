@@ -85,7 +85,7 @@ function ProductsContent() {
         } catch (paginatedError) {
           // Si falla el endpoint paginado (puede requerir auth), usar fallback
           console.warn('Error using paginated endpoint, falling back to all products:', paginatedError);
-          const fetchedProducts = await getProducts(null);
+        const fetchedProducts = await getProducts(null);
           // Filtrar localmente por visibilidad y categoría
           let filtered = fetchedProducts.filter((p) => p.isVisible);
           
@@ -141,7 +141,7 @@ function ProductsContent() {
   // Filtrar por precio (filtro local ya que el backend no lo soporta directamente)
   const filteredProducts = useMemo(() => {
     let result = products;
-
+    
     // Filtrar por precio (solo si hay filtros de precio)
     if (minPrice !== undefined || maxPrice !== undefined) {
       result = result.filter((p) => {
@@ -298,8 +298,8 @@ function ProductsContent() {
           <div className="h-10 w-full animate-pulse rounded bg-gray-200"></div>
         </div>
       </div>
-    </div>
-  );
+      </div>
+    );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -309,12 +309,12 @@ function ProductsContent() {
       
       <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
         <aside className="md:col-span-1">
-          <ProductFilters
-            availableCategories={uniqueCategories}
-            currentCategory={currentCategoryFilter ?? undefined}
-            minPrice={minPrice}
-            maxPrice={maxPrice}
-          />
+            <ProductFilters
+              availableCategories={uniqueCategories}
+              currentCategory={currentCategoryFilter ?? undefined}
+              minPrice={minPrice}
+              maxPrice={maxPrice}
+            />
         </aside>
         <main className="md:col-span-3">
           {error ? (

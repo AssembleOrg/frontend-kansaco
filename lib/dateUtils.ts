@@ -1,7 +1,8 @@
 // lib/dateUtils.ts
 import { DateTime } from 'luxon';
 
-const TIMEZONE = 'America/Argentina/Buenos_Aires'; // GMT-3
+// GMT-3 timezone (Buenos Aires)
+const TIMEZONE = 'America/Argentina/Buenos_Aires';
 
 /**
  * Get current date/time in GMT-3 timezone
@@ -30,11 +31,16 @@ export const formatToISO = (date?: Date | string | DateTime): string => {
 };
 
 /**
- * Format date for display in Spanish (Argentina locale)
+ * Format date for display in Spanish (Argentina locale) with GMT-3 timezone
+ * Formats:
+ * - 'short': "15 ene 2025"
+ * - 'long': "15 de enero de 2025"
+ * - 'datetime': "15 de enero de 2025, 14:30"
+ * - 'datetime-full': "15 de enero de 2025, 14:30:00"
  */
 export const formatDateForDisplay = (
   date?: Date | string | DateTime,
-  format: 'short' | 'long' | 'datetime' = 'short'
+  format: 'short' | 'long' | 'datetime' | 'datetime-full' = 'short'
 ): string => {
   if (!date) {
     return '';
@@ -45,15 +51,35 @@ export const formatDateForDisplay = (
   if (date instanceof DateTime) {
     dateTime = date.setZone(TIMEZONE);
   } else if (typeof date === 'string') {
-    dateTime = DateTime.fromISO(date).setZone(TIMEZONE);
+    // Si viene del backend, asumimos que está en ISO y lo convertimos a GMT-3
+    dateTime = DateTime.fromISO(date, { zone: TIMEZONE });
   } else {
-    dateTime = DateTime.fromJSDate(date).setZone(TIMEZONE);
+    dateTime = DateTime.fromJSDate(date, { zone: TIMEZONE });
+  }
+  
+  // Si no es válida, retornar string vacío
+  if (!dateTime.isValid) {
+    return '';
   }
   
   const formats = {
     short: { month: 'short', day: 'numeric', year: 'numeric' } as const,
     long: { month: 'long', day: 'numeric', year: 'numeric' } as const,
-    datetime: { month: 'short', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' } as const,
+    datetime: { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit' 
+    } as const,
+    'datetime-full': { 
+      month: 'long', 
+      day: 'numeric', 
+      year: 'numeric', 
+      hour: '2-digit', 
+      minute: '2-digit',
+      second: '2-digit'
+    } as const,
   };
 
   return dateTime.setLocale('es-AR').toLocaleString(formats[format]);
@@ -63,6 +89,6 @@ export const formatDateForDisplay = (
  * Parse ISO string to DateTime in GMT-3
  */
 export const parseISOToDateTime = (isoString: string): DateTime => {
-  return DateTime.fromISO(isoString).setZone(TIMEZONE);
+  return DateTime.fromISO(isoString, { zone: TIMEZONE });
 };
 

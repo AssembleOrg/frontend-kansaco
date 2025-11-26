@@ -30,10 +30,16 @@ export const useCart = () => {
       if (!item || !item.product) {
         return total;
       }
-      const price =
-        item.product.price && item.product.price > 0
-          ? item.product.price
-          : generateConsistentPrice(item.product.id);
+      // Parsear el precio si viene como string
+      let price: number;
+      if (typeof item.product.price === 'string') {
+        const parsedPrice = parseFloat(item.product.price);
+        price = !isNaN(parsedPrice) && parsedPrice > 0 ? parsedPrice : generateConsistentPrice(item.product.id);
+      } else if (typeof item.product.price === 'number' && item.product.price > 0) {
+        price = item.product.price;
+      } else {
+        price = generateConsistentPrice(item.product.id);
+      }
       return total + price * (item.quantity || 0);
     }, 0) || 0;
 

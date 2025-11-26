@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
+import { formatDateForDisplay } from '@/lib/dateUtils';
 
 export default function MayoristaPage() {
   const [formData, setFormData] = useState({
@@ -49,7 +50,7 @@ export default function MayoristaPage() {
         situacion_afip: formData.situacionAfip,
         informacion_adicional: formData.informacionAdicional,
         archivo_adjunto: selectedFile ? selectedFile.name : 'No se adjuntó archivo',
-        fecha: new Date().toLocaleDateString('es-AR'),
+        fecha: formatDateForDisplay(new Date(), 'short'),
         subject: `Nueva solicitud de mayorista - ${formData.nombre}`
       };
 

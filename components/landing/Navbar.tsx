@@ -4,16 +4,23 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ShoppingCart, Menu, X, ChevronDown, LogOut } from 'lucide-react';
+import { User, ShoppingCart, Menu, X, ChevronDown, LogOut, Package } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
 import { useRouter, usePathname } from 'next/navigation';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);
+  const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const { user, token, isAuthReady } = useAuth();
   const { logout } = useAuthStore();
@@ -171,22 +178,40 @@ const Navbar = () => {
               </div>
             ) : isAuthenticated ? (
               <div className="flex items-center space-x-2">
-                <div className="flex items-center p-2 text-white">
-                  <User className="h-5 w-5" />
-                  <span className="ml-2 hidden text-sm font-medium sm:block">
-                    {user?.nombre || user?.email?.split('@')[0]}
-                  </span>
-                </div>
-                <button
-                  onClick={async () => {
-                    await logout();
-                    router.push('/');
-                  }}
-                  className="flex items-center p-2 text-white transition-colors duration-200 hover:text-red-400"
-                  title="Cerrar sesión"
-                >
-                  <LogOut className="h-5 w-5" />
-                </button>
+                <DropdownMenu open={isUserDropdownOpen} onOpenChange={setIsUserDropdownOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <button className="flex items-center p-2 text-white transition-colors duration-200 hover:text-[#16a245]">
+                      <User className="h-5 w-5" />
+                      <span className="ml-2 hidden text-sm font-medium sm:block">
+                        {user?.nombre || user?.email?.split('@')[0]}
+                      </span>
+                      <ChevronDown className="ml-1 h-4 w-4" />
+                    </button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-56">
+                    <DropdownMenuItem
+                      onClick={() => {
+                        router.push('/mis-pedidos');
+                        setIsUserDropdownOpen(false);
+                      }}
+                      className="cursor-pointer"
+                    >
+                      <Package className="mr-2 h-4 w-4" />
+                      Ver historial de pedidos
+                    </DropdownMenuItem>
+                    <DropdownMenuItem
+                      onClick={async () => {
+                        await logout();
+                        setIsUserDropdownOpen(false);
+                        router.push('/');
+                      }}
+                      className="cursor-pointer text-red-600 focus:text-red-600"
+                    >
+                      <LogOut className="mr-2 h-4 w-4" />
+                      Cerrar sesión
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </div>
             ) : (
               <Link
@@ -329,6 +354,14 @@ const Navbar = () => {
                     <p className="text-sm text-gray-300">
                       Hola, {user?.nombre || user?.email?.split('@')[0]}
                     </p>
+                    <Link
+                      href="/mis-pedidos"
+                      className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                      onClick={() => setIsMobileMenuOpen(false)}
+                    >
+                      <Package className="mr-2 h-4 w-4" />
+                      Ver historial de pedidos
+                    </Link>
                     <button
                       onClick={async () => {
                         await logout();

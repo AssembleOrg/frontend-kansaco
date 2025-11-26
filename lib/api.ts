@@ -6,7 +6,7 @@ import {
   RegisterPayload,
   RegisterApiResponse,
 } from '@/types/auth';
-import { SendOrderEmailData, OrderEmailResponse, Order, OrderStatus } from '@/types/order';
+import { SendOrderEmailData, OrderEmailResponse, Order, OrderStatus, PaginatedOrdersResponse } from '@/types/order';
 import { logger, apiLogger } from './logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -739,7 +739,8 @@ export async function addProductToCart(
   cartId: number,
   productId: number,
   quantity: number,
-  token: string | null
+  token: string | null,
+  presentation?: string
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
     logger.error('API URL not configured.');
@@ -764,8 +765,14 @@ export async function addProductToCart(
     return null;
   }
 
-  // Construir la URL con quantity como query parameter
-  const url = `${API_BASE_URL}/cart/${cartId}/add/product/${productId}?quantity=${quantity}`;
+  // Construir la URL con quantity y presentation como query parameters
+  const urlParams = new URLSearchParams({
+    quantity: quantity.toString(),
+  });
+  if (presentation) {
+    urlParams.append('presentation', presentation);
+  }
+  const url = `${API_BASE_URL}/cart/${cartId}/add/product/${productId}?${urlParams.toString()}`;
   apiLogger.request('PUT', url);
 
   try {
@@ -954,6 +961,8 @@ interface SendOrderEmailApiResponse {
   data: {
     message: string;
     orderId: string;
+    presupuestoNumber?: string;
+    pdfBase64?: string;
   };
 }
 
@@ -997,6 +1006,8 @@ export async function sendOrderEmail(
     return {
       message: result.data.message,
       orderId: result.data.orderId,
+      presupuestoNumber: result.data.presupuestoNumber,
+      pdfBase64: result.data.pdfBase64,
     };
   } catch (error) {
     apiLogger.error('POST', url, error);
@@ -1072,6 +1083,54 @@ export async function getOrderById(token: string, orderId: string): Promise<Orde
     const result = await handleResponse<OrderApiResponse>(response);
     apiLogger.response('GET', url, response.status);
     return result.data;
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
+export async function getMyOrdersPaginated(
+  token: string,
+  options?: {
+    page?: number;
+    limit?: number;
+  }
+): Promise<PaginatedOrdersResponse> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const params = new URLSearchParams();
+  if (options?.page) params.append('page', options.page.toString());
+  if (options?.limit) params.append('limit', options.limit.toString());
+
+  const url = `${API_BASE_URL}/order/my-orders/paginated?${params.toString()}`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<{ status: string; data: PaginatedOrdersResponse }>(response);
+    apiLogger.response('GET', url, response.status);
+    
+    // Extraer los datos de la respuesta anidada (result.data contiene el PaginatedOrdersResponse)
+    if (result && 'data' in result && result.data) {
+      return result.data;
+    }
+    
+    // Si la respuesta ya viene en el formato correcto
+    return result as unknown as PaginatedOrdersResponse;
   } catch (error) {
     apiLogger.error('GET', url, error);
     throw error;

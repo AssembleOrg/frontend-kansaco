@@ -269,6 +269,11 @@ export default function ProductFilters({
                     <p className="text-xs text-gray-500">
                       {formatPrice(getProductPrice(item.product))} x {item.quantity}
                     </p>
+                    {item.presentation && (
+                      <p className="text-xs text-gray-600 font-medium mt-0.5">
+                        {item.presentation}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

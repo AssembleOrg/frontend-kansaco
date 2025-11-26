@@ -20,10 +20,10 @@ export interface Order {
   userId: string;
   customerType: CustomerType;
   status: OrderStatus;
-  contactInfo: OrderContactInfo;
+  contactInfo?: OrderContactInfo; // Opcional para compatibilidad con respuestas del backend
   businessInfo?: BusinessInfo;
-  items: OrderItem[];
-  totalAmount?: number;
+  items?: OrderItem[]; // Opcional para compatibilidad con respuestas del backend
+  totalAmount?: number | string; // Puede venir como string desde el backend
   notes?: string;
   createdAt: string;
   updatedAt: string;
@@ -56,4 +56,16 @@ export interface SendOrderEmailData {
 export interface OrderEmailResponse {
   message: string;
   orderId: string;
+  presupuestoNumber?: string;
+  pdfBase64?: string;
+}
+
+export interface PaginatedOrdersResponse {
+  data: Order[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
 }

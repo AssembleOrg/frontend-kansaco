@@ -245,13 +245,13 @@ export function useAdminProducts(token: string | null) {
           hasNext: result.hasNext,
           hasPrev: result.hasPrev,
         });
-      } catch (err) {
+    } catch (err) {
         console.error('Error loading products:', err);
         setError(err instanceof Error ? err.message : 'Error loading products');
         setProducts([]);
-      } finally {
-        setIsLoading(false);
-      }
+    } finally {
+      setIsLoading(false);
+    }
     },
     [token, pagination.limit]
   );

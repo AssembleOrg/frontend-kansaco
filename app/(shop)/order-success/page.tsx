@@ -1,7 +1,7 @@
 // app/(shop)/order-success/page.tsx
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { CheckCircle, Building2, Store, Loader2, AlertCircle } from 'lucide-react';
@@ -10,6 +10,8 @@ import { PDFPedidoDownloadButton } from '@/features/shop/components/PDFPedido';
 import { Order } from '@/types/order';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getOrderById } from '@/lib/api';
+import { toast } from 'sonner';
+import { formatDateForDisplay } from '@/lib/dateUtils';
 
 function OrderSuccessContent() {
   const { token } = useAuth();
@@ -17,6 +19,9 @@ function OrderSuccessContent() {
   const [orderData, setOrderData] = useState<Order | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pdfBase64, setPdfBase64] = useState<string | null>(null);
+  const [presupuestoNumber, setPresupuestoNumber] = useState<string | null>(null);
+  const hasShownNotification = useRef(false);
 
   useEffect(() => {
     const fetchOrder = async () => {
@@ -37,6 +42,22 @@ function OrderSuccessContent() {
       try {
         const order = await getOrderById(token, orderId);
         setOrderData(order);
+        
+        // Intentar obtener el PDF base64 del sessionStorage
+        const storedPdf = sessionStorage.getItem(`order-pdf-${orderId}`);
+        const storedPresupuesto = sessionStorage.getItem(`order-presupuesto-${orderId}`);
+        
+        if (storedPdf) {
+          setPdfBase64(storedPdf);
+          // Limpiar del sessionStorage después de obtenerlo
+          sessionStorage.removeItem(`order-pdf-${orderId}`);
+        }
+        
+        if (storedPresupuesto) {
+          setPresupuestoNumber(storedPresupuesto);
+          // Limpiar del sessionStorage después de obtenerlo
+          sessionStorage.removeItem(`order-presupuesto-${orderId}`);
+        }
       } catch (err) {
         console.error('Error fetching order:', err);
         setError('No se pudo cargar la información del pedido. Por favor, contacta a soporte.');
@@ -47,6 +68,19 @@ function OrderSuccessContent() {
 
     fetchOrder();
   }, [token, searchParams]);
+
+  // Mostrar notificación cuando el pedido se carga exitosamente
+  useEffect(() => {
+    if (orderData && !hasShownNotification.current) {
+      hasShownNotification.current = true;
+      const email = orderData.contactInfo?.email || 'tu email registrado';
+      
+      toast.success('¡Pedido confirmado!', {
+        description: `Tu pedido ha sido registrado correctamente. Se ha enviado un comprobante del pedido a ${email}.`,
+        duration: 6000,
+      });
+    }
+  }, [orderData]);
 
   const isMayorista = orderData?.customerType === 'CLIENTE_MAYORISTA';
 
@@ -62,7 +96,7 @@ function OrderSuccessContent() {
   }
 
   return (
-    <div className="min-h-[calc(100vh-120px)] bg-gray-50 px-4 py-12 sm:px-6 lg:px-8">
+    <div className="min-h-[calc(100vh-120px)] bg-gray-50 px-4 py-24 sm:px-6 lg:px-8">
       <div className="mx-auto max-w-3xl">
         {/* Error crítico - sin orderId o sin datos */}
         {error && !orderData && (
@@ -128,15 +162,17 @@ function OrderSuccessContent() {
             </div>
 
             {/* Datos de contacto */}
-            <div className="mb-4">
-              <h3 className="mb-2 font-semibold text-gray-900">Datos de contacto</h3>
-              <div className="space-y-1 text-sm text-gray-600">
-                <p><span className="font-medium">Nombre:</span> {orderData.contactInfo.fullName}</p>
-                <p><span className="font-medium">Email:</span> {orderData.contactInfo.email}</p>
-                <p><span className="font-medium">Teléfono:</span> {orderData.contactInfo.phone}</p>
-                <p><span className="font-medium">Dirección:</span> {orderData.contactInfo.address}</p>
+            {orderData.contactInfo && (
+              <div className="mb-4">
+                <h3 className="mb-2 font-semibold text-gray-900">Datos de contacto</h3>
+                <div className="space-y-1 text-sm text-gray-600">
+                  <p><span className="font-medium">Nombre:</span> {orderData.contactInfo.fullName}</p>
+                  <p><span className="font-medium">Email:</span> {orderData.contactInfo.email}</p>
+                  <p><span className="font-medium">Teléfono:</span> {orderData.contactInfo.phone}</p>
+                  <p><span className="font-medium">Dirección:</span> {orderData.contactInfo.address}</p>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* Datos fiscales (mayoristas) */}
             {isMayorista && orderData.businessInfo && (
@@ -156,20 +192,22 @@ function OrderSuccessContent() {
             )}
 
             {/* Productos */}
-            <div className="mb-4 border-t pt-4">
-              <h3 className="mb-2 font-semibold text-gray-900">Productos solicitados</h3>
-              <ul className="space-y-2">
-                {orderData.items.map((item, index) => (
-                  <li key={index} className="flex justify-between text-sm">
-                    <span className="text-gray-600">{item.productName}</span>
-                    <span className="font-medium text-gray-900">x{item.quantity}</span>
-                  </li>
-                ))}
-              </ul>
-              <p className="mt-2 text-sm text-gray-500">
-                Total: {orderData.items.reduce((acc, item) => acc + item.quantity, 0)} unidades
-              </p>
-            </div>
+            {orderData.items && orderData.items.length > 0 && (
+              <div className="mb-4 border-t pt-4">
+                <h3 className="mb-2 font-semibold text-gray-900">Productos solicitados</h3>
+                <ul className="space-y-2">
+                  {orderData.items.map((item, index) => (
+                    <li key={index} className="flex justify-between text-sm">
+                      <span className="text-gray-600">{item.productName}</span>
+                      <span className="font-medium text-gray-900">x{item.quantity}</span>
+                    </li>
+                  ))}
+                </ul>
+                <p className="mt-2 text-sm text-gray-500">
+                  Total: {orderData.items.reduce((acc, item) => acc + item.quantity, 0)} unidades
+                </p>
+              </div>
+            )}
 
             {/* Notas */}
             {orderData.notes && (
@@ -181,14 +219,7 @@ function OrderSuccessContent() {
 
             {/* Fecha */}
             <div className="border-t pt-4 text-sm text-gray-500">
-              Pedido realizado el{' '}
-              {new Date(orderData.createdAt).toLocaleDateString('es-AR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              Pedido realizado el {formatDateForDisplay(orderData.createdAt, 'datetime')}
             </div>
           </div>
         )}
@@ -200,18 +231,19 @@ function OrderSuccessContent() {
               <h3 className="mb-3 font-semibold text-gray-900">Próximos pasos</h3>
               <p className="text-gray-700">
                 Un representante de Kansaco se pondrá en contacto contigo en breve por teléfono o email
-                <span className="font-semibold"> ({orderData.contactInfo.email})</span> para coordinar el pago y el envío.
+                {orderData.contactInfo?.email && (
+                  <span className="font-semibold"> ({orderData.contactInfo.email})</span>
+                )} para coordinar el pago y el envío.
               </p>
             </div>
 
             {/* Botones de acción */}
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-              <PDFPedidoDownloadButton order={orderData} />
-              <Link href="/productos" passHref>
-                <Button variant="outline">
-                  Seguir Comprando
-                </Button>
-              </Link>
+              <PDFPedidoDownloadButton 
+                order={orderData} 
+                pdfBase64={pdfBase64 || undefined}
+                presupuestoNumber={presupuestoNumber || undefined}
+              />
             </div>
 
             {/* Nota legal */}

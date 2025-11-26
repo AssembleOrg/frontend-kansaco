@@ -8,6 +8,7 @@ import { useCartStore } from '@/features/cart/store/cartStore';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { Product } from '@/types/product';
+import { AddToCartModal } from './AddToCartModal';
 
 interface AddToCartButtonProps {
   product: Product;
@@ -21,6 +22,7 @@ export const AddToCartButton = ({
   className 
 }: AddToCartButtonProps) => {
   const [isLoading, setIsLoading] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const router = useRouter();
   
   const token = useAuthStore((state) => state.token);
@@ -39,18 +41,23 @@ export const AddToCartButton = ({
     );
   }
 
-  const handleClick = async () => {
+  const handleClick = () => {
     if (!isAuthenticated) {
       console.log('AddToCartButton: Usuario no autenticado, redirigiendo a login');
       router.push('/login');
       return;
     }
 
+    // Abrir el modal para seleccionar cantidad y presentación
+    setIsModalOpen(true);
+  };
+
+  const handleConfirm = async (selectedQuantity: number, selectedPresentation: string) => {
     setIsLoading(true);
     try {
-      console.log(`AddToCartButton: Agregando producto ${product.id} al carrito`);
+      console.log(`AddToCartButton: Agregando producto ${product.id} al carrito con cantidad ${selectedQuantity} y presentación ${selectedPresentation}`);
       
-      await addToCart(product, quantity);
+      await addToCart(product, selectedQuantity, selectedPresentation);
       
       // Solo mostrar éxito si no hay error en el store
       const currentError = useCartStore.getState().error;
@@ -71,19 +78,28 @@ export const AddToCartButton = ({
   };
 
   return (
-    <Button
-      onClick={handleClick}
-      disabled={isLoading}
-      className={className}
-      size="lg"
-    >
-      <ShoppingCart className="w-4 h-4 mr-2" />
-      {isLoading 
-        ? 'Agregando...' 
-        : isAuthenticated 
-          ? 'Agregar al carrito' 
-          : 'Iniciar sesión para comprar'
-      }
-    </Button>
+    <>
+      <Button
+        onClick={handleClick}
+        disabled={isLoading}
+        className={className}
+        size="lg"
+      >
+        <ShoppingCart className="w-4 h-4 mr-2" />
+        {isLoading 
+          ? 'Agregando...' 
+          : isAuthenticated 
+            ? 'Agregar al carrito' 
+            : 'Iniciar sesión para comprar'
+        }
+      </Button>
+
+      <AddToCartModal
+        product={product}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+        onConfirm={handleConfirm}
+      />
+    </>
   );
 };

@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Trash2, Eye, Search, ArrowUpDown, RefreshCw } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
+import { formatDateForDisplay } from '@/lib/dateUtils';
 import {
   ColumnDef,
   flexRender,
@@ -37,9 +38,9 @@ export default function OrdersPage() {
     return orders.filter((order) => {
       const searchLower = searchTerm.toLowerCase();
       return (
-        order.contactInfo.fullName.toLowerCase().includes(searchLower) ||
-        order.contactInfo.email.toLowerCase().includes(searchLower) ||
-        order.contactInfo.phone.includes(searchTerm) ||
+        order.contactInfo?.fullName?.toLowerCase().includes(searchLower) ||
+        order.contactInfo?.email?.toLowerCase().includes(searchLower) ||
+        order.contactInfo?.phone?.includes(searchTerm) ||
         order.id.toLowerCase().includes(searchLower)
       );
     });
@@ -69,13 +70,13 @@ export default function OrdersPage() {
       {
         id: 'cliente',
         header: 'Cliente',
-        accessorFn: (order) => order.contactInfo.fullName,
+        accessorFn: (order) => order.contactInfo?.fullName || 'N/A',
         cell: ({ row }) => {
           const order = row.original;
           const isMayorista = order.customerType === 'CLIENTE_MAYORISTA';
           return (
             <div>
-              {order.contactInfo.fullName}
+              {order.contactInfo?.fullName || 'N/A'}
               {isMayorista && (
                 <span className="ml-2 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
                   Mayorista
@@ -88,46 +89,59 @@ export default function OrdersPage() {
       {
         id: 'email',
         header: 'Email',
-        accessorFn: (order) => order.contactInfo.email,
-        cell: ({ row }) => (
-          <a
-            href={`mailto:${row.original.contactInfo.email}`}
-            className="text-sm text-green-600 hover:underline"
-          >
-            {row.original.contactInfo.email}
-          </a>
-        ),
+        accessorFn: (order) => order.contactInfo?.email || 'N/A',
+        cell: ({ row }) => {
+          const email = row.original.contactInfo?.email;
+          if (!email) return <span className="text-sm text-gray-400">N/A</span>;
+          return (
+            <a
+              href={`mailto:${email}`}
+              className="text-sm text-green-600 hover:underline"
+            >
+              {email}
+            </a>
+          );
+        },
       },
       {
         id: 'phone',
         header: 'Teléfono',
-        accessorFn: (order) => order.contactInfo.phone,
-        cell: ({ row }) => (
-          <a
-            href={`tel:${row.original.contactInfo.phone}`}
-            className="text-sm text-green-600 hover:underline"
-          >
-            {row.original.contactInfo.phone}
-          </a>
-        ),
+        accessorFn: (order) => order.contactInfo?.phone || 'N/A',
+        cell: ({ row }) => {
+          const phone = row.original.contactInfo?.phone;
+          if (!phone) return <span className="text-sm text-gray-400">N/A</span>;
+          return (
+            <a
+              href={`tel:${phone}`}
+              className="text-sm text-green-600 hover:underline"
+            >
+              {phone}
+            </a>
+          );
+        },
       },
       {
         id: 'items',
         header: 'Items',
-        accessorFn: (order) => order.items.length,
+        accessorFn: (order) => order.items?.length || 0,
         cell: ({ row }) => (
-          <span className="text-sm">{row.original.items.length}</span>
+          <span className="text-sm">{row.original.items?.length || 0}</span>
         ),
       },
       {
         id: 'total',
         header: 'Total',
         accessorFn: (order) => order.totalAmount || 0,
-        cell: ({ row }) => (
-          <span className="text-right text-sm font-semibold text-green-600">
-            {row.original.totalAmount ? formatPrice(row.original.totalAmount) : 'Consultar'}
-          </span>
-        ),
+        cell: ({ row }) => {
+          const totalAmount = row.original.totalAmount;
+          if (!totalAmount) return <span className="text-right text-sm font-semibold text-green-600">Consultar</span>;
+          const numAmount = typeof totalAmount === 'string' ? parseFloat(totalAmount) : totalAmount;
+          return (
+            <span className="text-right text-sm font-semibold text-green-600">
+              {formatPrice(isNaN(numAmount) ? 0 : numAmount)}
+            </span>
+          );
+        },
       },
       {
         id: 'status',
@@ -157,11 +171,7 @@ export default function OrdersPage() {
         accessorFn: (order) => new Date(order.createdAt).getTime(),
         cell: ({ row }) => (
           <span className="text-sm text-gray-600">
-            {new Date(row.original.createdAt).toLocaleDateString('es-AR', {
-              year: 'numeric',
-              month: 'short',
-              day: 'numeric',
-            })}
+            {formatDateForDisplay(row.original.createdAt, 'short')}
           </span>
         ),
       },
@@ -338,7 +348,7 @@ export default function OrdersPage() {
                   <div className="flex items-start justify-between">
                     <div className="min-w-0 flex-1">
                       <h3 className="truncate text-sm font-medium text-gray-900">
-                        {order.contactInfo.fullName}
+                        {order.contactInfo?.fullName || 'N/A'}
                       </h3>
                       {isMayorista && (
                         <span className="mt-1 inline-block rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-700">
@@ -356,30 +366,35 @@ export default function OrdersPage() {
                     <div>
                       <p className="text-gray-500">Email</p>
                       <p className="truncate font-medium text-green-600">
-                        <a href={`mailto:${order.contactInfo.email}`}>
-                          {order.contactInfo.email.split('@')[0]}...
-                        </a>
+                        {order.contactInfo?.email ? (
+                          <a href={`mailto:${order.contactInfo.email}`}>
+                            {order.contactInfo.email.split('@')[0]}...
+                          </a>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-500">Teléfono</p>
                       <p className="font-medium text-gray-900">
-                        <a href={`tel:${order.contactInfo.phone}`}>{order.contactInfo.phone}</a>
+                        {order.contactInfo?.phone ? (
+                          <a href={`tel:${order.contactInfo.phone}`}>{order.contactInfo.phone}</a>
+                        ) : (
+                          <span className="text-gray-400">N/A</span>
+                        )}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-500">Items</p>
                       <p className="font-medium text-gray-900">
-                        {order.items.length} producto{order.items.length !== 1 ? 's' : ''}
+                        {order.items?.length || 0} producto{(order.items?.length || 0) !== 1 ? 's' : ''}
                       </p>
                     </div>
                     <div>
                       <p className="text-gray-500">Fecha</p>
                       <p className="font-medium text-gray-900">
-                        {new Date(order.createdAt).toLocaleDateString('es-AR', {
-                          month: 'short',
-                          day: 'numeric',
-                        })}
+                        {formatDateForDisplay(order.createdAt, 'short')}
                       </p>
                     </div>
                   </div>
@@ -389,7 +404,10 @@ export default function OrdersPage() {
                     <div className="rounded-lg border border-green-200 bg-green-50 p-2">
                       <p className="text-xs font-medium text-green-600">Total</p>
                       <p className="text-lg font-bold text-green-700">
-                        {formatPrice(order.totalAmount)}
+                        {order.totalAmount ? (() => {
+                          const numAmount = typeof order.totalAmount === 'string' ? parseFloat(order.totalAmount) : order.totalAmount;
+                          return formatPrice(isNaN(numAmount) ? 0 : numAmount);
+                        })() : 'Consultar'}
                       </p>
                     </div>
                   )}
@@ -486,20 +504,28 @@ export default function OrdersPage() {
                   Información del Cliente
                 </h3>
                 <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-700">Nombre:</span> {selectedOrder.contactInfo.fullName}</p>
+                  <p><span className="font-medium text-gray-700">Nombre:</span> {selectedOrder.contactInfo?.fullName || 'N/A'}</p>
                   <p>
                     <span className="font-medium text-gray-700">Email:</span>{' '}
-                    <a href={`mailto:${selectedOrder.contactInfo.email}`} className="text-green-600 hover:underline">
-                      {selectedOrder.contactInfo.email}
-                    </a>
+                    {selectedOrder.contactInfo?.email ? (
+                      <a href={`mailto:${selectedOrder.contactInfo.email}`} className="text-green-600 hover:underline">
+                        {selectedOrder.contactInfo.email}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">N/A</span>
+                    )}
                   </p>
                   <p>
                     <span className="font-medium text-gray-700">Teléfono:</span>{' '}
-                    <a href={`tel:${selectedOrder.contactInfo.phone}`} className="text-green-600 hover:underline">
-                      {selectedOrder.contactInfo.phone}
-                    </a>
+                    {selectedOrder.contactInfo?.phone ? (
+                      <a href={`tel:${selectedOrder.contactInfo.phone}`} className="text-green-600 hover:underline">
+                        {selectedOrder.contactInfo.phone}
+                      </a>
+                    ) : (
+                      <span className="text-gray-400">N/A</span>
+                    )}
                   </p>
-                  <p><span className="font-medium text-gray-700">Dirección:</span> {selectedOrder.contactInfo.address}</p>
+                  <p><span className="font-medium text-gray-700">Dirección:</span> {selectedOrder.contactInfo?.address || 'N/A'}</p>
                 </div>
               </div>
 
@@ -533,7 +559,7 @@ export default function OrdersPage() {
                   Productos
                 </h3>
                 <div className="mt-4 space-y-3">
-                  {selectedOrder.items.map((item, idx) => (
+                  {selectedOrder.items?.map((item, idx) => (
                     <div
                       key={idx}
                       className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
@@ -573,13 +599,18 @@ export default function OrdersPage() {
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-gray-900">Total:</span>
                     <span className="text-lg font-bold text-green-600">
-                      {formatPrice(selectedOrder.totalAmount)}
+                      {(() => {
+                        const numAmount = typeof selectedOrder.totalAmount === 'string' 
+                          ? parseFloat(selectedOrder.totalAmount) 
+                          : selectedOrder.totalAmount;
+                        return formatPrice(isNaN(numAmount) ? 0 : numAmount);
+                      })()}
                     </span>
                   </div>
                 )}
                 <div className="text-sm text-gray-500">
-                  <p>Creada: {new Date(selectedOrder.createdAt).toLocaleString('es-AR')}</p>
-                  <p>Actualizada: {new Date(selectedOrder.updatedAt).toLocaleString('es-AR')}</p>
+                  <p>Creada: {formatDateForDisplay(selectedOrder.createdAt, 'datetime')}</p>
+                  <p>Actualizada: {formatDateForDisplay(selectedOrder.updatedAt, 'datetime')}</p>
                 </div>
               </div>
             </div>

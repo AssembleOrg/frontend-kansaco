@@ -105,6 +105,12 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
               <span className="text-xs text-gray-500">SKU: {product.sku}</span>
             )}
 
+            {item.presentation && (
+              <span className="mt-1 text-xs text-gray-600 font-medium">
+                Presentación: {item.presentation}
+              </span>
+            )}
+
             <div className="mt-auto flex items-center justify-between pt-2">
               <div className="flex items-center rounded-md border">
                 <button

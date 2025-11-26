@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
+import { formatDateForDisplay } from '@/lib/dateUtils';
 
 export default function ContactoPage() {
   const [formData, setFormData] = useState({
@@ -31,7 +32,7 @@ export default function ContactoPage() {
         from_email: formData.email,
         subject: formData.subject,
         message: formData.message,
-        fecha: new Date().toLocaleDateString('es-AR'),
+        fecha: formatDateForDisplay(new Date(), 'short'),
         reply_to: formData.email
       };
 

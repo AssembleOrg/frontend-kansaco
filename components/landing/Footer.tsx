@@ -158,6 +158,8 @@ const Footer = () => {
                   <a
                     key={social.label}
                     href={social.href}
+                    target="_blank"
+                    rel="noopener noreferrer"
                     className="flex h-10 w-10 items-center justify-center rounded-lg bg-gray-800 text-gray-400 transition-all duration-300 hover:bg-[#16a245] hover:text-white"
                     aria-label={social.label}
                   >
@@ -172,12 +174,24 @@ const Footer = () => {
 
       <div className="border-t border-gray-800">
         <div className="container mx-auto px-4 py-6 sm:px-6 lg:px-8">
-          <div className="flex flex-col items-center justify-between space-y-4 md:flex-row md:space-y-0">
-            <div className="text-sm text-gray-400">
+          <div className="flex flex-col items-center justify-center space-y-4">
+            <div className="text-center text-sm text-gray-400">
               © 2025 KANSACO. Todos los derechos reservados.
             </div>
 
-            <div className="flex items-center space-x-6">
+            <div className="flex flex-col items-center justify-center space-y-3 md:flex-row md:space-x-6 md:space-y-0">
+              <div className="text-center text-sm text-gray-400">
+                Desarrollado por{' '}
+                <a
+                  href="https://wa.me/5491138207230"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="font-semibold text-yellow-400 transition-colors duration-200 hover:text-yellow-300"
+                >
+                  Pistech
+                </a>
+              </div>
+
               <Link
                 href="/privacidad"
                 className="text-sm text-gray-400 transition-colors duration-200 hover:text-[#16a245]"

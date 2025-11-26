@@ -4,7 +4,7 @@
 import React, { useState, useEffect, Suspense } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
-import { notFound, useParams } from 'next/navigation';
+import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { Product } from '@/types/product';
 import { getProductBySlug, getProductImages, ProductImage } from '@/lib/api';
 import { AddToCartButton } from '@/features/cart/components/client/AddToCartButton';
@@ -14,7 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 
-function ProductDetailView({ product }: { product: Product }) {
+function ProductDetailView({ product, backUrl }: { product: Product; backUrl: string }) {
   const { getProductPrice } = useCart();
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
@@ -68,7 +68,7 @@ function ProductDetailView({ product }: { product: Product }) {
     <div className="container mx-auto px-4 py-8 mt-20">
       {/* Breadcrumb y Botón Volver */}
       <div className="mb-8 flex items-center justify-between">
-        <Link href="/productos">
+        <Link href={backUrl}>
           <Button variant="ghost" className="group">
             <ArrowLeft className="mr-2 h-4 w-4 transition-transform group-hover:-translate-x-1" />
             Volver a Productos
@@ -163,19 +163,23 @@ function ProductDetailView({ product }: { product: Product }) {
               <h1 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
                 {product.name}
               </h1>
-              {product.category && product.category.length > 0 && (
-                <div className="mb-4 flex flex-wrap gap-2">
-                  {product.category.map((cat) => (
-                    <Badge
-                      key={cat}
-                      variant="secondary"
-                      className="bg-green-50 text-green-700 hover:bg-green-100"
-                    >
-                      {cat}
-                    </Badge>
-                  ))}
-                </div>
-              )}
+              {product.category && product.category.length > 0 && (() => {
+                // Filtrar categorías duplicadas
+                const uniqueCategories = [...new Set(product.category)];
+                return (
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {uniqueCategories.map((cat) => (
+                      <Badge
+                        key={cat}
+                        variant="secondary"
+                        className="bg-green-50 text-green-700 hover:bg-green-100"
+                      >
+                        {cat}
+                      </Badge>
+                    ))}
+                  </div>
+                );
+              })()}
             </div>
 
             <div className="space-y-4">
@@ -220,17 +224,35 @@ function ProductDetailView({ product }: { product: Product }) {
                 </div>
               )}
 
-              {product.presentation && (
-                <div>
-                  <div className="mb-2 flex items-center space-x-2">
-                    <Box className="h-5 w-5 text-gray-500" />
-                    <h2 className="text-lg font-semibold text-gray-900">
-                      Presentación
-                    </h2>
+              {product.presentation && (() => {
+                const presentations = product.presentation
+                  .split(',')
+                  .map((pres) => pres.trim())
+                  .filter((pres) => pres.length > 0);
+                
+                return presentations.length > 0 ? (
+                  <div>
+                    <div className="mb-2 flex items-center space-x-2">
+                      <Box className="h-5 w-5 text-gray-500" />
+                      <h2 className="text-lg font-semibold text-gray-900">
+                        Presentación
+                      </h2>
+                    </div>
+                    <div className="max-w-md">
+                      <select
+                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 hover:border-gray-400"
+                        defaultValue={presentations[0]}
+                      >
+                        {presentations.map((option, optIndex) => (
+                          <option key={optIndex} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
-                  <p className="text-gray-600">{product.presentation}</p>
-                </div>
-              )}
+                ) : null;
+              })()}
             </div>
 
             <div className="mt-auto pt-6">
@@ -252,7 +274,21 @@ function ProductDetailPageContent() {
   const [error, setError] = useState<string | null>(null);
 
   const params = useParams();
+  const searchParams = useSearchParams();
   const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+
+  // Construir la URL de retorno con los parámetros de la página anterior
+  const getBackUrl = () => {
+    const page = searchParams.get('page');
+    const category = searchParams.get('category');
+    const params = new URLSearchParams();
+    if (page) params.set('page', page);
+    if (category) params.set('category', category);
+    const queryString = params.toString();
+    return queryString ? `/productos?${queryString}` : '/productos';
+  };
+
+  const backUrl = getBackUrl();
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -298,7 +334,7 @@ function ProductDetailPageContent() {
         <div className="rounded-lg border border-red-200 bg-red-50 p-8 text-center">
           <h2 className="mb-4 text-2xl font-semibold text-red-800">Error</h2>
           <p className="mb-6 text-red-600">{error}</p>
-          <Link href="/productos">
+          <Link href={backUrl}>
             <Button variant="outline" className="text-red-600 hover:bg-red-50">
               Volver a la lista de productos
             </Button>
@@ -312,7 +348,7 @@ function ProductDetailPageContent() {
     return notFound();
   }
 
-  return <ProductDetailView product={product} />;
+  return <ProductDetailView product={product} backUrl={backUrl} />;
 }
 
 export default function ProductDetailPage() {

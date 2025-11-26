@@ -3,6 +3,7 @@
 import { Order } from '@/types/order';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { formatDateForDisplay } from '@/lib/dateUtils';
 
 interface OrderDetailModalProps {
   order: Order;
@@ -37,29 +38,37 @@ export default function OrderDetailModal({
             <div className="mt-4 space-y-2">
               <p>
                 <span className="font-medium text-gray-700">Nombre:</span>{' '}
-                {order.contactInfo.fullName}
+                {order.contactInfo?.fullName || 'N/A'}
               </p>
               <p>
                 <span className="font-medium text-gray-700">Email:</span>{' '}
-                <a
-                  href={`mailto:${order.contactInfo.email}`}
-                  className="text-green-600 hover:underline"
-                >
-                  {order.contactInfo.email}
-                </a>
+                {order.contactInfo?.email ? (
+                  <a
+                    href={`mailto:${order.contactInfo.email}`}
+                    className="text-green-600 hover:underline"
+                  >
+                    {order.contactInfo.email}
+                  </a>
+                ) : (
+                  <span className="text-gray-400">N/A</span>
+                )}
               </p>
               <p>
                 <span className="font-medium text-gray-700">Teléfono:</span>{' '}
-                <a
-                  href={`tel:${order.contactInfo.phone}`}
-                  className="text-green-600 hover:underline"
-                >
-                  {order.contactInfo.phone}
-                </a>
+                {order.contactInfo?.phone ? (
+                  <a
+                    href={`tel:${order.contactInfo.phone}`}
+                    className="text-green-600 hover:underline"
+                  >
+                    {order.contactInfo.phone}
+                  </a>
+                ) : (
+                  <span className="text-gray-400">N/A</span>
+                )}
               </p>
               <p>
                 <span className="font-medium text-gray-700">Dirección:</span>{' '}
-                {order.contactInfo.address}
+                {order.contactInfo?.address || 'N/A'}
               </p>
             </div>
           </div>
@@ -72,7 +81,7 @@ export default function OrderDetailModal({
               Productos
             </h3>
             <div className="mt-4 space-y-3">
-              {order.items.map((item) => (
+              {order.items?.map((item) => (
                 <div
                   key={`${item.productId}-${item.productName}`}
                   className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
@@ -144,13 +153,7 @@ export default function OrderDetailModal({
           <div className="space-y-2 text-sm text-gray-600">
             <p>
               <span className="font-medium">Fecha de Orden:</span>{' '}
-              {new Date(order.createdAt).toLocaleDateString('es-AR', {
-                year: 'numeric',
-                month: 'long',
-                day: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-              })}
+              {formatDateForDisplay(order.createdAt, 'datetime')}
             </p>
             <p>
               <span className="font-medium">Tipo de Cliente:</span>{' '}

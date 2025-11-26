@@ -18,7 +18,7 @@ interface CartState {
   error: string | null;
   isCartOpen: boolean;
 
-  addToCart: (product: Product, quantity: number) => Promise<void>;
+  addToCart: (product: Product, quantity: number, presentation?: string) => Promise<void>;
   removeFromCart: (productId: number) => Promise<void>;
   updateQuantity: (productId: number, newQuantity: number) => Promise<void>;
   clearCart: () => Promise<void>;
@@ -135,7 +135,7 @@ export const useCartStore = create<CartState>()(
       },
 
       // ROBUST LOCAL CART: Always works, with or without server
-      addToCart: async (product: Product, quantityToAdd: number) => {
+      addToCart: async (product: Product, quantityToAdd: number, presentation?: string) => {
         await acquireCartLock();
 
         try {
@@ -153,8 +153,11 @@ export const useCartStore = create<CartState>()(
         if (currentCart.id > 0) {
           // Tenemos carrito del servidor, intentar agregar ahí
           try {
+            // Buscar item existente con el mismo producto Y la misma presentación
             const existingItem = currentCart.items.find(
-              (item) => item.product.id === product.id
+              (item) => 
+                item.product.id === product.id && 
+                item.presentation === presentation
             );
             const newQuantity = existingItem ? existingItem.quantity + quantityToAdd : quantityToAdd;
 
@@ -163,7 +166,8 @@ export const useCartStore = create<CartState>()(
               currentCart.id,
               product.id,
               newQuantity,
-              authState.token
+              authState.token,
+              presentation
             );
             
             if (response?.data?.id) {
@@ -179,24 +183,28 @@ export const useCartStore = create<CartState>()(
         // LOCAL CART: Always works
         logger.debug(`addToCart: Adding ${quantityToAdd} of ${product.name} to local cart`);
         
+        // Buscar item existente con el mismo producto Y la misma presentación
         const existingItemIndex = currentCart.items.findIndex(
-          (item) => item.product.id === product.id
+          (item) => 
+            item.product.id === product.id && 
+            item.presentation === presentation
         );
 
         let updatedItems = [...currentCart.items];
         
         if (existingItemIndex >= 0) {
-          // Update quantity of existing item
+          // Update quantity of existing item with same presentation
           updatedItems[existingItemIndex] = {
             ...updatedItems[existingItemIndex],
             quantity: updatedItems[existingItemIndex].quantity + quantityToAdd
           };
         } else {
-          // Add new item
+          // Add new item (different presentation or new product)
           const newItem: CartItemType = {
             id: generateLocalItemId(),
             quantity: quantityToAdd,
-            product: product
+            product: product,
+            presentation: presentation
           };
           updatedItems.push(newItem);
         }

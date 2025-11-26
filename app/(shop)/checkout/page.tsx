@@ -14,6 +14,7 @@ import { Loader2, Building2, Store } from 'lucide-react';
 import Link from 'next/link';
 import { sendOrderEmail } from '@/lib/api';
 import { SendOrderEmailData, BusinessInfo } from '@/types/order';
+import { toast } from 'sonner';
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -43,7 +44,7 @@ export default function CheckoutPage() {
   const [codigoPostal, setCodigoPostal] = useState('');
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [orderConfirmed, setOrderConfirmed] = useState(false);
 
   const isMayorista = user?.rol === 'CLIENTE_MAYORISTA';
 
@@ -86,6 +87,11 @@ export default function CheckoutPage() {
       return;
     }
 
+    // No redirigir si acabamos de confirmar un pedido
+    if (orderConfirmed) {
+      return;
+    }
+
     if (!token) {
       console.log('Checkout: No autenticado, redirigiendo a login.');
       router.replace(`/login?redirect=/checkout`);
@@ -98,13 +104,13 @@ export default function CheckoutPage() {
       return;
     }
 
-    if (!hasReachedMinimumPurchase) {
-      console.log(
-        'Checkout: No se ha alcanzado el mínimo de compra, redirigiendo a productos.'
-      );
-      router.replace('/productos?openCart=true');
-      return;
-    }
+    // if (!hasReachedMinimumPurchase) {
+    //   console.log(
+    //     'Checkout: No se ha alcanzado el mínimo de compra, redirigiendo a productos.'
+    //   );
+    //   router.replace('/productos?openCart=true');
+    //   return;
+    // }
 
     if (user) {
       if (!fullName) setFullName(`${user.nombre} ${user.apellido}`.trim());
@@ -120,39 +126,52 @@ export default function CheckoutPage() {
     router,
     fullName,
     email,
+    orderConfirmed,
   ]);
 
   const handleSubmit = async (e: FormEvent) => {
     e.preventDefault();
-    setErrorMessage(null);
     setIsSubmitting(true);
 
     if (!token || !user?.id) {
-      setErrorMessage('Debes iniciar sesión para completar tu pedido.');
+      toast.error('Error de autenticación', {
+        description: 'Debes iniciar sesión para completar tu pedido.',
+        duration: 5000,
+      });
       setIsSubmitting(false);
       return;
     }
     if (!cart || cart.items.length === 0) {
-      setErrorMessage(
-        'Tu carrito está vacío. Añade productos para hacer un pedido.'
-      );
+      toast.error('Carrito vacío', {
+        description: 'Tu carrito está vacío. Añade productos para hacer un pedido.',
+        duration: 5000,
+      });
       setIsSubmitting(false);
       return;
     }
-    if (!hasReachedMinimumPurchase) {
-      setErrorMessage('No has alcanzado el mínimo de compra.');
-      setIsSubmitting(false);
-      return;
-    }
+    // if (!hasReachedMinimumPurchase) {
+    //   toast.error('Mínimo de compra', {
+    //     description: 'No has alcanzado el mínimo de compra.',
+    //     duration: 5000,
+    //   });
+    //   setIsSubmitting(false);
+    //   return;
+    // }
     if (!fullName || !email || !phone || !address) {
-      setErrorMessage('Por favor, completa todos los campos obligatorios.');
+      toast.error('Campos incompletos', {
+        description: 'Por favor, completa todos los campos obligatorios.',
+        duration: 5000,
+      });
       setIsSubmitting(false);
       return;
     }
 
     // Validar teléfono
     if (!validatePhone(phone)) {
-      setErrorMessage('El teléfono debe tener al menos 8 dígitos.');
+      toast.error('Teléfono inválido', {
+        description: 'El teléfono debe tener al menos 8 dígitos.',
+        duration: 5000,
+      });
       setIsSubmitting(false);
       return;
     }
@@ -160,13 +179,19 @@ export default function CheckoutPage() {
     // Validaciones adicionales para mayoristas
     if (isMayorista) {
       if (!cuit || !situacionAfip) {
-        setErrorMessage('Por favor, completa los datos fiscales requeridos (CUIT y Situación AFIP).');
+        toast.error('Datos fiscales incompletos', {
+          description: 'Por favor, completa los datos fiscales requeridos (CUIT y Situación AFIP).',
+          duration: 5000,
+        });
         setIsSubmitting(false);
         return;
       }
 
       if (!validateCUIT(cuit)) {
-        setErrorMessage('El formato del CUIT no es válido. Debe ser XX-XXXXXXXX-X');
+        toast.error('CUIT inválido', {
+          description: 'El formato del CUIT no es válido. Debe ser XX-XXXXXXXX-X',
+          duration: 5000,
+        });
         setIsSubmitting(false);
         return;
       }
@@ -206,16 +231,50 @@ export default function CheckoutPage() {
       // Enviar email y crear orden en BD
       const response = await sendOrderEmail(token, orderEmailData);
 
-      // Vaciar carrito y redirigir con orderId en URL
+      // Guardar el PDF base64 en sessionStorage para que esté disponible en order-success
+      if (response.pdfBase64) {
+        sessionStorage.setItem(`order-pdf-${response.orderId}`, response.pdfBase64);
+        if (response.presupuestoNumber) {
+          sessionStorage.setItem(`order-presupuesto-${response.orderId}`, response.presupuestoNumber);
+        }
+      }
+
+      // Mostrar notificación de éxito
+      toast.success('¡Pedido confirmado!', {
+        description: `Tu pedido #${response.orderId} ha sido registrado correctamente. Te contactaremos pronto.`,
+        duration: 6000,
+      });
+
+      // Marcar que el pedido fue confirmado antes de limpiar el carrito
+      setOrderConfirmed(true);
+      
+      // Vaciar carrito
       await clearCart();
+      
+      // Limpiar el formulario
+      setFullName('');
+      setEmail('');
+      setPhone('');
+      setAddress('');
+      setNotes('');
+      setCuit('');
+      setRazonSocial('');
+      setSituacionAfip('');
+      setCodigoPostal('');
+      
+      // Redirigir a order-success con el orderId
       router.replace(`/order-success?orderId=${response.orderId}`);
     } catch (error) {
       console.error('Error al procesar el pedido:', error);
-      setErrorMessage(
-        error instanceof Error
-          ? error.message
-          : 'Hubo un error al procesar tu pedido. Inténtalo de nuevo.'
-      );
+      const errorMessage = error instanceof Error
+        ? error.message
+        : 'Hubo un error al procesar tu pedido. Inténtalo de nuevo.';
+      
+      // Mostrar notificación de error (ya no usamos setErrorMessage)
+      toast.error('Error al procesar el pedido', {
+        description: errorMessage,
+        duration: 6000,
+      });
     } finally {
       setIsSubmitting(false);
     }
@@ -226,8 +285,7 @@ export default function CheckoutPage() {
     !cartLoading &&
     !!token &&
     cart &&
-    cart.items.length > 0 &&
-    hasReachedMinimumPurchase;
+    cart.items.length > 0;
 
   if (!isReadyToRenderForm) {
     return (
@@ -239,7 +297,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className="container mx-auto px-4 py-24">
       <h1 className="mb-6 text-3xl font-bold text-gray-800">
         Finalizar Compra
       </h1>
@@ -267,6 +325,8 @@ export default function CheckoutPage() {
         )}
       </div>
 
+      {/* Advertencia si no se alcanza el mínimo de compra */}
+   
       <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
         {/* Resumen del Pedido */}
         <div className="md:col-span-2">
@@ -297,6 +357,11 @@ export default function CheckoutPage() {
                     <p className="text-sm text-gray-500">
                       Cantidad: {item.quantity}
                     </p>
+                    {item.presentation && (
+                      <p className="text-sm text-gray-600 font-medium mt-1">
+                        Presentación: {item.presentation}
+                      </p>
+                    )}
                   </div>
                 </li>
               ))}
@@ -459,12 +524,6 @@ export default function CheckoutPage() {
                   rows={3}
                 />
               </div>
-
-              {errorMessage && (
-                <div className="rounded-md bg-red-50 p-3 text-sm text-red-600">
-                  <p>{errorMessage}</p>
-                </div>
-              )}
 
               <Button
                 type="submit"
