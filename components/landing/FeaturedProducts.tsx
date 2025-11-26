@@ -1,86 +1,85 @@
-// Reemplazar productos hardcodeados por datos reales del API (si aplica al backoffice)
-// Habilitar los botones y agregar navegación real
-// Conectar con funcionalidad de carrito
-
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { ShoppingCart, ArrowRight, Zap } from 'lucide-react';
+import { ArrowRight, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/types';
 import { NeonBorders } from './HeroBanner';
+import { getProducts, getProductsPaginated } from '@/lib/api';
+import { motion, AnimatePresence } from 'framer-motion';
 
-interface FeaturedProductsProps {
-  products?: Product[];
-}
-
-const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
-  const [featuredProducts, setFeaturedProducts] = useState<Product[]>([]);
+const FeaturedProducts = () => {
+  const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [itemsPerPage, setItemsPerPage] = useState(3);
 
+  // Fetch productos reales (misma lógica que /productos)
   useEffect(() => {
-    const mockFeaturedProducts: Product[] = [
-      {
-        id: 1,
-        name: 'KANSACO Sintético 5W-30',
-        sku: 'KAN-SIN-5W30-4L',
-        slug: 'kansaco-sintetico-5w30',
-        category: ['Sintéticos', 'Aceites para Motor'],
-        description:
-          'Aceite sintético de alta performance para motores modernos',
-        presentation: '4L',
-        aplication: 'Motores de gasolina modernos',
-        imageUrl: '/images/products/sintetico-5w30.jpg',
-        wholeSaler: 'KANSACO',
-        stock: 50,
-        isVisible: true,
-        price: 8500,
-      },
-      {
-        id: 2,
-        name: 'KANSACO Diesel Heavy Line 15W-40',
-        sku: 'KAN-DIE-15W40-20L',
-        slug: 'kansaco-diesel-heavy-15w40',
-        category: ['Industrial', 'Diesel Heavy Line'],
-        description: 'Lubricante especializado para motores diesel pesados',
-        presentation: '20L',
-        aplication: 'Motores diesel industriales',
-        imageUrl: '/images/products/diesel-heavy-15w40.jpg',
-        wholeSaler: 'KANSACO',
-        stock: 25,
-        isVisible: true,
-        price: 12000,
-      },
-      {
-        id: 3,
-        name: 'KANSACO Polymer Protection Film',
-        sku: 'KAN-POL-PROT-500ML',
-        slug: 'kansaco-polymer-protection-film',
-        category: ['Derivados Y Aditivos', 'Films de Protección'],
-        description: 'Film de protección polimérica para máximo rendimiento',
-        presentation: '500ml',
-        aplication: 'Protección de superficies metálicas',
-        imageUrl: '/images/products/polymer-protection.jpg',
-        wholeSaler: 'KANSACO',
-        stock: 30,
-        isVisible: true,
-        price: 15000,
-      },
-    ];
+    const fetchProducts = async () => {
+      try {
+        // Intentar primero con API paginada (como hace /productos)
+        const result = await getProductsPaginated(null, {
+          page: 1,
+          limit: 9,
+          isVisible: true,
+        });
+        setProducts(result.data);
+      } catch (error) {
+        // Fallback si falla el endpoint paginado
+        console.warn('Error using paginated endpoint, falling back:', error);
+        try {
+          const data = await getProducts(null);
+          const visibleProducts = data.filter((p) => p.isVisible).slice(0, 9);
+          setProducts(visibleProducts);
+        } catch (fallbackError) {
+          console.error('Error fetching products:', fallbackError);
+        }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchProducts();
+  }, []);
 
-    setTimeout(() => {
-      setFeaturedProducts(
-        products.length > 0 ? products.slice(0, 3) : mockFeaturedProducts
-      );
-      setIsLoading(false);
-    }, 1000);
-  }, [products]);
+  // Responsive items per page
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth < 768) {
+        setItemsPerPage(1);
+      } else if (window.innerWidth < 1024) {
+        setItemsPerPage(2);
+      } else {
+        setItemsPerPage(3);
+      }
+    };
+    handleResize();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
 
-  // Los productos destacados son solo placeholder visual - sin funcionalidad
-  const handlePlaceholderClick = () => {
-    // Placeholder sin funcionalidad
+  const totalSlides = Math.ceil(products.length / itemsPerPage);
+
+  const nextSlide = useCallback(() => {
+    setCurrentIndex((prev) => (prev + 1) % totalSlides);
+  }, [totalSlides]);
+
+  const prevSlide = () => {
+    setCurrentIndex((prev) => (prev - 1 + totalSlides) % totalSlides);
+  };
+
+  // Auto-slide cada 5 segundos
+  useEffect(() => {
+    if (totalSlides <= 1) return;
+    const interval = setInterval(nextSlide, 5000);
+    return () => clearInterval(interval);
+  }, [totalSlides, nextSlide]);
+
+  const getCurrentProducts = () => {
+    const start = currentIndex * itemsPerPage;
+    return products.slice(start, start + itemsPerPage);
   };
 
   if (isLoading) {
@@ -113,6 +112,7 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
     <section className="relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-gray-900 py-24">
       <div className="absolute left-0 right-0 top-0 h-24 bg-gradient-to-b from-gray-900/80 to-transparent"></div>
 
+      {/* Background decorations */}
       <div className="absolute inset-0 opacity-45">
         {Array.from({ length: 6 }).map((_, i) => (
           <div
@@ -173,6 +173,46 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
       </div>
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
+        {/* Kancore Highlight - ARRIBA del slider */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6 }}
+          viewport={{ once: true }}
+          className="mb-12 flex flex-col items-center justify-center gap-4 rounded-xl border border-[#d4af37]/30 bg-gray-900/60 p-6 backdrop-blur-sm sm:flex-row sm:gap-6"
+        >
+          <span className="text-base text-gray-300 sm:text-lg">
+            Conocé nuestro nuevo producto:
+          </span>
+          <motion.span
+            className="text-2xl font-black text-[#d4af37] sm:text-3xl"
+            animate={{
+              textShadow: [
+                '0 0 10px rgba(212, 175, 55, 0.5)',
+                '0 0 20px rgba(212, 175, 55, 0.8)',
+                '0 0 10px rgba(212, 175, 55, 0.5)',
+              ],
+            }}
+            transition={{
+              duration: 2,
+              repeat: Infinity,
+              ease: 'easeInOut',
+            }}
+          >
+            KANCORE
+          </motion.span>
+          <Link href="/kancore">
+            <Button
+              size="sm"
+              className="bg-[#d4af37] text-black font-semibold transition-all duration-300 hover:bg-[#b8962e] hover:shadow-[0_0_15px_rgba(212,175,55,0.5)]"
+            >
+              Descubrir más
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+          </Link>
+        </motion.div>
+
+        {/* Header */}
         <div className="mb-16 text-center">
           <div className="relative mb-6 inline-flex items-center gap-3 rounded-lg border border-gray-800 bg-gray-900/50 px-4 py-2 text-sm font-medium text-[#16a245]">
             <NeonBorders intensity={0.3} />
@@ -182,7 +222,7 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
 
           <h2 className="mb-6 text-4xl font-black leading-tight text-white lg:text-5xl">
             PRODUCTOS
-            <span className="block text-[#16a245]">DESTACADOS (Hardcodeado)</span>
+            <span className="block text-[#16a245]">DESTACADOS</span>
           </h2>
 
           <p className="mx-auto max-w-3xl text-lg leading-relaxed text-gray-400">
@@ -191,79 +231,136 @@ const FeaturedProducts = ({ products = [] }: FeaturedProductsProps) => {
           </p>
         </div>
 
-        <div className="mb-16 grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3">
-          {featuredProducts.map((product) => {
-            return (
-              <div
-                key={product.id}
-                className="group rounded-lg border border-gray-800/50 bg-gray-900/50 p-6 transition-all duration-300 hover:border-gray-700 hover:bg-gray-900/70"
-              >
-                <div className="relative mb-6 h-48 overflow-hidden rounded-lg bg-gradient-to-br from-gray-800 to-gray-900">
-                  <div className="flex h-full w-full items-center justify-center">
-                    <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#16a245] to-[#0d7a32] shadow-lg">
-                      <Image
-                        src="/landing/kansaco-logo.png"
-                        alt="KANSACO Logo"
-                        width={64}
-                        height={64}
-                        className="h-16 w-auto"
-                      />
-                    </div>
-                  </div>
+        {/* Slider */}
+        {products.length > 0 && (
+          <div className="relative mb-16">
+            {/* Navigation Buttons */}
+            {totalSlides > 1 && (
+              <>
+                <button
+                  onClick={prevSlide}
+                  className="absolute -left-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-gray-700 bg-gray-900/90 p-2 text-white transition-all hover:border-[#16a245] hover:bg-gray-800 sm:-left-6"
+                  aria-label="Anterior"
+                >
+                  <ChevronLeft className="h-5 w-5 sm:h-6 sm:w-6" />
+                </button>
+                <button
+                  onClick={nextSlide}
+                  className="absolute -right-4 top-1/2 z-20 -translate-y-1/2 rounded-full border border-gray-700 bg-gray-900/90 p-2 text-white transition-all hover:border-[#16a245] hover:bg-gray-800 sm:-right-6"
+                  aria-label="Siguiente"
+                >
+                  <ChevronRight className="h-5 w-5 sm:h-6 sm:w-6" />
+                </button>
+              </>
+            )}
 
-                  <div className="absolute inset-0 flex items-center justify-center opacity-0 transition-opacity duration-300 group-hover:opacity-100">
-                    <Button
-                      variant="secondary"
-                      size="sm"
-                      className="border-gray-700 bg-gray-600 text-white cursor-not-allowed"
-                      disabled
-                      onClick={handlePlaceholderClick}
+            {/* Products Grid */}
+            <div className="overflow-hidden px-2">
+              <AnimatePresence mode="wait">
+                <motion.div
+                  key={currentIndex}
+                  initial={{ opacity: 0, x: 50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  exit={{ opacity: 0, x: -50 }}
+                  transition={{ duration: 0.3 }}
+                  className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-3"
+                >
+                  {getCurrentProducts().map((product) => (
+                    <div
+                      key={product.id}
+                      className="group mx-auto flex h-full w-full max-w-sm flex-col rounded-lg border border-gray-800/50 bg-gray-900/50 p-6 transition-all duration-300 hover:border-[#16a245]/50 hover:bg-gray-900/70"
                     >
-                      Placeholder
-                    </Button>
-                  </div>
-                </div>
-
-                <div className="space-y-4">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="mb-1 text-xs font-medium text-[#16a245]">
-                        {product.category[0]}
+                      {/* Product Image */}
+                      <div className="relative mb-6 h-48 overflow-hidden rounded-lg bg-gradient-to-br from-gray-800 to-gray-900">
+                        {product.imageUrl ? (
+                          <Image
+                            src={product.imageUrl}
+                            alt={product.name}
+                            fill
+                            className="object-cover transition-transform duration-300 group-hover:scale-105"
+                          />
+                        ) : (
+                          <div className="flex h-full w-full items-center justify-center">
+                            <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#16a245] to-[#0d7a32] shadow-lg">
+                              <Image
+                                src="/landing/kansaco-logo.png"
+                                alt="KANSACO Logo"
+                                width={64}
+                                height={64}
+                                className="h-16 w-auto"
+                              />
+                            </div>
+                          </div>
+                        )}
                       </div>
-                      <h3 className="text-lg font-bold text-white transition-colors duration-300 group-hover:text-[#16a245]">
-                        {product.name}
-                      </h3>
+
+                      {/* Product Info */}
+                      <div className="flex flex-1 flex-col space-y-4">
+                        <div className="flex items-start justify-between">
+                          <div className="flex-1">
+                            <div className="mb-1 text-xs font-medium text-[#16a245]">
+                              {product.category[0]}
+                            </div>
+                            <h3 className="line-clamp-2 text-lg font-bold text-white transition-colors duration-300 group-hover:text-[#16a245]">
+                              {product.name}
+                            </h3>
+                          </div>
+                        </div>
+
+                        <p className="line-clamp-2 flex-1 text-sm leading-relaxed text-gray-400">
+                          {product.description}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-2 text-xs">
+                          {product.presentation && (
+                            <span className="rounded bg-gray-800 px-2 py-1 text-gray-300">
+                              {product.presentation}
+                            </span>
+                          )}
+                          {product.sku && (
+                            <span className="rounded bg-gray-800 px-2 py-1 text-gray-300">
+                              SKU: {product.sku}
+                            </span>
+                          )}
+                        </div>
+
+                        <Link href={`/productos/${product.slug}`} className="mt-auto">
+                          <Button
+                            className="w-full bg-[#16a245] text-white transition-all duration-300 hover:bg-[#0d7a32]"
+                            size="sm"
+                          >
+                            Ver producto
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Button>
+                        </Link>
+                      </div>
                     </div>
-                  </div>
+                  ))}
+                </motion.div>
+              </AnimatePresence>
+            </div>
 
-                  <p className="text-sm leading-relaxed text-gray-400">
-                    {product.description}
-                  </p>
-
-                  <div className="flex items-center gap-3 text-xs">
-                    <span className="rounded bg-gray-800 px-2 py-1 text-gray-300">
-                      {product.presentation}
-                    </span>
-                    <span className="rounded bg-gray-800 px-2 py-1 text-gray-300">
-                      SKU: {product.sku}
-                    </span>
-                  </div>
-
-                  <Button
-                    onClick={handlePlaceholderClick}
-                    className="w-full bg-gray-500 text-white cursor-not-allowed"
-                    size="sm"
-                    disabled
-                  >
-                    <ShoppingCart className="mr-2 h-4 w-4" />
-                    Placeholder
-                  </Button>
-                </div>
+            {/* Dots Indicator */}
+            {totalSlides > 1 && (
+              <div className="mt-8 flex justify-center gap-2">
+                {Array.from({ length: totalSlides }).map((_, index) => (
+                  <button
+                    key={index}
+                    onClick={() => setCurrentIndex(index)}
+                    className={`h-2 rounded-full transition-all duration-300 ${
+                      index === currentIndex
+                        ? 'w-8 bg-[#16a245]'
+                        : 'w-2 bg-gray-600 hover:bg-gray-500'
+                    }`}
+                    aria-label={`Ir a slide ${index + 1}`}
+                  />
+                ))}
               </div>
-            );
-          })}
-        </div>
+            )}
+          </div>
+        )}
 
+        {/* CTA Button */}
         <div className="text-center">
           <Link href="/productos">
             <Button

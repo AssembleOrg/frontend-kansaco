@@ -19,7 +19,7 @@ export default function MayoristaPage() {
     telefono: '',
     zonaDistribucion: '',
     situacionAfip: '',
-    informacionAdicional: ''
+    informacionAdicional: '',
   });
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,7 +29,7 @@ export default function MayoristaPage() {
     'No Inscripto',
     'Monotributista',
     'Responsable Inscripto',
-    'Persona Jurídica'
+    'Persona Jurídica',
   ];
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -49,28 +49,36 @@ export default function MayoristaPage() {
         zona_distribucion: formData.zonaDistribucion,
         situacion_afip: formData.situacionAfip,
         informacion_adicional: formData.informacionAdicional,
-        archivo_adjunto: selectedFile ? selectedFile.name : 'No se adjuntó archivo',
+        archivo_adjunto: selectedFile
+          ? selectedFile.name
+          : 'No se adjuntó archivo',
         fecha: formatDateForDisplay(new Date(), 'short'),
-        subject: `Nueva solicitud de mayorista - ${formData.nombre}`
+        subject: `Nueva solicitud de mayorista - ${formData.nombre}`,
       };
 
       // TODO: Implementar EmailJS cuando tengas las credenciales
       // await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams, 'YOUR_PUBLIC_KEY');
       console.log('Datos del formulario mayorista:', templateParams);
-      
+
       setTimeout(() => {
         setIsSubmitting(false);
         setIsSubmitted(true);
-        setFormData({ 
-          nombre: '', email: '', cuit: '', domicilio: '', codigoPostal: '',
-          telefono: '', zonaDistribucion: '', situacionAfip: '', informacionAdicional: ''
+        setFormData({
+          nombre: '',
+          email: '',
+          cuit: '',
+          domicilio: '',
+          codigoPostal: '',
+          telefono: '',
+          zonaDistribucion: '',
+          situacionAfip: '',
+          informacionAdicional: '',
         });
         setSelectedFile(null);
-        
+
         // Reset success message after 5 seconds
         setTimeout(() => setIsSubmitted(false), 5000);
       }, 2000);
-
     } catch (error) {
       console.error('Error al enviar formulario mayorista:', error);
       setIsSubmitting(false);
@@ -78,9 +86,13 @@ export default function MayoristaPage() {
     }
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
+  const handleInputChange = (
+    e: React.ChangeEvent<
+      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
+    >
+  ) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,7 +107,7 @@ export default function MayoristaPage() {
   return (
     <div className="min-h-screen bg-black">
       <Navbar />
-      
+
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-black via-gray-950 to-gray-900 pt-20">
         <div className="absolute inset-0 opacity-10">
@@ -120,18 +132,19 @@ export default function MayoristaPage() {
           >
             <h1 className="mb-6 text-5xl font-black text-white md:text-6xl">
               CONVERTITE EN
-              <span className="block text-[#16a245]">MAYORISTA KANSACO (sin logica aun)</span>
+              <span className="block text-[#16a245]">MAYORISTA KANSACO</span>
             </h1>
             <p className="mx-auto max-w-3xl text-xl text-gray-300">
-              Únete a nuestra red de distribuidores y accede a precios especiales, 
-              capacitación técnica y el respaldo de más de 15 años de experiencia.
+              Únete a nuestra red de distribuidores y accede a precios
+              especiales, capacitación técnica y el respaldo de más de 15 años
+              de experiencia.
             </p>
           </motion.div>
         </div>
       </section>
 
       {/* Form Section */}
-      <section className="py-16 bg-gradient-to-b from-gray-900 to-black">
+      <section className="bg-gradient-to-b from-gray-900 to-black py-16">
         <div className="container mx-auto px-4">
           <div className="mx-auto max-w-4xl">
             <motion.div
@@ -142,9 +155,12 @@ export default function MayoristaPage() {
               className="rounded-2xl border border-gray-800 bg-gray-900/50 p-8 backdrop-blur-sm"
             >
               <div className="mb-8 text-center">
-                <h2 className="mb-4 text-3xl font-bold text-white">Solicitud de Registro</h2>
+                <h2 className="mb-4 text-3xl font-bold text-white">
+                  Solicitud de Registro
+                </h2>
                 <p className="text-gray-300">
-                  Completa el siguiente formulario y nos pondremos en contacto contigo
+                  Completa el siguiente formulario y nos pondremos en contacto
+                  contigo
                 </p>
               </div>
 
@@ -152,17 +168,22 @@ export default function MayoristaPage() {
                 <motion.div
                   initial={{ opacity: 0, y: -20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 flex items-center gap-3 rounded-lg bg-green-900/50 border border-green-700 p-4 text-green-300"
+                  className="mb-6 flex items-center gap-3 rounded-lg border border-green-700 bg-green-900/50 p-4 text-green-300"
                 >
                   <CheckCircle className="h-5 w-5" />
-                  <span>¡Solicitud enviada con éxito! Te contactaremos pronto.</span>
+                  <span>
+                    ¡Solicitud enviada con éxito! Te contactaremos pronto.
+                  </span>
                 </motion.div>
               )}
 
               <form onSubmit={handleSubmit} className="space-y-6">
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label htmlFor="nombre" className="mb-2 block text-sm font-medium text-gray-300">
+                    <label
+                      htmlFor="nombre"
+                      className="mb-2 block text-sm font-medium text-gray-300"
+                    >
                       Nombre completo *
                     </label>
                     <input
@@ -177,7 +198,10 @@ export default function MayoristaPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="email" className="mb-2 block text-sm font-medium text-gray-300">
+                    <label
+                      htmlFor="email"
+                      className="mb-2 block text-sm font-medium text-gray-300"
+                    >
                       Correo electrónico *
                     </label>
                     <input
@@ -195,7 +219,10 @@ export default function MayoristaPage() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label htmlFor="cuit" className="mb-2 block text-sm font-medium text-gray-300">
+                    <label
+                      htmlFor="cuit"
+                      className="mb-2 block text-sm font-medium text-gray-300"
+                    >
                       CUIT *
                     </label>
                     <input
@@ -210,7 +237,10 @@ export default function MayoristaPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="telefono" className="mb-2 block text-sm font-medium text-gray-300">
+                    <label
+                      htmlFor="telefono"
+                      className="mb-2 block text-sm font-medium text-gray-300"
+                    >
                       Teléfono *
                     </label>
                     <input
@@ -227,7 +257,10 @@ export default function MayoristaPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="domicilio" className="mb-2 block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="domicilio"
+                    className="mb-2 block text-sm font-medium text-gray-300"
+                  >
                     Domicilio completo con Localidad y Provincia *
                   </label>
                   <input
@@ -244,7 +277,10 @@ export default function MayoristaPage() {
 
                 <div className="grid gap-6 md:grid-cols-2">
                   <div>
-                    <label htmlFor="codigoPostal" className="mb-2 block text-sm font-medium text-gray-300">
+                    <label
+                      htmlFor="codigoPostal"
+                      className="mb-2 block text-sm font-medium text-gray-300"
+                    >
                       Código Postal *
                     </label>
                     <input
@@ -259,7 +295,10 @@ export default function MayoristaPage() {
                     />
                   </div>
                   <div>
-                    <label htmlFor="zonaDistribucion" className="mb-2 block text-sm font-medium text-gray-300">
+                    <label
+                      htmlFor="zonaDistribucion"
+                      className="mb-2 block text-sm font-medium text-gray-300"
+                    >
                       Zona de distribución *
                     </label>
                     <input
@@ -276,7 +315,10 @@ export default function MayoristaPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="situacionAfip" className="mb-2 block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="situacionAfip"
+                    className="mb-2 block text-sm font-medium text-gray-300"
+                  >
                     Situación ante AFIP *
                   </label>
                   <select
@@ -297,7 +339,10 @@ export default function MayoristaPage() {
                 </div>
 
                 <div>
-                  <label htmlFor="informacionAdicional" className="mb-2 block text-sm font-medium text-gray-300">
+                  <label
+                    htmlFor="informacionAdicional"
+                    className="mb-2 block text-sm font-medium text-gray-300"
+                  >
                     Información adicional o carta de presentación
                   </label>
                   <textarea
@@ -306,7 +351,7 @@ export default function MayoristaPage() {
                     value={formData.informacionAdicional}
                     onChange={handleInputChange}
                     rows={4}
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20 resize-none"
+                    className="w-full resize-none rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
                     placeholder="Cuéntanos sobre tu experiencia, distribución actual, objetivos, etc."
                   />
                 </div>
@@ -331,7 +376,9 @@ export default function MayoristaPage() {
                       <div className="text-center">
                         <Upload className="mx-auto h-8 w-8 text-gray-400" />
                         <p className="mt-2 text-sm text-gray-300">
-                          {selectedFile ? selectedFile.name : 'Haz clic para subir un PDF'}
+                          {selectedFile
+                            ? selectedFile.name
+                            : 'Haz clic para subir un PDF'}
                         </p>
                         <p className="mt-1 text-xs text-gray-400">
                           Constancia de AFIP, certificados, etc. (opcional)
@@ -344,7 +391,7 @@ export default function MayoristaPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="w-full bg-[#16a245] text-white hover:bg-[#0d7a32] disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-300"
+                  className="w-full bg-[#16a245] text-white transition-all duration-300 hover:bg-[#0d7a32] disabled:cursor-not-allowed disabled:opacity-50"
                   size="lg"
                 >
                   {isSubmitting ? (
@@ -369,4 +416,4 @@ export default function MayoristaPage() {
       <BackToHomeButton />
     </div>
   );
-} 
+}

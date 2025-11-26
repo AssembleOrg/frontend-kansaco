@@ -6,7 +6,13 @@ import {
   RegisterPayload,
   RegisterApiResponse,
 } from '@/types/auth';
-import { SendOrderEmailData, OrderEmailResponse, Order, OrderStatus, PaginatedOrdersResponse } from '@/types/order';
+import {
+  SendOrderEmailData,
+  OrderEmailResponse,
+  Order,
+  OrderStatus,
+  PaginatedOrdersResponse,
+} from '@/types/order';
 import { logger, apiLogger } from './logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -48,37 +54,42 @@ interface CartApiResponse {
 // Helper function to handle 401 Unauthorized
 function handleUnauthorized() {
   if (typeof window === 'undefined') return;
-  
+
   try {
     // Import authStore dynamically to avoid circular dependencies
     // This will only execute on the client side
-    import('@/features/auth/store/authStore').then((module) => {
-      const { useAuthStore } = module;
-      const { logout } = useAuthStore.getState();
-      
-      // Clear authentication
-      logout();
-      
-      // Redirect to login with current path as redirect
-      const currentPath = window.location.pathname;
-      const redirectUrl = currentPath !== '/login' 
-        ? `/login?redirect=${encodeURIComponent(currentPath)}`
-        : '/login';
-      
-      // Use setTimeout to ensure logout completes before redirect
-      setTimeout(() => {
-        window.location.href = redirectUrl;
-      }, 100);
-    }).catch((err) => {
-      logger.error('Error handling unauthorized:', err);
-      // Fallback: clear cookies and redirect to login
-      if (typeof document !== 'undefined') {
-        // Clear auth cookies manually as fallback
-        document.cookie = 'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-        document.cookie = 'user_data=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
-      }
-      window.location.href = '/login';
-    });
+    import('@/features/auth/store/authStore')
+      .then((module) => {
+        const { useAuthStore } = module;
+        const { logout } = useAuthStore.getState();
+
+        // Clear authentication
+        logout();
+
+        // Redirect to login with current path as redirect
+        const currentPath = window.location.pathname;
+        const redirectUrl =
+          currentPath !== '/login'
+            ? `/login?redirect=${encodeURIComponent(currentPath)}`
+            : '/login';
+
+        // Use setTimeout to ensure logout completes before redirect
+        setTimeout(() => {
+          window.location.href = redirectUrl;
+        }, 100);
+      })
+      .catch((err) => {
+        logger.error('Error handling unauthorized:', err);
+        // Fallback: clear cookies and redirect to login
+        if (typeof document !== 'undefined') {
+          // Clear auth cookies manually as fallback
+          document.cookie =
+            'auth_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+          document.cookie =
+            'user_data=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT';
+        }
+        window.location.href = '/login';
+      });
   } catch (err) {
     logger.error('Error in handleUnauthorized:', err);
     // Final fallback: just redirect
@@ -137,12 +148,7 @@ async function handleResponse<T>(response: Response): Promise<T> {
           .join('; ');
       }
     }
-    logger.error(
-      'API Error (parsed):',
-      errorMsg,
-      'Raw error data:',
-      errorData
-    );
+    logger.error('API Error (parsed):', errorMsg, 'Raw error data:', errorData);
     throw new Error(errorMsg);
   }
   try {
@@ -173,7 +179,7 @@ export async function getProducts(token: string | null): Promise<Product[]> {
       headers,
       cache: 'no-store',
     });
-    
+
     const fullResponse =
       await handleResponse<ActualProductsApiResponse>(response);
     if (fullResponse && Array.isArray(fullResponse.data)) {
@@ -186,7 +192,10 @@ export async function getProducts(token: string | null): Promise<Product[]> {
       return getMockProducts();
     }
   } catch (error) {
-    logger.error('Error fetching products (Railway might be down), using fallback:', error);
+    logger.error(
+      'Error fetching products (Railway might be down), using fallback:',
+      error
+    );
     return getMockProducts();
   }
 }
@@ -218,9 +227,11 @@ export async function getProductsPaginated(
   if (options?.category) {
     options.category.forEach((cat) => params.append('category', cat));
   }
-  if (options?.stock !== undefined) params.append('stock', options.stock.toString());
+  if (options?.stock !== undefined)
+    params.append('stock', options.stock.toString());
   if (options?.wholeSaler) params.append('wholeSaler', options.wholeSaler);
-  if (options?.isVisible !== undefined) params.append('isVisible', options.isVisible.toString());
+  if (options?.isVisible !== undefined)
+    params.append('isVisible', options.isVisible.toString());
 
   const url = `${API_BASE_URL}/product?${params.toString()}`;
   apiLogger.request('GET', url);
@@ -229,7 +240,7 @@ export async function getProductsPaginated(
     const headers: HeadersInit = {
       Accept: 'application/json',
     };
-    
+
     // Agregar token si está disponible
     if (token) {
       headers.Authorization = `Bearer ${token}`;
@@ -241,9 +252,12 @@ export async function getProductsPaginated(
       cache: 'no-store',
     });
 
-    const result = await handleResponse<PaginatedProductsResponse | { status: string; data: PaginatedProductsResponse }>(response);
+    const result = await handleResponse<
+      | PaginatedProductsResponse
+      | { status: string; data: PaginatedProductsResponse }
+    >(response);
     apiLogger.response('GET', url, response.status);
-    
+
     // Manejar respuesta envuelta (con status y data) o directa
     let paginatedData: PaginatedProductsResponse;
     if ('status' in result && 'data' in result) {
@@ -253,7 +267,7 @@ export async function getProductsPaginated(
       // Respuesta directa
       paginatedData = result as PaginatedProductsResponse;
     }
-    
+
     // Asegurar que siempre devolvemos una estructura válida
     return {
       data: Array.isArray(paginatedData.data) ? paginatedData.data : [],
@@ -279,7 +293,8 @@ function getMockProducts(): Product[] {
       sku: 'KAN-SIN-5W30-4L',
       slug: 'kansaco-sintetico-5w30',
       category: ['Sintéticos', 'Aceites para Motor'],
-      description: 'Aceite sintético de alta performance para motores modernos con tecnología Polymer\'s Protection Film',
+      description:
+        "Aceite sintético de alta performance para motores modernos con tecnología Polymer's Protection Film",
       presentation: '4L',
       aplication: 'Motores de gasolina modernos, turbo, híbridos',
       imageUrl: '/landing/kansaco-logo.png',
@@ -294,7 +309,8 @@ function getMockProducts(): Product[] {
       sku: 'KAN-DIE-15W40-20L',
       slug: 'kansaco-diesel-heavy-15w40',
       category: ['Industrial', 'Diesel Heavy Line'],
-      description: 'Lubricante especializado para motores diesel pesados con máxima protección',
+      description:
+        'Lubricante especializado para motores diesel pesados con máxima protección',
       presentation: '20L',
       aplication: 'Motores diesel industriales, camiones, ómnibus',
       imageUrl: '/landing/kansaco-logo.png',
@@ -309,7 +325,8 @@ function getMockProducts(): Product[] {
       sku: 'KAN-POL-PROT-500ML',
       slug: 'kansaco-polymer-protection-film',
       category: ['Derivados Y Aditivos'],
-      description: 'El orgullo de nuestra empresa. Film de protección polimérica exclusivo',
+      description:
+        'El orgullo de nuestra empresa. Film de protección polimérica exclusivo',
       presentation: '500ml',
       aplication: 'Protección de superficies metálicas en motores',
       imageUrl: '/landing/kansaco-logo.png',
@@ -324,7 +341,8 @@ function getMockProducts(): Product[] {
       sku: 'KAN-PREM-10W40-4L',
       slug: 'kansaco-premium-10w40',
       category: ['Premium', 'Aceites para Motor'],
-      description: 'Aceite semi-sintético de alto rendimiento para uso comercial',
+      description:
+        'Aceite semi-sintético de alto rendimiento para uso comercial',
       presentation: '4L',
       aplication: 'Vehículos familiares, flotas comerciales, taxis',
       imageUrl: '/landing/kansaco-logo.png',
@@ -354,7 +372,8 @@ function getMockProducts(): Product[] {
       sku: 'KAN-MOTO-4T-10W40-1L',
       slug: 'kansaco-moto-4t-10w40',
       category: ['Motos', 'Aceites para Motor'],
-      description: 'Aceite especial para motocicletas 4 tiempos con embrague húmedo',
+      description:
+        'Aceite especial para motocicletas 4 tiempos con embrague húmedo',
       presentation: '1L',
       aplication: 'Motocicletas 4 tiempos, scooters, ATVs',
       imageUrl: '/landing/kansaco-logo.png',
@@ -369,7 +388,8 @@ function getMockProducts(): Product[] {
       sku: 'KAN-GRASA-MP-NLGI2-500G',
       slug: 'kansaco-grasa-multiproposito-nlgi2',
       category: ['Grasas', 'Lubricantes'],
-      description: 'Grasa de litio complejo para múltiples aplicaciones industriales',
+      description:
+        'Grasa de litio complejo para múltiples aplicaciones industriales',
       presentation: '500g',
       aplication: 'Rodamientos, chassis, equipos industriales',
       imageUrl: '/landing/kansaco-logo.png',
@@ -444,7 +464,8 @@ function getMockProducts(): Product[] {
       sku: 'KAN-IND-HID-ISO68-20L',
       slug: 'kansaco-industrial-hidraulico-iso68',
       category: ['Industrial', 'Aceites Hidráulicos'],
-      description: 'Aceite hidráulico de alta calidad para sistemas industriales',
+      description:
+        'Aceite hidráulico de alta calidad para sistemas industriales',
       presentation: '20L',
       aplication: 'Sistemas hidráulicos industriales, prensas, elevadores',
       imageUrl: '/landing/kansaco-logo.png',
@@ -452,7 +473,7 @@ function getMockProducts(): Product[] {
       stock: 25,
       isVisible: true,
       price: 11500,
-    }
+    },
   ];
 }
 
@@ -514,15 +535,19 @@ export async function loginUser(
       body: JSON.stringify(payload),
       credentials: 'include', // Include cookies in request
     });
-    
+
     const apiResponse = await handleResponse<LoginApiResponse>(response);
-    
+
     // Validate response structure
-    if (!apiResponse.data || !apiResponse.data.token || !apiResponse.data.user) {
+    if (
+      !apiResponse.data ||
+      !apiResponse.data.token ||
+      !apiResponse.data.user
+    ) {
       logger.error('Login: Invalid response structure', apiResponse);
       throw new Error('Invalid response from server');
     }
-    
+
     return apiResponse;
   } catch (error) {
     let errorMessage = 'An unknown error occurred.';
@@ -620,8 +645,8 @@ export async function createCart(
         'Content-Type': 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ 
-        userId
+      body: JSON.stringify({
+        userId,
       }),
       cache: 'no-store',
       credentials: 'include',
@@ -629,7 +654,9 @@ export async function createCart(
 
     const result = await handleResponse<CartApiResponse>(response);
     if (result?.data?.id) {
-      logger.debug(`createCart: Cart created successfully with ID ${result.data.id}`);
+      logger.debug(
+        `createCart: Cart created successfully with ID ${result.data.id}`
+      );
     }
     return result;
   } catch (error) {
@@ -678,7 +705,10 @@ export async function getUserCartByUserId(
     return result;
   } catch (error) {
     // Silently fail - this endpoint might not be available or might expect different format
-    logger.debug('getUserCartByUserId: Error fetching cart by userId, will try alternative method', error);
+    logger.debug(
+      'getUserCartByUserId: Error fetching cart by userId, will try alternative method',
+      error
+    );
     apiLogger.error('GET', `${API_BASE_URL}/cart/user/${userId}`, error);
     return null;
   }
@@ -706,7 +736,7 @@ export async function getUserCart(
   // IMPROVED STRATEGY: Try to get existing cart, then create if it doesn't exist
   try {
     logger.debug(`getUserCart: Attempting to get cart for user ${userId}`);
-    
+
     // First try to get existing cart by userId
     // Note: This endpoint might not be available or might expect different format
     // If it fails, we'll silently continue to create a new cart
@@ -715,16 +745,16 @@ export async function getUserCart(
       logger.debug(`getUserCart: Existing cart found`);
       return existingCart;
     }
-    
+
     // If cart doesn't exist or endpoint failed, try to create a new one
     logger.debug(`getUserCart: Creating new cart`);
     const createResponse = await createCart(userId, token);
-    
+
     if (createResponse?.data?.id) {
       logger.debug(`getUserCart: Cart created successfully`);
       return createResponse;
     }
-    
+
     // If creation also fails, return null to use local cart
     logger.info('getUserCart: Using local cart');
     return null;
@@ -875,9 +905,10 @@ export async function createProduct(
   // Asegurar que price sea un número válido
   const cleanData: Omit<Product, 'id' | 'slug'> = { ...productData };
   if (cleanData.price !== undefined && cleanData.price !== null) {
-    const priceValue = typeof cleanData.price === 'string' 
-      ? parseFloat(cleanData.price) 
-      : cleanData.price;
+    const priceValue =
+      typeof cleanData.price === 'string'
+        ? parseFloat(cleanData.price)
+        : cleanData.price;
     cleanData.price = isNaN(priceValue) || priceValue <= 0 ? 1 : priceValue;
   }
 
@@ -892,7 +923,9 @@ export async function createProduct(
     cache: 'no-store',
   });
 
-  const result = await handleResponse<{ status: string; data: Product }>(response);
+  const result = await handleResponse<{ status: string; data: Product }>(
+    response
+  );
   return result.data;
 }
 
@@ -911,13 +944,15 @@ export async function updateProduct(
   const cleanData: Partial<ProductDataWithoutId> = { ...productData };
   delete (cleanData as Partial<Product>).id;
   delete (cleanData as Partial<Product>).slug;
-  
+
   // Asegurar que price sea un número válido
   if (cleanData.price !== undefined) {
-    const priceValue = typeof cleanData.price === 'string' 
-      ? parseFloat(cleanData.price) 
-      : cleanData.price;
-    cleanData.price = isNaN(priceValue!) || priceValue! <= 0 ? 1 : priceValue ?? 1;
+    const priceValue =
+      typeof cleanData.price === 'string'
+        ? parseFloat(cleanData.price)
+        : cleanData.price;
+    cleanData.price =
+      isNaN(priceValue!) || priceValue! <= 0 ? 1 : (priceValue ?? 1);
   }
 
   const response = await fetch(`${API_BASE_URL}/product/${productId}/edit`, {
@@ -931,7 +966,9 @@ export async function updateProduct(
     cache: 'no-store',
   });
 
-  const result = await handleResponse<{ status: string; data: Product }>(response);
+  const result = await handleResponse<{ status: string; data: Product }>(
+    response
+  );
   return result.data;
 }
 
@@ -998,11 +1035,19 @@ export async function sendOrderEmail(
 
     // Validate that orderId was returned (response is wrapped by TransformInterceptor)
     if (!result.data?.orderId) {
-      logger.error('sendOrderEmail: Backend no devolvió orderId válido', result);
-      throw new Error('El servidor no devolvió el ID del pedido. Por favor, contacta a soporte.');
+      logger.error(
+        'sendOrderEmail: Backend no devolvió orderId válido',
+        result
+      );
+      throw new Error(
+        'El servidor no devolvió el ID del pedido. Por favor, contacta a soporte.'
+      );
     }
 
-    logger.info('sendOrderEmail: Pedido enviado correctamente, orderId:', result.data.orderId);
+    logger.info(
+      'sendOrderEmail: Pedido enviado correctamente, orderId:',
+      result.data.orderId
+    );
     return {
       message: result.data.message,
       orderId: result.data.orderId,
@@ -1058,7 +1103,10 @@ export async function getOrders(token: string): Promise<Order[]> {
   }
 }
 
-export async function getOrderById(token: string, orderId: string): Promise<Order> {
+export async function getOrderById(
+  token: string,
+  orderId: string
+): Promise<Order> {
   if (!API_BASE_URL) {
     throw new Error('API URL not configured.');
   }
@@ -1121,14 +1169,17 @@ export async function getMyOrdersPaginated(
       cache: 'no-store',
     });
 
-    const result = await handleResponse<{ status: string; data: PaginatedOrdersResponse }>(response);
+    const result = await handleResponse<{
+      status: string;
+      data: PaginatedOrdersResponse;
+    }>(response);
     apiLogger.response('GET', url, response.status);
-    
+
     // Extraer los datos de la respuesta anidada (result.data contiene el PaginatedOrdersResponse)
     if (result && 'data' in result && result.data) {
       return result.data;
     }
-    
+
     // Si la respuesta ya viene en el formato correcto
     return result as unknown as PaginatedOrdersResponse;
   } catch (error) {
@@ -1174,7 +1225,10 @@ export async function updateOrderStatus(
   }
 }
 
-export async function deleteOrder(token: string, orderId: string): Promise<void> {
+export async function deleteOrder(
+  token: string,
+  orderId: string
+): Promise<void> {
   if (!API_BASE_URL) {
     throw new Error('API URL not configured.');
   }
@@ -1321,7 +1375,8 @@ export async function listImages(
   if (options?.page) params.append('page', options.page.toString());
   if (options?.limit) params.append('limit', options.limit.toString());
   if (options?.prefix) params.append('prefix', options.prefix);
-  if (options?.continuationToken) params.append('continuationToken', options.continuationToken);
+  if (options?.continuationToken)
+    params.append('continuationToken', options.continuationToken);
 
   const url = `${API_BASE_URL}/image/list?${params.toString()}`;
   apiLogger.request('GET', url);
@@ -1348,7 +1403,11 @@ export async function listImages(
             data = errorData.data;
           }
           // Si tiene la estructura de ImageListResponse
-          if (data && typeof data === 'object' && ('images' in data || Array.isArray(data.images))) {
+          if (
+            data &&
+            typeof data === 'object' &&
+            ('images' in data || Array.isArray(data.images))
+          ) {
             apiLogger.response('GET', url, response.status);
             return {
               images: Array.isArray(data.images) ? data.images : [],
@@ -1365,9 +1424,11 @@ export async function listImages(
       }
     }
 
-    const result = await handleResponse<ImageListResponse | { status: string; data: ImageListResponse }>(response);
+    const result = await handleResponse<
+      ImageListResponse | { status: string; data: ImageListResponse }
+    >(response);
     apiLogger.response('GET', url, response.status);
-    
+
     // Manejar respuesta envuelta (con status y data) o directa
     let imageData: ImageListResponse;
     if ('status' in result && 'data' in result) {
@@ -1377,7 +1438,7 @@ export async function listImages(
       // Respuesta directa
       imageData = result as ImageListResponse;
     }
-    
+
     // Asegurar que siempre devolvemos una estructura válida
     return {
       images: Array.isArray(imageData.images) ? imageData.images : [],
@@ -1392,7 +1453,7 @@ export async function listImages(
     // en lugar de lanzar error y romper la aplicación
     logger.warn('Error listing images, returning empty response:', error);
     apiLogger.error('GET', url, error);
-    
+
     // Devolver respuesta vacía en lugar de lanzar error
     return {
       images: [],
@@ -1434,10 +1495,7 @@ export async function getImageUrl(
   }
 }
 
-export async function deleteImage(
-  token: string,
-  key: string
-): Promise<void> {
+export async function deleteImage(token: string, key: string): Promise<void> {
   if (!API_BASE_URL) {
     throw new Error('API URL not configured.');
   }
@@ -1485,12 +1543,16 @@ export async function associateProductImage(
   }
 
   if (!token) {
-    throw new Error('Authentication token is required to associate product images.');
+    throw new Error(
+      'Authentication token is required to associate product images.'
+    );
   }
 
   const url = `${API_BASE_URL}/product/${productId}/image/associate${isPrimary ? '?isPrimary=true' : ''}`;
   apiLogger.request('POST', url);
-  console.log(`🔗 Associating image to product ${productId}, isPrimary: ${isPrimary}, imageKey: ${imageKey}`);
+  console.log(
+    `🔗 Associating image to product ${productId}, isPrimary: ${isPrimary}, imageKey: ${imageKey}`
+  );
 
   try {
     const response = await fetch(url, {
@@ -1504,17 +1566,23 @@ export async function associateProductImage(
       cache: 'no-store',
     });
 
-    console.log(`📥 Response status: ${response.status} ${response.statusText}`);
+    console.log(
+      `📥 Response status: ${response.status} ${response.statusText}`
+    );
 
     if (!response.ok) {
       // Si el endpoint no existe (404), intentar con upload
       if (response.status === 404) {
-        console.log('⚠️ Associate endpoint not available, falling back to upload');
+        console.log(
+          '⚠️ Associate endpoint not available, falling back to upload'
+        );
         throw new Error('ASSOCIATE_ENDPOINT_NOT_AVAILABLE');
       }
       const errorText = await response.text();
       console.error(`❌ Error response body:`, errorText);
-      throw new Error(`Failed to associate image: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to associate image: ${response.status} ${response.statusText}`
+      );
     }
 
     const result = await handleResponse<ProductImage>(response);
@@ -1523,7 +1591,10 @@ export async function associateProductImage(
     return result;
   } catch (error) {
     apiLogger.error('POST', url, error);
-    if (error instanceof Error && error.message === 'ASSOCIATE_ENDPOINT_NOT_AVAILABLE') {
+    if (
+      error instanceof Error &&
+      error.message === 'ASSOCIATE_ENDPOINT_NOT_AVAILABLE'
+    ) {
       throw error; // Re-throw para que el caller pueda manejar el fallback
     }
     console.error(`❌ Error associating product image:`, error);
@@ -1542,7 +1613,9 @@ export async function uploadProductImage(
   }
 
   if (!token) {
-    throw new Error('Authentication token is required to upload product images.');
+    throw new Error(
+      'Authentication token is required to upload product images.'
+    );
   }
 
   const formData = new FormData();
@@ -1550,7 +1623,9 @@ export async function uploadProductImage(
 
   const url = `${API_BASE_URL}/product/${productId}/image${isPrimary ? '?isPrimary=true' : ''}`;
   apiLogger.request('POST', url);
-  console.log(`📤 Uploading image to product ${productId}, isPrimary: ${isPrimary}, file: ${file.name}, size: ${file.size} bytes, type: ${file.type}`);
+  console.log(
+    `📤 Uploading image to product ${productId}, isPrimary: ${isPrimary}, file: ${file.name}, size: ${file.size} bytes, type: ${file.type}`
+  );
 
   try {
     const response = await fetch(url, {
@@ -1563,12 +1638,16 @@ export async function uploadProductImage(
       cache: 'no-store',
     });
 
-    console.log(`📥 Response status: ${response.status} ${response.statusText}`);
+    console.log(
+      `📥 Response status: ${response.status} ${response.statusText}`
+    );
 
     if (!response.ok) {
       const errorText = await response.text();
       console.error(`❌ Error response body:`, errorText);
-      throw new Error(`Failed to upload image: ${response.status} ${response.statusText}`);
+      throw new Error(
+        `Failed to upload image: ${response.status} ${response.statusText}`
+      );
     }
 
     const result = await handleResponse<ProductImage>(response);
@@ -1597,7 +1676,7 @@ export async function getProductImages(
     const headers: HeadersInit = {
       Accept: 'application/json',
     };
-    
+
     if (token) {
       headers.Authorization = `Bearer ${token}`;
     }
@@ -1619,9 +1698,11 @@ export async function getProductImages(
 
     // Si hay token y recibe 401, dejar que handleResponse maneje la redirección
     if (response.status === 401 && token) {
-      const result = await handleResponse<ProductImage[] | { status: string; data: ProductImage[] }>(response);
+      const result = await handleResponse<
+        ProductImage[] | { status: string; data: ProductImage[] }
+      >(response);
       apiLogger.response('GET', url, response.status);
-      
+
       if (Array.isArray(result)) {
         return result;
       } else if ('data' in result && Array.isArray(result.data)) {
@@ -1632,9 +1713,11 @@ export async function getProductImages(
 
     // Para otros códigos de estado, usar handleResponse normalmente
     if (!response.ok) {
-      const result = await handleResponse<ProductImage[] | { status: string; data: ProductImage[] }>(response);
+      const result = await handleResponse<
+        ProductImage[] | { status: string; data: ProductImage[] }
+      >(response);
       apiLogger.response('GET', url, response.status);
-      
+
       if (Array.isArray(result)) {
         return result;
       } else if ('data' in result && Array.isArray(result.data)) {
@@ -1646,17 +1729,22 @@ export async function getProductImages(
     // Respuesta exitosa
     const jsonResponse = await response.json();
     apiLogger.response('GET', url, response.status);
-    
+
     // Manejar respuesta envuelta o directa
     let images: ProductImage[] = [];
     if (Array.isArray(jsonResponse)) {
       images = jsonResponse;
     } else if ('data' in jsonResponse && Array.isArray(jsonResponse.data)) {
       images = jsonResponse.data;
-    } else if (jsonResponse && typeof jsonResponse === 'object' && 'status' in jsonResponse && 'data' in jsonResponse) {
+    } else if (
+      jsonResponse &&
+      typeof jsonResponse === 'object' &&
+      'status' in jsonResponse &&
+      'data' in jsonResponse
+    ) {
       images = Array.isArray(jsonResponse.data) ? jsonResponse.data : [];
     }
-    
+
     return images;
   } catch (error) {
     apiLogger.error('GET', url, error);

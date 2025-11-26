@@ -12,8 +12,8 @@ import {
   SheetHeader,
   SheetTitle,
   SheetTrigger,
-} from "@/components/ui/sheet";
-import { Input } from "@/components/ui/input";
+} from '@/components/ui/sheet';
+import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
 import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
 
@@ -39,7 +39,8 @@ export default function ProductFilters({
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
-  const { cart, itemCount, subtotal, formatPrice, openCart, getProductPrice } = useCart();
+  const { cart, itemCount, subtotal, formatPrice, openCart, getProductPrice } =
+    useCart();
 
   const [customMinPrice, setCustomMinPrice] = useState<string>('');
   const [customMaxPrice, setCustomMaxPrice] = useState<string>('');
@@ -66,11 +67,11 @@ export default function ProductFilters({
 
   const handlePriceRangeSelect = (min: number, max: number | undefined) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
-    
+
     // Limpiar filtros de precio existentes
     current.delete('minPrice');
     current.delete('maxPrice');
-    
+
     // Aplicar nuevos filtros
     if (min !== undefined) {
       current.set('minPrice', min.toString());
@@ -78,7 +79,7 @@ export default function ProductFilters({
     if (max !== undefined) {
       current.set('maxPrice', max.toString());
     }
-    
+
     current.delete('page');
     current.delete('openCart'); // Eliminar openCart al cambiar filtros
 
@@ -89,22 +90,22 @@ export default function ProductFilters({
 
   const applyCustomPriceFilter = () => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
-    
+
     // Limpiar filtros de precio existentes
     current.delete('minPrice');
     current.delete('maxPrice');
-    
+
     // Aplicar nuevos filtros solo si tienen valor
     const minPriceValue = customMinPrice.trim();
     const maxPriceValue = customMaxPrice.trim();
-    
+
     if (minPriceValue) {
       current.set('minPrice', minPriceValue);
     }
     if (maxPriceValue) {
       current.set('maxPrice', maxPriceValue);
     }
-    
+
     current.delete('page');
     current.delete('openCart'); // Eliminar openCart al cambiar filtros
 
@@ -128,8 +129,10 @@ export default function ProductFilters({
 
   // Filtrar y ordenar solo las categorías permitidas que estén disponibles
   const sortedCategories = [...availableCategories]
-    .filter((cat): cat is typeof ALLOWED_PRODUCT_CATEGORIES[number] => 
-      ALLOWED_PRODUCT_CATEGORIES.includes(cat as typeof ALLOWED_PRODUCT_CATEGORIES[number])
+    .filter((cat): cat is (typeof ALLOWED_PRODUCT_CATEGORIES)[number] =>
+      ALLOWED_PRODUCT_CATEGORIES.includes(
+        cat as (typeof ALLOWED_PRODUCT_CATEGORIES)[number]
+      )
     )
     .sort((a, b) => {
       // Ordenar según el orden de ALLOWED_PRODUCT_CATEGORIES
@@ -138,7 +141,8 @@ export default function ProductFilters({
       return indexA - indexB;
     });
 
-  const hasActiveFilters = currentCategory || initialMinPrice || initialMaxPrice;
+  const hasActiveFilters =
+    currentCategory || initialMinPrice || initialMaxPrice;
 
   const isPriceRangeActive = (min: number, max: number | undefined) => {
     if (max === undefined) {
@@ -165,7 +169,7 @@ export default function ProductFilters({
         </div>
         <div className="space-y-2">
           <Button
-            variant={!currentCategory ? "default" : "outline"}
+            variant={!currentCategory ? 'default' : 'outline'}
             className="w-full justify-start"
             onClick={() => handleCategoryChange(null)}
           >
@@ -174,7 +178,7 @@ export default function ProductFilters({
           {sortedCategories.map((category) => (
             <Button
               key={category}
-              variant={currentCategory === category ? "default" : "outline"}
+              variant={currentCategory === category ? 'default' : 'outline'}
               className="w-full justify-start"
               onClick={() => handleCategoryChange(category)}
             >
@@ -267,10 +271,11 @@ export default function ProductFilters({
                       {item.product.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatPrice(getProductPrice(item.product))} x {item.quantity}
+                      {formatPrice(getProductPrice(item.product))} x{' '}
+                      {item.quantity}
                     </p>
                     {item.presentation && (
-                      <p className="text-xs text-gray-600 font-medium mt-0.5">
+                      <p className="mt-0.5 text-xs font-medium text-gray-600">
                         {item.presentation}
                       </p>
                     )}
@@ -279,27 +284,21 @@ export default function ProductFilters({
               ))}
             </div>
 
-            <div className="border-t pt-4">
+            {/* <div className="border-t pt-4">
               <div className="mb-2 flex justify-between text-sm">
                 <span>Total:</span>
                 <span className="font-medium text-green-600">
                   {formatPrice(subtotal)}
                 </span>
               </div>
-            </div>
+            </div> */}
 
             <div className="space-y-2">
-              <Button
-                onClick={openCart}
-                className="w-full"
-                variant="outline"
-              >
+              <Button onClick={openCart} className="w-full" variant="outline">
                 Ver Carrito
               </Button>
               <Link href="/checkout" className="block w-full">
-                <Button className="w-full">
-                  Proceder al Pago
-                </Button>
+                <Button className="w-full">Proceder al Pago</Button>
               </Link>
             </div>
           </div>
