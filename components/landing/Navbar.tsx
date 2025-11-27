@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ShoppingCart, Menu, X, ChevronDown, LogOut, Package } from 'lucide-react';
+import { User, ShoppingCart, Menu, X, ChevronDown, LogOut, Package, LayoutDashboard } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
@@ -146,6 +146,13 @@ const Navbar = () => {
             </Link>
 
             <Link
+              href="/tecnologia-lubricantes"
+              className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+            >
+              El Lubricante
+            </Link>
+
+            <Link
               href="/sobre-nosotros"
               className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
             >
@@ -188,24 +195,37 @@ const Navbar = () => {
                       <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        router.push('/mis-pedidos');
-                        setIsUserDropdownOpen(false);
-                      }}
-                      className="cursor-pointer"
-                    >
-                      <Package className="mr-2 h-4 w-4" />
-                      Ver historial de pedidos
-                    </DropdownMenuItem>
+                  <DropdownMenuContent align="end" className="w-56 border-gray-800/50 bg-black/95 backdrop-blur-md shadow-xl">
+                    {isAdmin ? (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push('/admin/dashboard');
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
+                      >
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Ir a Dashboard
+                      </DropdownMenuItem>
+                    ) : (
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push('/mis-pedidos');
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        Ver historial de pedidos
+                      </DropdownMenuItem>
+                    )}
                     <DropdownMenuItem
                       onClick={async () => {
                         await logout();
                         setIsUserDropdownOpen(false);
                         router.push('/');
                       }}
-                      className="cursor-pointer text-red-600 focus:text-red-600"
+                      className="cursor-pointer text-red-400 hover:bg-red-500/10 hover:text-red-300 focus:bg-red-500/10 focus:text-red-300"
                     >
                       <LogOut className="mr-2 h-4 w-4" />
                       Cerrar sesión
@@ -318,6 +338,14 @@ const Navbar = () => {
               </Link>
 
               <Link
+                href="/tecnologia-lubricantes"
+                className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                onClick={() => setIsMobileMenuOpen(false)}
+              >
+                El Lubricante
+              </Link>
+
+              <Link
                 href="/sobre-nosotros"
                 className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
                 onClick={() => setIsMobileMenuOpen(false)}
@@ -354,14 +382,25 @@ const Navbar = () => {
                     <p className="text-sm text-gray-300">
                       Hola, {user?.nombre || user?.email?.split('@')[0]}
                     </p>
-                    <Link
-                      href="/mis-pedidos"
-                      className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                      onClick={() => setIsMobileMenuOpen(false)}
-                    >
-                      <Package className="mr-2 h-4 w-4" />
-                      Ver historial de pedidos
-                    </Link>
+                    {isAdmin ? (
+                      <Link
+                        href="/admin/dashboard"
+                        className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <LayoutDashboard className="mr-2 h-4 w-4" />
+                        Ir a Dashboard
+                      </Link>
+                    ) : (
+                      <Link
+                        href="/mis-pedidos"
+                        className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        Ver historial de pedidos
+                      </Link>
+                    )}
                     <button
                       onClick={async () => {
                         await logout();

@@ -35,16 +35,15 @@ const ArgentinaSection = () => {
               </div>
 
               <h2 className="text-4xl font-black leading-tight text-white lg:text-5xl">
-                15 AÑOS DE
+                MEDIO SIGLO DE
                 <span className="block bg-gradient-to-r from-blue-400 via-white to-blue-400 bg-clip-text text-transparent">
                   INGENIERÍA ARGENTINA
                 </span>
               </h2>
 
               <p className="text-lg leading-relaxed text-gray-300 lg:text-xl">
-                Desde Buenos Aires hacia el mundo. KANSACO lleva medio siglo
-                desarrollando tecnología de lubricación con la calidad y
-                excelencia que nos caracterizan como argentinos.
+                Desde Buenos Aires hacia el mundo. KANSACO sigue desarrollando
+                tecnología con la calidad y excelencia que nos caracterizan.
               </p>
             </div>
 

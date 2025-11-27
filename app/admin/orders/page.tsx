@@ -5,15 +5,17 @@ import { useOrders } from '@/features/admin/hooks/useOrders';
 import { Order, OrderStatus } from '@/types/order';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Eye, Search, ArrowUpDown, RefreshCw } from 'lucide-react';
-import { formatPrice } from '@/lib/utils';
+import { Trash2, Eye, Search, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+// import { formatPrice } from '@/lib/utils';
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
+  getPaginationRowModel,
   SortingState,
+  PaginationState,
   useReactTable,
 } from '@tanstack/react-table';
 
@@ -31,6 +33,10 @@ export default function OrdersPage() {
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
+  const [pagination, setPagination] = useState<PaginationState>({
+    pageIndex: 0,
+    pageSize: 20,
+  });
 
   // Filtrar órdenes por búsqueda
   const filteredOrders = useMemo(() => {
@@ -128,6 +134,7 @@ export default function OrdersPage() {
           <span className="text-sm">{row.original.items?.length || 0}</span>
         ),
       },
+      /*
       {
         id: 'total',
         header: 'Total',
@@ -143,6 +150,7 @@ export default function OrdersPage() {
           );
         },
       },
+      */
       {
         id: 'status',
         header: 'Estado',
@@ -214,10 +222,13 @@ export default function OrdersPage() {
     columns,
     state: {
       sorting,
+      pagination,
     },
     onSortingChange: setSorting,
+    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
   });
 
   if (isLoading) {
@@ -400,6 +411,7 @@ export default function OrdersPage() {
                   </div>
 
                   {/* Total */}
+                  {/*
                   {order.totalAmount && (
                     <div className="rounded-lg border border-green-200 bg-green-50 p-2">
                       <p className="text-xs font-medium text-green-600">Total</p>
@@ -411,6 +423,7 @@ export default function OrdersPage() {
                       </p>
                     </div>
                   )}
+                  */}
 
                   {/* Cambiar estado */}
                   <div>
@@ -453,6 +466,47 @@ export default function OrdersPage() {
             })}
           </div>
         </>
+      )}
+
+      {/* Controles de Paginación */}
+      {filteredOrders.length > 20 && (
+        <div className="flex items-center justify-between border-t border-gray-200 bg-white px-6 py-4 rounded-b-lg">
+          <div className="text-sm text-gray-700">
+            Mostrando{' '}
+            <span className="font-medium">
+              {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
+            </span>{' '}
+            a{' '}
+            <span className="font-medium">
+              {Math.min(
+                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
+                filteredOrders.length
+              )}
+            </span>{' '}
+            de{' '}
+            <span className="font-medium">{filteredOrders.length}</span> pedidos
+          </div>
+          <div className="flex gap-2">
+            <Button
+              onClick={() => table.previousPage()}
+              disabled={!table.getCanPreviousPage()}
+              variant="outline"
+              size="sm"
+            >
+              <ChevronLeft className="h-4 w-4 mr-1" />
+              Anterior
+            </Button>
+            <Button
+              onClick={() => table.nextPage()}
+              disabled={!table.getCanNextPage()}
+              variant="outline"
+              size="sm"
+            >
+              Siguiente
+              <ChevronRight className="h-4 w-4 ml-1" />
+            </Button>
+          </div>
+        </div>
       )}
 
       {/* Modal - Detalle de Orden */}
@@ -568,14 +622,16 @@ export default function OrdersPage() {
                         <p className="font-medium text-gray-900">{item.productName}</p>
                         <p className="text-sm text-gray-600">
                           Cantidad: {item.quantity}
-                          {item.unitPrice && ` @ ${formatPrice(item.unitPrice)}`}
+                          {/* {item.unitPrice && ` @ ${formatPrice(item.unitPrice)}`} */}
                         </p>
                       </div>
+                      {/*
                       {item.unitPrice && (
                         <p className="font-semibold text-gray-900">
                           {formatPrice(item.unitPrice * item.quantity)}
                         </p>
                       )}
+                      */}
                     </div>
                   ))}
                 </div>
@@ -595,19 +651,21 @@ export default function OrdersPage() {
               {/* Total y fechas */}
               <hr className="border-gray-200" />
               <div className="space-y-2">
+                {/*
                 {selectedOrder.totalAmount && (
                   <div className="flex items-center justify-between">
                     <span className="font-semibold text-gray-900">Total:</span>
                     <span className="text-lg font-bold text-green-600">
                       {(() => {
-                        const numAmount = typeof selectedOrder.totalAmount === 'string' 
-                          ? parseFloat(selectedOrder.totalAmount) 
+                        const numAmount = typeof selectedOrder.totalAmount === 'string'
+                          ? parseFloat(selectedOrder.totalAmount)
                           : selectedOrder.totalAmount;
                         return formatPrice(isNaN(numAmount) ? 0 : numAmount);
                       })()}
                     </span>
                   </div>
                 )}
+                */}
                 <div className="text-sm text-gray-500">
                   <p>Creada: {formatDateForDisplay(selectedOrder.createdAt, 'datetime')}</p>
                   <p>Actualizada: {formatDateForDisplay(selectedOrder.updatedAt, 'datetime')}</p>

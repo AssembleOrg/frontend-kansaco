@@ -1,109 +1,50 @@
 'use client';
 
-import { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Send, Upload, CheckCircle } from 'lucide-react';
+import Link from 'next/link';
+import {
+  MapPin,
+  Users,
+  FileText,
+  Building2,
+  Calculator,
+  CheckCircle,
+  ArrowRight,
+  Phone,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
-import { formatDateForDisplay } from '@/lib/dateUtils';
 
 export default function MayoristaPage() {
-  const [formData, setFormData] = useState({
-    nombre: '',
-    email: '',
-    cuit: '',
-    domicilio: '',
-    codigoPostal: '',
-    telefono: '',
-    zonaDistribucion: '',
-    situacionAfip: '',
-    informacionAdicional: '',
-  });
-  const [selectedFile, setSelectedFile] = useState<File | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isSubmitted, setIsSubmitted] = useState(false);
-
-  const situacionesAfip = [
-    'No Inscripto',
-    'Monotributista',
-    'Responsable Inscripto',
-    'Persona Jurídica',
+  const requirements = [
+    {
+      icon: FileText,
+      title: 'CUIT Activo',
+      description: 'Número de CUIT válido y activo ante AFIP',
+    },
+    {
+      icon: CheckCircle,
+      title: 'Constancia AFIP',
+      description: 'Documentación que acredite situación fiscal vigente',
+    },
+    {
+      icon: Building2,
+      title: 'Domicilio Comercial',
+      description: 'Dirección comercial verificable con local o depósito',
+    },
+    {
+      icon: MapPin,
+      title: 'Zona de Distribución',
+      description: 'Área geográfica definida donde realizarás la distribución',
+    },
+    {
+      icon: Calculator,
+      title: 'Capacidad de Compra',
+      description: 'Compra mínima por pedido',
+    },
   ];
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
-
-    try {
-      // Preparar datos para EmailJS
-      const templateParams = {
-        to_email: 'info@kansaco.com',
-        from_name: formData.nombre,
-        from_email: formData.email,
-        cuit: formData.cuit,
-        domicilio: formData.domicilio,
-        codigo_postal: formData.codigoPostal,
-        telefono: formData.telefono,
-        zona_distribucion: formData.zonaDistribucion,
-        situacion_afip: formData.situacionAfip,
-        informacion_adicional: formData.informacionAdicional,
-        archivo_adjunto: selectedFile
-          ? selectedFile.name
-          : 'No se adjuntó archivo',
-        fecha: formatDateForDisplay(new Date(), 'short'),
-        subject: `Nueva solicitud de mayorista - ${formData.nombre}`,
-      };
-
-      // TODO: Implementar EmailJS cuando tengas las credenciales
-      // await emailjs.send('YOUR_SERVICE_ID', 'YOUR_TEMPLATE_ID', templateParams, 'YOUR_PUBLIC_KEY');
-      console.log('Datos del formulario mayorista:', templateParams);
-
-      setTimeout(() => {
-        setIsSubmitting(false);
-        setIsSubmitted(true);
-        setFormData({
-          nombre: '',
-          email: '',
-          cuit: '',
-          domicilio: '',
-          codigoPostal: '',
-          telefono: '',
-          zonaDistribucion: '',
-          situacionAfip: '',
-          informacionAdicional: '',
-        });
-        setSelectedFile(null);
-
-        // Reset success message after 5 seconds
-        setTimeout(() => setIsSubmitted(false), 5000);
-      }, 2000);
-    } catch (error) {
-      console.error('Error al enviar formulario mayorista:', error);
-      setIsSubmitting(false);
-      alert('Error al enviar el formulario. Por favor, intenta nuevamente.');
-    }
-  };
-
-  const handleInputChange = (
-    e: React.ChangeEvent<
-      HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement
-    >
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file && file.type === 'application/pdf') {
-      setSelectedFile(file);
-    } else {
-      alert('Por favor, selecciona solo archivos PDF');
-    }
-  };
-
   return (
     <div className="min-h-screen bg-black">
       <Navbar />
@@ -135,280 +76,105 @@ export default function MayoristaPage() {
               <span className="block text-[#16a245]">MAYORISTA KANSACO</span>
             </h1>
             <p className="mx-auto max-w-3xl text-xl text-gray-300">
-              Únete a nuestra red de distribuidores y accede a precios
-              especiales, capacitación técnica y el respaldo de más de 15 años
-              de experiencia.
+              Únete a nuestra red de distribuidores con el respaldo de más de
+              medio siglo de experiencia.
             </p>
           </motion.div>
         </div>
       </section>
 
-      {/* Form Section */}
-      <section className="bg-gradient-to-b from-gray-900 to-black py-16">
+      {/* Requirements Section */}
+      <section className="bg-gradient-to-b from-gray-950 to-black py-16">
         <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="mb-12 text-center"
+          >
+            <h2 className="mb-4 text-4xl font-bold text-[#16a245]">
+              Requisitos
+            </h2>
+            <p className="mx-auto max-w-2xl text-lg text-gray-300">
+              Lo que necesitas para formar parte de nuestra red de
+              distribuidores
+            </p>
+          </motion.div>
+
           <div className="mx-auto max-w-4xl">
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="rounded-2xl border border-gray-800 bg-gray-900/50 p-8 backdrop-blur-sm"
-            >
-              <div className="mb-8 text-center">
-                <h2 className="mb-4 text-3xl font-bold text-white">
-                  Solicitud de Registro
-                </h2>
-                <p className="text-gray-300">
-                  Completa el siguiente formulario y nos pondremos en contacto
-                  contigo
-                </p>
-              </div>
-
-              {isSubmitted && (
+            <div className="grid gap-6 md:grid-cols-2">
+              {requirements.map((req, index) => (
                 <motion.div
-                  initial={{ opacity: 0, y: -20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="mb-6 flex items-center gap-3 rounded-lg border border-green-700 bg-green-900/50 p-4 text-green-300"
+                  key={req.title}
+                  initial={{ opacity: 0, x: index % 2 === 0 ? -30 : 30 }}
+                  whileInView={{ opacity: 1, x: 0 }}
+                  transition={{ duration: 0.8, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  className="flex gap-4 rounded-xl border border-gray-800 bg-gray-900/30 p-6"
                 >
-                  <CheckCircle className="h-5 w-5" />
-                  <span>
-                    ¡Solicitud enviada con éxito! Te contactaremos pronto.
-                  </span>
+                  <div className="flex-shrink-0">
+                    <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-[#16a245]/20">
+                      <req.icon className="h-6 w-6 text-[#16a245]" />
+                    </div>
+                  </div>
+                  <div>
+                    <h3 className="mb-2 text-lg font-semibold text-white">
+                      {req.title}
+                    </h3>
+                    <p className="text-gray-400">{req.description}</p>
+                  </div>
                 </motion.div>
-              )}
-
-              <form onSubmit={handleSubmit} className="space-y-6">
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="nombre"
-                      className="mb-2 block text-sm font-medium text-gray-300"
-                    >
-                      Nombre completo *
-                    </label>
-                    <input
-                      type="text"
-                      id="nombre"
-                      name="nombre"
-                      value={formData.nombre}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
-                      placeholder="Tu nombre completo"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="email"
-                      className="mb-2 block text-sm font-medium text-gray-300"
-                    >
-                      Correo electrónico *
-                    </label>
-                    <input
-                      type="email"
-                      id="email"
-                      name="email"
-                      value={formData.email}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
-                      placeholder="tu@email.com"
-                    />
-                  </div>
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="cuit"
-                      className="mb-2 block text-sm font-medium text-gray-300"
-                    >
-                      CUIT *
-                    </label>
-                    <input
-                      type="text"
-                      id="cuit"
-                      name="cuit"
-                      value={formData.cuit}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
-                      placeholder="XX-XXXXXXXX-X"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="telefono"
-                      className="mb-2 block text-sm font-medium text-gray-300"
-                    >
-                      Teléfono *
-                    </label>
-                    <input
-                      type="tel"
-                      id="telefono"
-                      name="telefono"
-                      value={formData.telefono}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
-                      placeholder="Tu número de teléfono"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="domicilio"
-                    className="mb-2 block text-sm font-medium text-gray-300"
-                  >
-                    Domicilio completo con Localidad y Provincia *
-                  </label>
-                  <input
-                    type="text"
-                    id="domicilio"
-                    name="domicilio"
-                    value={formData.domicilio}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
-                    placeholder="Dirección completa, localidad, provincia"
-                  />
-                </div>
-
-                <div className="grid gap-6 md:grid-cols-2">
-                  <div>
-                    <label
-                      htmlFor="codigoPostal"
-                      className="mb-2 block text-sm font-medium text-gray-300"
-                    >
-                      Código Postal *
-                    </label>
-                    <input
-                      type="text"
-                      id="codigoPostal"
-                      name="codigoPostal"
-                      value={formData.codigoPostal}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
-                      placeholder="CP"
-                    />
-                  </div>
-                  <div>
-                    <label
-                      htmlFor="zonaDistribucion"
-                      className="mb-2 block text-sm font-medium text-gray-300"
-                    >
-                      Zona de distribución *
-                    </label>
-                    <input
-                      type="text"
-                      id="zonaDistribucion"
-                      name="zonaDistribucion"
-                      value={formData.zonaDistribucion}
-                      onChange={handleInputChange}
-                      required
-                      className="w-full rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
-                      placeholder="Área geográfica de cobertura"
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="situacionAfip"
-                    className="mb-2 block text-sm font-medium text-gray-300"
-                  >
-                    Situación ante AFIP *
-                  </label>
-                  <select
-                    id="situacionAfip"
-                    name="situacionAfip"
-                    value={formData.situacionAfip}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full rounded-lg bg-gray-900 px-4 py-3 text-white focus:outline-none"
-                  >
-                    <option value="">Selecciona tu situación</option>
-                    {situacionesAfip.map((situacion) => (
-                      <option key={situacion} value={situacion}>
-                        {situacion}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    htmlFor="informacionAdicional"
-                    className="mb-2 block text-sm font-medium text-gray-300"
-                  >
-                    Información adicional o carta de presentación
-                  </label>
-                  <textarea
-                    id="informacionAdicional"
-                    name="informacionAdicional"
-                    value={formData.informacionAdicional}
-                    onChange={handleInputChange}
-                    rows={4}
-                    className="w-full resize-none rounded-lg border border-gray-700 bg-gray-800/50 px-4 py-3 text-white placeholder-gray-400 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/20"
-                    placeholder="Cuéntanos sobre tu experiencia, distribución actual, objetivos, etc."
-                  />
-                </div>
-
-                {/* File Upload */}
-                <div>
-                  <label className="mb-2 block text-sm font-medium text-gray-300">
-                    Documentación adicional (PDF opcional)
-                  </label>
-                  <div className="relative">
-                    <input
-                      type="file"
-                      accept=".pdf"
-                      onChange={handleFileChange}
-                      className="hidden"
-                      id="file-upload"
-                    />
-                    <label
-                      htmlFor="file-upload"
-                      className="flex cursor-pointer items-center justify-center rounded-lg border-2 border-dashed border-gray-600 bg-gray-800/30 px-6 py-8 transition-colors hover:border-[#16a245] hover:bg-gray-800/50"
-                    >
-                      <div className="text-center">
-                        <Upload className="mx-auto h-8 w-8 text-gray-400" />
-                        <p className="mt-2 text-sm text-gray-300">
-                          {selectedFile
-                            ? selectedFile.name
-                            : 'Haz clic para subir un PDF'}
-                        </p>
-                        <p className="mt-1 text-xs text-gray-400">
-                          Constancia de AFIP, certificados, etc. (opcional)
-                        </p>
-                      </div>
-                    </label>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  disabled={isSubmitting}
-                  className="w-full bg-[#16a245] text-white transition-all duration-300 hover:bg-[#0d7a32] disabled:cursor-not-allowed disabled:opacity-50"
-                  size="lg"
-                >
-                  {isSubmitting ? (
-                    <>
-                      <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                      Enviando solicitud...
-                    </>
-                  ) : (
-                    <>
-                      <Send className="mr-2 h-4 w-4" />
-                      Enviar solicitud
-                    </>
-                  )}
-                </Button>
-              </form>
-            </motion.div>
+              ))}
+            </div>
           </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="bg-gradient-to-b from-gray-900 to-black py-24">
+        <div className="container mx-auto px-4">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="mx-auto max-w-4xl rounded-3xl border border-[#16a245]/50 bg-gradient-to-br from-[#16a245]/10 to-gray-900/50 p-12 text-center backdrop-blur-sm"
+          >
+            <h2 className="mb-6 text-4xl font-bold text-white">
+              ¿Listo para unirte a nuestra red?
+            </h2>
+            <p className="mb-8 text-xl text-gray-300">
+              Crea tu cuenta ahora y comienza a disfrutar de los beneficios
+              exclusivos para mayoristas KANSACO
+            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
+              <Link href="/register">
+                <Button
+                  size="lg"
+                  className="bg-[#16a245] text-white transition-all duration-300 hover:scale-105 hover:bg-[#0d7a32]"
+                >
+                  <Users className="mr-2 h-5 w-5" />
+                  Crear Cuenta de Mayorista
+                  <ArrowRight className="ml-2 h-5 w-5" />
+                </Button>
+              </Link>
+              <Link href="/contacto">
+                <Button
+                  size="lg"
+                  variant="outline"
+                  className="border-[#16a245] text-[#16a245] transition-all duration-300 hover:bg-[#16a245] hover:text-white"
+                >
+                  <Phone className="mr-2 h-5 w-5" />
+                  ¿Tienes dudas? Contáctanos
+                </Button>
+              </Link>
+            </div>
+            <p className="mt-6 text-sm text-gray-400">
+              Al crear tu cuenta, selecciona &quot;Cliente Mayorista&quot; para
+              acceder a precios especiales
+            </p>
+          </motion.div>
         </div>
       </section>
 

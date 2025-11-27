@@ -28,6 +28,8 @@ import {
   Users,
   Truck,
   ChevronRight,
+  ShoppingBag,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
@@ -299,34 +301,43 @@ function LoginContent() {
               </form>
             </CardContent>
 
-            <CardFooter className="text-center border-t border-gray-100 pt-6">
-              <div className="space-y-3 w-full">
-                <div className="text-center">
-                  <Link
-                    href="/productos"
-                    className="text-sm text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline"
-                  >
-                    Ver productos sin iniciar sesión →
-                  </Link>
+            <CardFooter className="flex-col items-stretch border-t border-gray-100 pt-8">
+              <div className="w-full">
+                {/* Nivel 1: Acción Primaria - Ver productos sin login */}
+                <Link
+                  href="/productos"
+                  className="flex items-center justify-center gap-2 w-full py-4 px-6 bg-[#16a245]/5 border border-[#16a245]/10 rounded-lg text-[#16a245] font-semibold text-sm hover:bg-[#16a245]/10 hover:scale-[1.02] transition-all duration-200 group"
+                >
+                  <ShoppingBag className="h-4 w-4" />
+                  <span>Ver productos sin iniciar sesión</span>
+                  <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+                </Link>
+
+                {/* Nivel 2: Acción Secundaria - Registro */}
+                <div className="mt-6">
+                  <p className="text-sm text-gray-600 text-center">
+                    ¿No tienes una cuenta?{' '}
+                    <Link
+                      href="/register"
+                      className="text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline transition-colors"
+                    >
+                      Regístrate aquí
+                    </Link>
+                  </p>
                 </div>
-                <p className="text-sm text-gray-600">
-                  ¿No tienes una cuenta?{' '}
-                  <Link
-                    href="/register"
-                    className="text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline"
-                  >
-                    Regístrate aquí
-                  </Link>
-                </p>
-                <p className="text-xs text-gray-500">
-                  Al iniciar sesión, aceptas nuestros{' '}
-                  <Link
-                    href="/terminos-y-condiciones"
-                    className="text-[#16a245] hover:underline"
-                  >
-                    Términos y Condiciones
-                  </Link>
-                </p>
+
+                {/* Nivel 3: Legal - Términos y Condiciones */}
+                <div className="mt-8 pt-6 border-t border-gray-100">
+                  <p className="text-xs text-gray-500 text-center leading-relaxed">
+                    Al iniciar sesión, aceptas nuestros{' '}
+                    <Link
+                      href="/terminos-y-condiciones"
+                      className="text-[#16a245] hover:underline transition-colors"
+                    >
+                      Términos y Condiciones
+                    </Link>
+                  </p>
+                </div>
               </div>
             </CardFooter>
           </Card>

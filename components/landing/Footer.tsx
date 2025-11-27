@@ -38,13 +38,20 @@ const Footer = () => {
 
   const supportLinks = [
     { name: 'Contacto', href: '/contacto' },
-    { name: 'Guía de Compra', href: '/guia-compra' },
     { name: 'Términos y Condiciones', href: '/terminos-y-condiciones' },
   ];
 
   const socialLinks = [
-    { icon: Facebook, href: 'https://www.facebook.com/kansacolubs/', label: 'Facebook' },
-    { icon: Instagram, href: 'https://www.instagram.com/kansaco', label: 'Instagram' },
+    {
+      icon: Facebook,
+      href: 'https://www.facebook.com/kansacolubs/',
+      label: 'Facebook',
+    },
+    {
+      icon: Instagram,
+      href: 'https://www.instagram.com/kansaco',
+      label: 'Instagram',
+    },
   ];
 
   return (
@@ -60,7 +67,7 @@ const Footer = () => {
       <div className="container relative z-10 mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <div className="grid grid-cols-1 gap-12 md:grid-cols-2 lg:grid-cols-4">
           <div className="space-y-6">
-            <Link href="/" className="flex items-center space-x-3 group">
+            <Link href="/" className="group flex items-center space-x-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg shadow-lg transition-all duration-200 group-hover:scale-105">
                 <Image
                   src="/landing/kansaco-logo.png"
@@ -71,15 +78,18 @@ const Footer = () => {
                 />
               </div>
               <div>
-                <h3 className="text-2xl font-black tracking-wider group-hover:text-[#16a245] transition-colors duration-200">KANSACO</h3>
-                <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-200">Ingeniería Líquida</p>
+                <h3 className="text-2xl font-black tracking-wider transition-colors duration-200 group-hover:text-[#16a245]">
+                  KANSACO
+                </h3>
+                <p className="text-sm text-gray-400 transition-colors duration-200 group-hover:text-gray-300">
+                  Ingeniería Líquida
+                </p>
               </div>
             </Link>
 
             <p className="leading-relaxed text-gray-400">
-              Más de 15 años desarrollando tecnologías avanzadas en lubricación
-              para maximizar el rendimiento y protección de motores y
-              maquinarias.
+              Desarrollando tecnologías para maximizar el rendimiento y
+              protección de tus motores o maquinarias.
             </p>
 
             <div className="space-y-3">

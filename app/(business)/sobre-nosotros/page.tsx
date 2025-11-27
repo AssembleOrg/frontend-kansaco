@@ -179,15 +179,15 @@ export default function SobreNosotrosPage() {
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
               {[
-                { number: '15+', label: 'Años de Experiencia', icon: Award },
+                { number: 'Medio siglo', label: 'de Experiencia', icon: Award },
                 {
                   number: '300+',
                   label: 'Productos Desarrollados',
                   icon: Target,
                 },
-                { number: '2M', label: 'Litros Anuales', icon: Factory },
+                { number: '5 millones', label: 'de Litros Anuales', icon: Factory },
                 {
-                  number: '300K',
+                  number: '700.000',
                   label: 'Toneladas de Grasas',
                   icon: TrendingUp,
                 },
@@ -833,7 +833,7 @@ export default function SobreNosotrosPage() {
                 </span>
               </h2>
               <p className="mb-8 text-xl text-gray-300">
-                Descubre cómo nuestros más de 15 años de experiencia pueden
+                Descubre cómo nuestro más de medio siglo de experiencia puede
                 proteger y optimizar tus motores
               </p>
               <div className="flex flex-col justify-center gap-4 sm:flex-row">

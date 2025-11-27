@@ -27,6 +27,8 @@ import {
   Lock,
   Building2,
   Store,
+  ShoppingBag,
+  ArrowRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
@@ -400,25 +402,30 @@ export default function RegisterPage() {
             </form>
           </CardContent>
           
-          <CardFooter className="text-center border-t border-gray-100 pt-6">
-            <div className="space-y-3 w-full flex flex-col items-center">
-              <div className="text-center">
-                <Link
-                  href="/productos"
-                  className="text-sm text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline"
-                >
-                  Ver productos sin registrarse →
-                </Link>
+          <CardFooter className="flex-col items-stretch border-t border-gray-100 pt-8">
+            <div className="w-full">
+              {/* Nivel 1: Acción Primaria - Ver productos sin registro */}
+              <Link
+                href="/productos"
+                className="flex items-center justify-center gap-2 w-full py-4 px-6 bg-[#16a245]/5 border border-[#16a245]/10 rounded-lg text-[#16a245] font-semibold text-sm hover:bg-[#16a245]/10 hover:scale-[1.02] transition-all duration-200 group"
+              >
+                <ShoppingBag className="h-4 w-4" />
+                <span>Ver productos sin registrarse</span>
+                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
+              </Link>
+
+              {/* Nivel 2: Acción Secundaria - Login */}
+              <div className="mt-6">
+                <p className="text-sm text-gray-600 text-center">
+                  ¿Ya tienes cuenta?{' '}
+                  <Link
+                    href="/login"
+                    className="text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline transition-colors"
+                  >
+                    Inicia sesión aquí
+                  </Link>
+                </p>
               </div>
-              <p className="text-sm text-gray-600 text-center">
-                ¿Ya tienes cuenta?{' '}
-                <Link
-                  href="/login"
-                  className="text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline"
-                >
-                  Inicia sesión aquí
-                </Link>
-              </p>
             </div>
           </CardFooter>
         </Card>

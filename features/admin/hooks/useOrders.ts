@@ -20,7 +20,9 @@ export function useOrders() {
       setIsLoading(true);
       setError(null);
       const data = await getOrders(token);
-      setOrders(data);
+      // Extraer el array del objeto response si es necesario
+      const ordersArray = Array.isArray(data) ? data : ((data as any)?.data || []);
+      setOrders(ordersArray);
     } catch (err) {
       console.error('Error loading orders:', err);
       setError(err instanceof Error ? err.message : 'Error loading orders');
