@@ -215,16 +215,15 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
           </View>
 
           <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>KANSACO</Text>
+            <Text style={styles.companyName}>Kansaco Petroquimica S.A</Text>
             <Text style={{ marginTop: 3, fontSize: 8 }}>
-              Lubricantes y Aceites
+              CUIT: 30-58610901-0
             </Text>
             <Text style={{ fontSize: 8 }}>
-              Buenos Aires, Argentina
+              Magallanes 2031 Florencio Varela
             </Text>
-            <Text style={{ marginTop: 2, fontSize: 8 }}>
-              Email: ventas@kansaco.com
-            </Text>
+            <Text style={{ marginTop: 2, fontSize: 8 }}>Tel: 4237-2636</Text>
+            <Text style={{ fontSize: 8 }}>Email: info@kansaco.com</Text>
           </View>
 
           <View style={styles.orderInfo}>
@@ -234,13 +233,15 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
             <Text style={{ marginTop: 3, fontSize: 8 }}>
               Fecha: {formatDateForDisplay(getOrderDate(order), 'long')}
             </Text>
-            <Text style={{
-              marginTop: 4,
-              fontSize: 7,
-              backgroundColor: isMayorista ? '#fef3c7' : '#dbeafe',
-              padding: 2,
-              borderRadius: 2,
-            }}>
+            <Text
+              style={{
+                marginTop: 4,
+                fontSize: 7,
+                backgroundColor: isMayorista ? '#fef3c7' : '#dbeafe',
+                padding: 2,
+                borderRadius: 2,
+              }}
+            >
               {isMayorista ? 'MAYORISTA' : 'MINORISTA'}
             </Text>
           </View>
@@ -256,23 +257,31 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
             <View style={styles.clientDetailsRow}>
               <View style={styles.clientDetailsPair}>
                 <Text style={styles.label}>Nombre:</Text>
-                <Text style={styles.value}>{order.contactInfo.fullName || 'N/A'}</Text>
+                <Text style={styles.value}>
+                  {order.contactInfo.fullName || 'N/A'}
+                </Text>
               </View>
               <View style={styles.clientDetailsPair}>
                 <Text style={styles.label}>Email:</Text>
-                <Text style={styles.value}>{order.contactInfo.email || 'N/A'}</Text>
+                <Text style={styles.value}>
+                  {order.contactInfo.email || 'N/A'}
+                </Text>
               </View>
             </View>
             <View style={styles.clientDetailsRow}>
               <View style={styles.clientDetailsPair}>
                 <Text style={styles.label}>Teléfono:</Text>
-                <Text style={styles.value}>{order.contactInfo.phone || 'N/A'}</Text>
+                <Text style={styles.value}>
+                  {order.contactInfo.phone || 'N/A'}
+                </Text>
               </View>
             </View>
             <View style={styles.clientDetailsRow}>
               <View style={styles.clientDetailsPair}>
                 <Text style={styles.label}>Dirección:</Text>
-                <Text style={styles.value}>{order.contactInfo.address || 'N/A'}</Text>
+                <Text style={styles.value}>
+                  {order.contactInfo.address || 'N/A'}
+                </Text>
               </View>
             </View>
           </>
@@ -289,14 +298,18 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
               </View>
               <View style={styles.clientDetailsPair}>
                 <Text style={styles.label}>Situación AFIP:</Text>
-                <Text style={styles.value}>{order.businessInfo.situacionAfip}</Text>
+                <Text style={styles.value}>
+                  {order.businessInfo.situacionAfip}
+                </Text>
               </View>
             </View>
             {order.businessInfo.razonSocial && (
               <View style={styles.clientDetailsRow}>
                 <View style={styles.clientDetailsPair}>
                   <Text style={styles.label}>Razón Social:</Text>
-                  <Text style={styles.value}>{order.businessInfo.razonSocial}</Text>
+                  <Text style={styles.value}>
+                    {order.businessInfo.razonSocial}
+                  </Text>
                 </View>
               </View>
             )}
@@ -304,7 +317,9 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
               <View style={styles.clientDetailsRow}>
                 <View style={styles.clientDetailsPair}>
                   <Text style={styles.label}>Código Postal:</Text>
-                  <Text style={styles.value}>{order.businessInfo.codigoPostal}</Text>
+                  <Text style={styles.value}>
+                    {order.businessInfo.codigoPostal}
+                  </Text>
                 </View>
               </View>
             )}
@@ -330,7 +345,11 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
             </View>
 
             <View style={{ marginTop: 4, fontSize: 8, color: '#666' }}>
-              <Text>Total de productos: {order.items.reduce((acc, item) => acc + item.quantity, 0)} unidades</Text>
+              <Text>
+                Total de productos:{' '}
+                {order.items.reduce((acc, item) => acc + item.quantity, 0)}{' '}
+                unidades
+              </Text>
             </View>
           </>
         )}
@@ -352,20 +371,26 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
           </View>
           <View style={styles.footerRow}>
             <Text>
-              Este comprobante es solo una confirmación de pedido y no tiene validez fiscal.
+              Este comprobante es solo una confirmación de pedido y no tiene
+              validez fiscal.
             </Text>
           </View>
           <View style={styles.footerRow}>
             <Text>
-              Un representante de Kansaco se comunicará para coordinar pago y envío.
+              Un representante de Kansaco se comunicará para coordinar pago y
+              envío.
             </Text>
           </View>
           <View style={styles.footerRow}>
-            <Text>Para consultas: ventas@kansaco.com</Text>
+            <Text>Para consultas: info@kansaco.com</Text>
           </View>
           <View style={styles.footerRow}>
             <Text style={{ fontSize: 7, color: '#999' }}>
-              Documento generado el {formatDateForDisplay(getCurrentDateTime().toJSDate(), 'datetime')}
+              Documento generado el{' '}
+              {formatDateForDisplay(
+                getCurrentDateTime().toJSDate(),
+                'datetime'
+              )}
             </Text>
           </View>
         </View>
@@ -374,11 +399,11 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
   );
 };
 
-export function PDFPedidoDownloadButton({ 
-  order, 
-  pdfBase64, 
-  presupuestoNumber 
-}: { 
+export function PDFPedidoDownloadButton({
+  order,
+  pdfBase64,
+  presupuestoNumber,
+}: {
   order: OrderData;
   pdfBase64?: string;
   presupuestoNumber?: string;
@@ -415,12 +440,15 @@ export function PDFPedidoDownloadButton({
     if (pdfBase64) {
       setIsDownloading(true);
       try {
-        const customerName = order.contactInfo?.fullName?.replace(/\s+/g, '_') || 'Cliente';
-        const orderDate = formatDateForDisplay(getOrderDate(order), 'short').replace(/\s+/g, '-').replace(/,/g, '');
-        const fileName = presupuestoNumber 
+        const customerName =
+          order.contactInfo?.fullName?.replace(/\s+/g, '_') || 'Cliente';
+        const orderDate = formatDateForDisplay(getOrderDate(order), 'short')
+          .replace(/\s+/g, '-')
+          .replace(/,/g, '');
+        const fileName = presupuestoNumber
           ? `Presupuesto_${presupuestoNumber}_${customerName}_${orderDate}.pdf`
           : `Pedido_Kansaco_${customerName}_${orderDate}.pdf`;
-        
+
         downloadPdfFromBase64(pdfBase64, fileName);
       } catch (error) {
         console.error('Error al descargar PDF:', error);
@@ -434,9 +462,12 @@ export function PDFPedidoDownloadButton({
 
   // Si tenemos PDF del backend, usar ese
   if (pdfBase64) {
-    const customerName = order.contactInfo?.fullName?.replace(/\s+/g, '_') || 'Cliente';
-    const orderDate = formatDateForDisplay(getOrderDate(order), 'short').replace(/\s+/g, '-').replace(/,/g, '');
-    const fileName = presupuestoNumber 
+    const customerName =
+      order.contactInfo?.fullName?.replace(/\s+/g, '_') || 'Cliente';
+    const orderDate = formatDateForDisplay(getOrderDate(order), 'short')
+      .replace(/\s+/g, '-')
+      .replace(/,/g, '');
+    const fileName = presupuestoNumber
       ? `Presupuesto_${presupuestoNumber}_${customerName}_${orderDate}.pdf`
       : `Pedido_Kansaco_${customerName}_${orderDate}.pdf`;
 
@@ -453,8 +484,11 @@ export function PDFPedidoDownloadButton({
   }
 
   // Fallback: generar PDF del frontend si no hay PDF del backend
-  const customerName = order.contactInfo?.fullName?.replace(/\s+/g, '_') || 'Cliente';
-  const orderDate = formatDateForDisplay(getOrderDate(order), 'short').replace(/\s+/g, '-').replace(/,/g, '');
+  const customerName =
+    order.contactInfo?.fullName?.replace(/\s+/g, '_') || 'Cliente';
+  const orderDate = formatDateForDisplay(getOrderDate(order), 'short')
+    .replace(/\s+/g, '-')
+    .replace(/,/g, '');
   const fileName = `Pedido_Kansaco_${customerName}_${orderDate}.pdf`;
 
   return (
