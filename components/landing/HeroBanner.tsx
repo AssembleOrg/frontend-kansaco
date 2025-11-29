@@ -3,8 +3,9 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, Volume2, VolumeX, ChevronDown } from 'lucide-react';
+import { Play, Pause, ChevronDown, ArrowDownRight } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { scrollToSection } from '@/lib/scrollUtils';
 
 // Componente reutilizable para efectos de neón
 export const NeonBorders = ({
@@ -141,7 +142,6 @@ const HeroBanner = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
-  const [isMuted, setIsMuted] = useState(true);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
 
   useEffect(() => {
@@ -181,14 +181,7 @@ const HeroBanner = () => {
   }, []);
 
   // Debug: Log current state
-  console.log(
-    'isVideoLoaded:',
-    isVideoLoaded,
-    'isPlaying:',
-    isPlaying,
-    'isMuted:',
-    isMuted
-  );
+  console.log('isVideoLoaded:', isVideoLoaded, 'isPlaying:', isPlaying);
 
   const togglePlay = () => {
     console.log('Toggle play clicked!'); // Debug log
@@ -203,39 +196,31 @@ const HeroBanner = () => {
     setIsPlaying(!isPlaying);
   };
 
-  const toggleMute = () => {
-    console.log('Toggle mute clicked!'); // Debug log
-    const video = videoRef.current;
-    if (!video) return;
-
-    video.muted = !video.muted;
-    setIsMuted(video.muted);
-  };
-
   // Función para scroll smooth a la siguiente sección
   const scrollToNextSection = () => {
-    const nextSection = document.querySelector('#categories') || 
-                       document.querySelector('section[id]') || 
-                       document.querySelector('main > section:nth-child(2)');
-    
+    const nextSection =
+      document.querySelector('#categories') ||
+      document.querySelector('section[id]') ||
+      document.querySelector('main > section:nth-child(2)');
+
     if (nextSection) {
-      nextSection.scrollIntoView({ 
+      nextSection.scrollIntoView({
         behavior: 'smooth',
-        block: 'start'
+        block: 'start',
       });
     } else {
       // Fallback: scroll down por viewport height
       window.scrollTo({
         top: window.innerHeight,
-        behavior: 'smooth'
+        behavior: 'smooth',
       });
     }
   };
 
   return (
     <section className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white lg:flex-row">
-      {/* Video Section - 2/3 - OCULTO EN MÓVILES */}
-      <div className="relative hidden h-screen w-full lg:block lg:w-2/3">
+      {/* Video Section - 1/2 - OCULTO EN MÓVILES */}
+      <div className="relative hidden h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-black lg:block lg:w-1/2">
         {/* Video Element */}
         <video
           ref={videoRef}
@@ -243,10 +228,10 @@ const HeroBanner = () => {
           loop
           muted
           playsInline
-          className="h-full w-full object-cover"
-          poster="/landing/barril-mercedes.png"
+          className="h-full w-full object-contain"
+          poster="/landing/business-kansaco.png"
         >
-          <source src="/landing/banner.mp4" type="video/mp4" />
+          <source src="/landing/hero-presentacion.mp4" type="video/mp4" />
           Tu navegador no soporta el tag de video.
         </video>
 
@@ -271,19 +256,6 @@ const HeroBanner = () => {
                 <Pause className="h-5 w-5 text-[#16a245] drop-shadow-sm" />
               ) : (
                 <Play className="ml-0.5 h-5 w-5 text-[#16a245] drop-shadow-sm" />
-              )}
-            </motion.button>
-
-            <motion.button
-              onClick={toggleMute}
-              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-200 hover:bg-[#16a245]/80"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.9 }}
-            >
-              {isMuted ? (
-                <VolumeX className="h-5 w-5 text-[#16a245] drop-shadow-sm" />
-              ) : (
-                <Volume2 className="h-5 w-5 text-[#16a245] drop-shadow-sm" />
               )}
             </motion.button>
           </div>
@@ -332,8 +304,8 @@ const HeroBanner = () => {
         </div>
       </div>
 
-      {/* Content Section - 1/3 en desktop, full width en móvil */}
-      <div className="relative flex min-h-screen w-full flex-col items-center justify-center text-center lg:h-screen lg:w-1/3 lg:items-start lg:text-left">
+      {/* Content Section - 1/2 en desktop, full width en móvil */}
+      <div className="relative flex min-h-screen w-full flex-col items-center justify-center text-center lg:h-screen lg:w-1/2 lg:items-start lg:text-left">
         {/* Simple Lightning Borders */}
         <motion.div
           className="pointer-events-none absolute inset-0 z-50"
@@ -489,7 +461,7 @@ const HeroBanner = () => {
           ref={contentRef}
           className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-6 py-12 sm:px-8 lg:h-screen lg:items-start lg:px-12"
           style={{
-            backgroundImage: "url('/landing/barril-garage.png')",
+            backgroundImage: "url('/landing/business-kansaco.png')",
             backgroundSize: 'cover',
             backgroundPosition: 'center',
           }}
@@ -560,10 +532,10 @@ const HeroBanner = () => {
               </span>
               <br />
               <span className="bg-gradient-to-r from-[#16a245] via-[#0d7a32] to-[#16a245] bg-clip-text text-transparent">
-                Ingeniería
+                La Nueva Generación
               </span>
               <br />
-              <span className="font-light text-white">Líquida.</span>
+              <span className="font-semibold text-white">en Lubricantes</span>
             </motion.h1>
 
             {/* Subtitle */}
@@ -581,7 +553,7 @@ const HeroBanner = () => {
 
             {/* CTA Buttons */}
             <motion.div
-              className="flex w-full max-w-sm flex-col gap-4 sm:max-w-none sm:flex-row lg:w-auto"
+              className="flex w-full max-w-sm flex-col gap-4 sm:max-w-none sm:flex-row sm:justify-center lg:w-auto lg:justify-start"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 }}
@@ -619,42 +591,117 @@ const HeroBanner = () => {
                     href="/contacto"
                     className="flex items-center justify-center gap-2"
                   >
-                    Contactar Ahora
+                    Contactanos
                   </Link>
                 </Button>
               </motion.div>
             </motion.div>
 
-            {/* Trust Indicators */}
             <motion.div
-              className="mt-8 grid grid-cols-1 gap-4 text-sm text-gray-400 sm:flex sm:items-center sm:gap-6"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
+              className="mt-8 w-full"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.7 }}
             >
-              <div className="flex items-center justify-center gap-2 sm:justify-start">
-                <motion.div
-                  className="h-2 w-2 rounded-full bg-[#16a245]"
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity }}
-                />
-                <span>Calidad Premium</span>
-              </div>
-              <div className="flex items-center justify-center gap-2 sm:justify-start">
-                <motion.div
-                  className="h-2 w-2 rounded-full bg-[#16a245]"
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 0.5 }}
-                />
-                <span>Envío Gratuito</span>
-              </div>
-              <div className="flex items-center justify-center gap-2 sm:justify-start">
-                <motion.div
-                  className="h-2 w-2 rounded-full bg-[#16a245]"
-                  animate={{ opacity: [0.5, 1, 0.5] }}
-                  transition={{ duration: 2, repeat: Infinity, delay: 1 }}
-                />
-                <span>Garantía Total</span>
+              <p className="mb-4 text-center text-sm font-medium text-white lg:text-left">
+                Descubrí más:
+              </p>
+
+              <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+                <motion.button
+                  onClick={() => scrollToSection('la-empresa')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)]"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
+                  </motion.div>
+                  <span>La Empresa</span>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => scrollToSection('categories')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)]"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
+                  </motion.div>
+                  <span>Categorías</span>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => scrollToSection('technology')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)]"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
+                  </motion.div>
+                  <span>Tecnología</span>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => scrollToSection('featured-products')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)]"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
+                  </motion.div>
+                  <span>Productos</span>
+                </motion.button>
+
+                <motion.button
+                  onClick={() => scrollToSection('argentina')}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className="group col-span-2 flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)] lg:col-span-1"
+                >
+                  <motion.div
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{
+                      duration: 1.5,
+                      repeat: Infinity,
+                      ease: 'easeInOut',
+                    }}
+                  >
+                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
+                  </motion.div>
+                  <span>Argentina</span>
+                </motion.button>
               </div>
             </motion.div>
           </motion.div>
@@ -664,7 +711,7 @@ const HeroBanner = () => {
       {/* Scroll Indicator - Con funcionalidad de scroll */}
       <motion.button
         onClick={scrollToNextSection}
-        className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 transform cursor-pointer lg:left-1/3"
+        className="absolute bottom-8 left-1/2 z-30 -translate-x-1/2 transform cursor-pointer lg:left-1/4"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.8, delay: 1 }}
@@ -672,7 +719,6 @@ const HeroBanner = () => {
         whileTap={{ scale: 0.9 }}
       >
         <div className="flex flex-col items-center gap-2 text-white/60 transition-colors duration-300 hover:text-[#16a245]">
-          <span className="text-sm font-medium">Descubre más</span>
           <motion.div
             animate={{ y: [0, 8, 0] }}
             transition={{ duration: 2, repeat: Infinity, ease: 'easeInOut' }}

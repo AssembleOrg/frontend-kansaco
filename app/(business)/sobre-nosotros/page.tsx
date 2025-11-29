@@ -5,7 +5,8 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Factory,
   Users,
@@ -26,8 +27,11 @@ import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import Link from 'next/link';
 
-export default function SobreNosotrosPage() {
+function SobreNosotrosContent() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const section = searchParams.get('section');
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end start'],
@@ -35,6 +39,20 @@ export default function SobreNosotrosPage() {
 
   const heroY = useTransform(scrollYProgress, [0, 1], [0, -300]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  useEffect(() => {
+    if (section) {
+      setTimeout(() => {
+        const element = document.getElementById(`section-${section}`);
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 300);
+    }
+  }, [section]);
 
   return (
     <div className="min-h-screen bg-black">
@@ -175,7 +193,7 @@ export default function SobreNosotrosPage() {
         </motion.section>
 
         {/* Stats Section */}
-        <section className="relative bg-gradient-to-b from-black to-gray-950 py-20">
+        <section id="section-estadisticas" className="relative bg-gradient-to-b from-black to-gray-950 py-20">
           <div className="container mx-auto px-4">
             <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
               {[
@@ -215,7 +233,7 @@ export default function SobreNosotrosPage() {
         </section>
 
         {/* Nosotros Section */}
-        <section className="relative bg-gradient-to-b from-gray-950 to-black py-24">
+        <section id="section-nosotros" className="relative bg-gradient-to-b from-gray-950 to-black py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -317,7 +335,7 @@ export default function SobreNosotrosPage() {
         </section>
 
         {/* Technology Section */}
-        <section className="relative bg-gradient-to-b from-black to-gray-950 py-24">
+        <section id="section-tecnologia" className="relative bg-gradient-to-b from-black to-gray-950 py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -469,7 +487,7 @@ export default function SobreNosotrosPage() {
         </section>
 
         {/* Production Section */}
-        <section className="relative bg-gradient-to-b from-gray-950 to-black py-24">
+        <section id="section-elaboracion" className="relative bg-gradient-to-b from-gray-950 to-black py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -671,7 +689,7 @@ export default function SobreNosotrosPage() {
         </section>
 
         {/* Analysis Section */}
-        <section className="relative bg-gradient-to-b from-black to-gray-950 py-24">
+        <section id="section-analisis" className="relative bg-gradient-to-b from-black to-gray-950 py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -865,5 +883,13 @@ export default function SobreNosotrosPage() {
       </div>
       <Footer />
     </div>
+  );
+}
+
+export default function SobreNosotrosPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <SobreNosotrosContent />
+    </Suspense>
   );
 }

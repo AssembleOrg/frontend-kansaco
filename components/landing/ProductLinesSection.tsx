@@ -1,7 +1,8 @@
 'use client';
 
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef, useState } from 'react';
+import { useRef, useState, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Shield,
   Car,
@@ -268,9 +269,11 @@ const productLines = [
   },
 ];
 
-const ProductLinesSection = () => {
+const ProductLinesSectionContent = () => {
   const sectionRef = useRef<HTMLDivElement>(null);
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const searchParams = useSearchParams();
+  const lineParam = searchParams.get('line');
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
@@ -282,6 +285,42 @@ const ProductLinesSection = () => {
     [0, 0.3, 0.7, 1],
     [0.1, 0.6, 0.6, 0.1]
   );
+
+  const getCategoryId = (category: string): string => {
+    const idMap: Record<string, string> = {
+      'LÍNEAS VEHÍCULOS': 'vehiculos',
+      'INDUSTRIA PESADA': 'industria-pesada',
+      'ESPECIALIDADES': 'especialidades',
+      'COMPLEMENTOS': 'complementos'
+    };
+    return `category-${idMap[category] || ''}`;
+  };
+
+  useEffect(() => {
+    if (lineParam) {
+      const categoryMap: Record<string, string> = {
+        'vehiculos': 'LÍNEAS VEHÍCULOS',
+        'industria-pesada': 'INDUSTRIA PESADA',
+        'especialidades': 'ESPECIALIDADES',
+        'complementos': 'COMPLEMENTOS'
+      };
+      const category = categoryMap[lineParam];
+      if (category) {
+        setExpandedCategories(new Set([category]));
+
+        // Auto-scroll a la sección expandida después de un pequeño delay
+        setTimeout(() => {
+          const element = document.getElementById(`category-${lineParam}`);
+          if (element) {
+            element.scrollIntoView({
+              behavior: 'smooth',
+              block: 'center'
+            });
+          }
+        }, 300);
+      }
+    }
+  }, [lineParam]);
 
   return (
     <section
@@ -430,6 +469,7 @@ const ProductLinesSection = () => {
             >
               {/* Category Header */}
               <motion.button
+                id={getCategoryId(line.category)}
                 className="w-full rounded-2xl border border-gray-700/50 bg-black/50 p-6 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245]/50"
                 onClick={() => {
                   setExpandedCategories(prev => {
@@ -457,9 +497,6 @@ const ProductLinesSection = () => {
                       </h3>
                       <p className="text-sm text-gray-400">{line.description}</p>
                     </div>
-                    <span className="rounded-full bg-[#16a245]/20 px-2 py-1 text-xs sm:px-3 sm:text-sm text-[#16a245] flex-shrink-0">
-                      {line.products.length} productos
-                    </span>
                   </div>
                   <motion.div
                     animate={{
@@ -627,6 +664,14 @@ const ProductLinesSection = () => {
         </motion.div>
       </div>
     </section>
+  );
+};
+
+const ProductLinesSection = () => {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <ProductLinesSectionContent />
+    </Suspense>
   );
 };
 

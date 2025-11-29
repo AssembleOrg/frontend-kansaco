@@ -20,6 +20,9 @@ const Navbar = () => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);
+  const [isProductLinesDropdownOpen, setIsProductLinesDropdownOpen] = useState(false);
+  const [isLubricantDropdownOpen, setIsLubricantDropdownOpen] = useState(false);
+  const [isAboutUsDropdownOpen, setIsAboutUsDropdownOpen] = useState(false);
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const { user, token, isAuthReady } = useAuth();
@@ -51,15 +54,40 @@ const Navbar = () => {
   }, []);
 
   const productCategories = [
-    { name: 'Aceites Sintéticos', href: '/productos?category=Sintéticos' },
-    { name: 'Aceites Minerales', href: '/productos?category=Minerales' },
-    { name: 'Aceites para Vehículos', href: '/productos?category=Vehículos' },
-    { name: 'Aceites Industriales', href: '/productos?category=Industrial' },
-    { name: 'Aceites para Motos', href: '/productos?category=Motos' },
+    { name: 'Lubricantes para Vehículos', href: '/productos?category=Vehículos' },
+    { name: 'Lubricantes Industriales', href: '/productos?category=Industrial' },
+    { name: 'Lubricantes para Motos', href: '/productos?category=Motos' },
+    { name: 'Grasas Lubricantes', href: '/productos?category=Grasas' },
+    { name: 'Agro Lubricantes', href: '/productos?category=Agro' },
     {
       name: 'Derivados y Aditivos',
       href: '/productos?category=Derivados Y Aditivos',
     },
+  ];
+
+  const productLineCategories = [
+    { name: 'Inicio', href: '/lineas-de-productos' },
+    { name: 'Línea Vehículo', href: '/lineas-de-productos?line=vehiculos' },
+    { name: 'Industria Pesada', href: '/lineas-de-productos?line=industria-pesada' },
+    { name: 'Especialidades', href: '/lineas-de-productos?line=especialidades' },
+    { name: 'Complementos', href: '/lineas-de-productos?line=complementos' },
+  ];
+
+  const lubricantCategories = [
+    { name: 'Inicio', href: '/tecnologia-lubricantes' },
+    { name: 'Función Principal', href: '/tecnologia-lubricantes?section=funcion-principal' },
+    { name: 'Protección Avanzada', href: '/tecnologia-lubricantes?section=proteccion-desgaste' },
+    { name: 'Tecnología Exclusiva', href: '/tecnologia-lubricantes?section=polymers-protection' },
+    { name: 'Proceso Detallado', href: '/tecnologia-lubricantes?section=como-funciona' },
+    { name: 'Evolución Constante', href: '/tecnologia-lubricantes?section=evolucion' },
+  ];
+
+  const aboutUsCategories = [
+    { name: 'Inicio', href: '/sobre-nosotros' },
+    { name: 'Nosotros', href: '/sobre-nosotros?section=nosotros' },
+    { name: 'Tecnología', href: '/sobre-nosotros?section=tecnologia' },
+    { name: 'Elaboración Propia', href: '/sobre-nosotros?section=elaboracion' },
+    { name: 'Análisis y Ensayos', href: '/sobre-nosotros?section=analisis' },
   ];
 
   return (
@@ -138,26 +166,122 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
 
-            <Link
-              href="/lineas-de-productos"
-              className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+            <div
+              className="relative"
+              onMouseEnter={() => setIsProductLinesDropdownOpen(true)}
+              onMouseLeave={() => setIsProductLinesDropdownOpen(false)}
             >
-              Ver Nuestra Línea
-            </Link>
+              <button className="flex items-center space-x-1 font-medium text-white transition-colors duration-200 hover:text-[#16a245]">
+                <span>Nuestra Línea</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isProductLinesDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
 
-            <Link
-              href="/tecnologia-lubricantes"
-              className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-            >
-              El Lubricante
-            </Link>
+              <AnimatePresence>
+                {isProductLinesDropdownOpen && (
+                  <motion.div
+                    className="absolute left-0 top-full mt-2 w-64 rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="py-2">
+                      {productLineCategories.map((category) => (
+                        <Link
+                          key={category.name}
+                          href={category.href}
+                          className="block px-4 py-2 text-gray-300 transition-colors duration-200 hover:bg-[#16a245]/10 hover:text-[#16a245]"
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
-            <Link
-              href="/sobre-nosotros"
-              className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+            <div
+              className="relative"
+              onMouseEnter={() => setIsLubricantDropdownOpen(true)}
+              onMouseLeave={() => setIsLubricantDropdownOpen(false)}
             >
-              Sobre Nosotros
-            </Link>
+              <button className="flex items-center space-x-1 font-medium text-white transition-colors duration-200 hover:text-[#16a245]">
+                <span>El Lubricante</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isLubricantDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {isLubricantDropdownOpen && (
+                  <motion.div
+                    className="absolute left-0 top-full mt-2 w-64 rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="py-2">
+                      {lubricantCategories.map((category) => (
+                        <Link
+                          key={category.name}
+                          href={category.href}
+                          className="block px-4 py-2 text-gray-300 transition-colors duration-200 hover:bg-[#16a245]/10 hover:text-[#16a245]"
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
+            <div
+              className="relative"
+              onMouseEnter={() => setIsAboutUsDropdownOpen(true)}
+              onMouseLeave={() => setIsAboutUsDropdownOpen(false)}
+            >
+              <button className="flex items-center space-x-1 font-medium text-white transition-colors duration-200 hover:text-[#16a245]">
+                <span>Sobre Nosotros</span>
+                <ChevronDown
+                  className={`h-4 w-4 transition-transform duration-200 ${
+                    isAboutUsDropdownOpen ? 'rotate-180' : ''
+                  }`}
+                />
+              </button>
+
+              <AnimatePresence>
+                {isAboutUsDropdownOpen && (
+                  <motion.div
+                    className="absolute left-0 top-full mt-2 w-64 rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    exit={{ opacity: 0, y: -10 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div className="py-2">
+                      {aboutUsCategories.map((category) => (
+                        <Link
+                          key={category.name}
+                          href={category.href}
+                          className="block px-4 py-2 text-gray-300 transition-colors duration-200 hover:bg-[#16a245]/10 hover:text-[#16a245]"
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {isAdmin && (
               <Link
@@ -329,29 +453,122 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
 
-              <Link
-                href="/lineas-de-productos"
-                className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Ver Nuestra Línea
-              </Link>
+              <div>
+                <button
+                  onClick={() =>
+                    setIsProductLinesDropdownOpen(!isProductLinesDropdownOpen)
+                  }
+                  className="flex w-full items-center justify-between py-2 font-medium text-white"
+                >
+                  <span>Nuestra Línea</span>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isProductLinesDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
 
-              <Link
-                href="/tecnologia-lubricantes"
-                className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                El Lubricante
-              </Link>
+                <AnimatePresence>
+                  {isProductLinesDropdownOpen && (
+                    <motion.div
+                      className="mt-2 space-y-2 pl-4"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {productLineCategories.map((category) => (
+                        <Link
+                          key={category.name}
+                          href={category.href}
+                          className="block py-1 text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-              <Link
-                href="/sobre-nosotros"
-                className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                onClick={() => setIsMobileMenuOpen(false)}
-              >
-                Sobre Nosotros
-              </Link>
+              <div>
+                <button
+                  onClick={() =>
+                    setIsLubricantDropdownOpen(!isLubricantDropdownOpen)
+                  }
+                  className="flex w-full items-center justify-between py-2 font-medium text-white"
+                >
+                  <span>El Lubricante</span>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isLubricantDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {isLubricantDropdownOpen && (
+                    <motion.div
+                      className="mt-2 space-y-2 pl-4"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {lubricantCategories.map((category) => (
+                        <Link
+                          key={category.name}
+                          href={category.href}
+                          className="block py-1 text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              <div>
+                <button
+                  onClick={() =>
+                    setIsAboutUsDropdownOpen(!isAboutUsDropdownOpen)
+                  }
+                  className="flex w-full items-center justify-between py-2 font-medium text-white"
+                >
+                  <span>Sobre Nosotros</span>
+                  <ChevronDown
+                    className={`h-4 w-4 transition-transform duration-200 ${
+                      isAboutUsDropdownOpen ? 'rotate-180' : ''
+                    }`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {isAboutUsDropdownOpen && (
+                    <motion.div
+                      className="mt-2 space-y-2 pl-4"
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: 'auto' }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {aboutUsCategories.map((category) => (
+                        <Link
+                          key={category.name}
+                          href={category.href}
+                          className="block py-1 text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          {category.name}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {isAdmin && (
                 <Link

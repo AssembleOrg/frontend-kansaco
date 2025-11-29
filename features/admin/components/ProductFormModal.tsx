@@ -53,6 +53,13 @@ export default function ProductFormModal({
     if (product) {
       setFormData({
         ...product,
+        name: product.name ?? '',
+        sku: product.sku ?? '',
+        slug: product.slug ?? '',
+        description: product.description ?? '',
+        presentation: product.presentation ?? '',
+        aplication: product.aplication ?? '',
+        wholeSaler: product.wholeSaler ?? '',
         price: product.price ?? 0,
         stock: product.stock ?? 0,
         imageUrl: product.imageUrl ?? '',

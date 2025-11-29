@@ -6,12 +6,14 @@
 
 import Navbar from '@/components/landing/Navbar';
 import HeroBanner from '@/components/landing/HeroBanner';
+import LaEmpresaSection from '@/components/landing/LaEmpresaSection';
 import CategoriesSection from '@/components/landing/CategoriesSection';
 import TechnologySection from '@/components/landing/TechnologySection';
 import ArgentinaSection from '@/components/landing/ArgentinaSection';
 import FeaturedProducts from '@/components/landing/FeaturedProducts';
 import Footer from '@/components/landing/Footer';
 import ScrollAnimationSystem from '@/components/landing/ScrollAnimationSystem';
+import { FloatingScrollTop } from '@/components/landing/FloatingScrollTop';
 
 export default function HomePage() {
   return (
@@ -22,11 +24,15 @@ export default function HomePage() {
       {/* Landing Page Sections */}
       <Navbar />
       <HeroBanner />
+      <LaEmpresaSection />
       <CategoriesSection />
       <TechnologySection />
       <FeaturedProducts />
       <ArgentinaSection />
       <Footer />
+
+      {/* Floating Scroll to Top Button */}
+      <FloatingScrollTop />
     </main>
     // <div className="flex h-screen flex-col items-center justify-center bg-[#f7faf8]">
     //   <div className="w-80 rounded-lg bg-white p-8 shadow-md">

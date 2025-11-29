@@ -109,7 +109,7 @@ const FeaturedProducts = () => {
   }
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-gray-900 py-24">
+    <section id="featured-products" className="relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-gray-900 py-24">
       <div className="absolute left-0 right-0 top-0 h-24 bg-gradient-to-b from-gray-900/80 to-transparent"></div>
 
       {/* Background decorations */}

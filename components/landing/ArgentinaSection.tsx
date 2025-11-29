@@ -12,7 +12,7 @@ const ArgentinaSection = () => {
   ];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-black py-20">
+    <section id="argentina" className="relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-black py-20">
       {/* Smooth transition from previous section */}
       <div className="absolute left-0 right-0 top-0 h-16 bg-gradient-to-b from-gray-900/80 to-transparent"></div>
 

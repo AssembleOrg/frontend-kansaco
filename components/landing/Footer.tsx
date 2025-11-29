@@ -19,11 +19,11 @@ const Footer = () => {
   };
 
   const productCategories = [
-    { name: 'Aceites Sintéticos', href: '/productos?category=Sintéticos' },
-    { name: 'Aceites Minerales', href: '/productos?category=Minerales' },
-    { name: 'Aceites para Vehículos', href: '/productos?category=Vehículos' },
-    { name: 'Aceites Industriales', href: '/productos?category=Industrial' },
-    { name: 'Aceites para Motos', href: '/productos?category=Motos' },
+    { name: 'Lubricantes para Vehículos', href: '/productos?category=Vehículos' },
+    { name: 'Lubricantes Industriales', href: '/productos?category=Industrial' },
+    { name: 'Lubricantes para Motos', href: '/productos?category=Motos' },
+    { name: 'Grasas Lubricantes', href: '/productos?category=Grasas' },
+    { name: 'Agro Lubricantes', href: '/productos?category=Agro' },
     {
       name: 'Derivados y Aditivos',
       href: '/productos?category=Derivados Y Aditivos',

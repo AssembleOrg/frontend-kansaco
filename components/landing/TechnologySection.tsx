@@ -39,7 +39,10 @@ const TechnologySection = () => {
   ];
 
   return (
-    <section className="relative overflow-hidden bg-gradient-to-b from-black via-gray-950 to-gray-900 py-24">
+    <section
+      id="technology"
+      className="relative overflow-hidden bg-gradient-to-b from-black via-gray-950 to-gray-900 py-24"
+    >
       {/* Smooth transition from previous section */}
       <div className="absolute left-0 right-0 top-0 h-24 bg-gradient-to-b from-black/80 to-transparent"></div>
 
@@ -188,15 +191,7 @@ const TechnologySection = () => {
               <div className="absolute bottom-4 left-4 h-8 w-8 border-b-2 border-l-2 border-[#16a245]/60" />
             </div>
 
-            {/* Data Cards */}
-            <div className="absolute -left-6 -top-6 rounded-lg border border-gray-800/50 bg-black/90 p-4 backdrop-blur-sm">
-              <div className="text-sm font-medium text-gray-400">
-                Viscosidad
-              </div>
-              <div className="text-xl font-black text-white">5W-30</div>
-            </div>
-
-                            <div className="absolute bottom-2 right-2 rounded-lg border border-gray-800/50 bg-black/90 p-4 backdrop-blur-sm md:bottom-6 md:right-6 md:-bottom-6 md:-right-6">
+            <div className="absolute bottom-2 right-2 rounded-lg border border-gray-800/50 bg-black/90 p-4 backdrop-blur-sm md:-bottom-6 md:-right-6">
               <div className="text-sm font-medium text-gray-400">
                 Protección
               </div>

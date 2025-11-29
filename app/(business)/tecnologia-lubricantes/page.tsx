@@ -5,7 +5,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { motion, useScroll, useTransform } from 'framer-motion';
-import { useRef } from 'react';
+import { useRef, useEffect, Suspense } from 'react';
+import { useSearchParams } from 'next/navigation';
 import {
   Atom,
   Zap,
@@ -26,8 +27,11 @@ import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import Link from 'next/link';
 
-export default function TecnologiaLubricantesPage() {
+function TecnologiaLubricantesContent() {
   const containerRef = useRef<HTMLDivElement>(null);
+  const searchParams = useSearchParams();
+  const section = searchParams.get('section');
+
   const { scrollYProgress } = useScroll({
     target: containerRef,
     offset: ['start start', 'end start'],
@@ -35,6 +39,20 @@ export default function TecnologiaLubricantesPage() {
 
   const heroY = useTransform(scrollYProgress, [0, 1], [0, -200]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.5], [1, 0]);
+
+  useEffect(() => {
+    if (section) {
+      setTimeout(() => {
+        const element = document.getElementById(`section-${section}`);
+        if (element) {
+          element.scrollIntoView({
+            behavior: 'smooth',
+            block: 'center'
+          });
+        }
+      }, 300);
+    }
+  }, [section]);
 
   return (
     <div className="min-h-screen bg-black">
@@ -177,7 +195,7 @@ export default function TecnologiaLubricantesPage() {
         </motion.section>
 
         {/* Function Section */}
-        <section className="relative bg-gradient-to-b from-black to-gray-950 py-24">
+        <section id="section-funcion-principal" className="relative bg-gradient-to-b from-black to-gray-950 py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -286,7 +304,7 @@ export default function TecnologiaLubricantesPage() {
         </section>
 
         {/* Protection Science Section */}
-        <section className="relative bg-gradient-to-b from-gray-950 to-black py-24">
+        <section id="section-proteccion-desgaste" className="relative bg-gradient-to-b from-gray-950 to-black py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -422,7 +440,7 @@ export default function TecnologiaLubricantesPage() {
         </section>
 
         {/* Polymer's Protection Film Section */}
-        <section className="relative bg-gradient-to-b from-black to-gray-950 py-24">
+        <section id="section-polymers-protection" className="relative bg-gradient-to-b from-black to-gray-950 py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -589,7 +607,7 @@ export default function TecnologiaLubricantesPage() {
         </section>
 
         {/* How It Works Section */}
-        <section className="relative bg-gradient-to-b from-gray-950 to-black py-24">
+        <section id="section-como-funciona" className="relative bg-gradient-to-b from-gray-950 to-black py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -693,7 +711,7 @@ export default function TecnologiaLubricantesPage() {
         </section>
 
         {/* Evolution Section */}
-        <section className="relative bg-gradient-to-b from-black to-gray-950 py-24">
+        <section id="section-evolucion" className="relative bg-gradient-to-b from-black to-gray-950 py-24">
           <div className="container mx-auto px-4">
             <div className="mx-auto max-w-7xl">
               <motion.div
@@ -854,5 +872,13 @@ export default function TecnologiaLubricantesPage() {
       </div>
       <Footer />
     </div>
+  );
+}
+
+export default function TecnologiaLubricantesPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black" />}>
+      <TecnologiaLubricantesContent />
+    </Suspense>
   );
 }
