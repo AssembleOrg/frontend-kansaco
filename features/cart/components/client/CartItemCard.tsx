@@ -5,7 +5,7 @@ import Image from 'next/image';
 import { CartItem } from '@/types';
 import { useCart } from '../../hooks/useCart';
 import { Button } from '@/components/ui/button';
-import { Trash, Plus, Minus, Loader2 } from 'lucide-react';
+import { Trash, Loader2 } from 'lucide-react';
 import Link from 'next/link';
 
 interface CartItemCardProps {
@@ -15,10 +15,9 @@ interface CartItemCardProps {
 export const CartItemCard = ({ item }: CartItemCardProps) => {
   const {
     removeFromCart,
-    updateQuantity,
     isLoading,
     getProductPrice,
-    getQuantity,
+    formatPrice,
   } = useCart();
   const { product, quantity } = item;
   const [localLoading, setLocalLoading] = useState(false);
@@ -30,32 +29,6 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
     setLocalLoading(true);
     try {
       await removeFromCart(product.id);
-    } finally {
-      setLocalLoading(false);
-    }
-  };
-
-  const handleIncrement = async () => {
-    setLocalLoading(true);
-    try {
-      // Get current quantity from store to avoid stale closure
-      const currentQuantity = getQuantity(product.id);
-      await updateQuantity(product.id, currentQuantity + 1);
-    } finally {
-      setLocalLoading(false);
-    }
-  };
-
-  const handleDecrement = async () => {
-    setLocalLoading(true);
-    try {
-      // Get current quantity from store to avoid stale closure
-      const currentQuantity = getQuantity(product.id);
-      if (currentQuantity > 1) {
-        await updateQuantity(product.id, currentQuantity - 1);
-      } else {
-        await removeFromCart(product.id);
-      }
     } finally {
       setLocalLoading(false);
     }
@@ -112,31 +85,13 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
             )}
 
             <div className="mt-auto flex items-center justify-between pt-2">
-              <div className="flex items-center rounded-md border">
-                <button
-                  onClick={handleDecrement}
-                  className="flex h-6 w-6 items-center justify-center rounded-l-md border-r hover:bg-gray-100 disabled:opacity-50"
-                  aria-label="Disminuir cantidad"
-                  disabled={isButtonDisabled}
-                >
-                  <Minus size={14} />
-                </button>
-                <span className="flex h-6 w-8 items-center justify-center text-xs">
-                  {quantity}
-                </span>
-                <button
-                  onClick={handleIncrement}
-                  className="flex h-6 w-6 items-center justify-center rounded-r-md border-l hover:bg-gray-100 disabled:opacity-50"
-                  aria-label="Aumentar cantidad"
-                  disabled={isButtonDisabled}
-                >
-                  <Plus size={14} />
-                </button>
+              <div className="text-sm text-gray-600">
+                Cantidad: <span className="font-medium">{quantity}</span>
               </div>
 
               <div className="text-right">
-                <p className="text-xs text-gray-500">
-                  Cant: {quantity}
+                <p className="text-sm font-semibold text-gray-900">
+                  {formatPrice(productPrice * quantity)}
                 </p>
               </div>
             </div>
