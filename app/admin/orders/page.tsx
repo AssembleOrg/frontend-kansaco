@@ -291,8 +291,8 @@ export default function OrdersPage() {
       ) : (
         <>
           {/* Tabla Desktop */}
-          <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm xl:block">
-            <div className="overflow-x-auto">
+          <div className="hidden xl:block w-full max-w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-x-auto w-full">
               <table className="w-full">
                 <thead className="border-b border-gray-200 bg-gray-50">
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -345,7 +345,7 @@ export default function OrdersPage() {
           </div>
 
           {/* Cards Mobile */}
-          <div className="space-y-3 xl:hidden">
+          <div className="xl:hidden w-full max-w-full space-y-3">
             {filteredOrders.map((order) => {
               const isMayorista = order.customerType === 'CLIENTE_MAYORISTA';
               const config = statusConfig[order.status];

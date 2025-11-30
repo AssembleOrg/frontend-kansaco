@@ -3,6 +3,10 @@ import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 
 export const viewport: Viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: '#16a245',
 };
 

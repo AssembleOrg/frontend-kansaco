@@ -343,7 +343,7 @@ export default function ProductsTable({
       </div>
 
       {/* Selection Toolbar - Mobile Select All */}
-      <div className="xl:hidden space-y-2">
+      <div className="xl:hidden w-full max-w-full space-y-2">
         <div className="flex gap-2">
           <Button
             variant="outline"
@@ -420,8 +420,8 @@ export default function ProductsTable({
       ) : (
         <>
           {/* Tabla Desktop - TanStack Table */}
-          <div className="hidden xl:block overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
-            <div className="overflow-x-auto">
+          <div className="hidden xl:block w-full max-w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
+            <div className="overflow-x-auto w-full">
               <table className="w-full">
                 <thead className="border-b border-gray-200 bg-gray-50">
                   {table.getHeaderGroups().map((headerGroup) => (
@@ -474,7 +474,7 @@ export default function ProductsTable({
           </div>
 
           {/* Cards Mobile */}
-          <div className="xl:hidden space-y-3">
+          <div className="xl:hidden w-full max-w-full space-y-3">
             {filteredProducts.map((product) => (
               <div
                 key={product.id}

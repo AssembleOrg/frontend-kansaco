@@ -13,8 +13,15 @@ html, body {
   box-sizing: border-box;
 }
 
+/* Additional mobile safety rules */
+#__next,
+main {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
 /* Mobile responsive containers */
-@media (max-width: 768px) {
+@media (max-width: 1280px) {
   .container {
     max-width: 100vw;
     overflow-x: hidden;
