@@ -23,6 +23,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 50,
     isVisible: true,
+    isFeatured: false,
     price: 8500,
   },
   {
@@ -38,6 +39,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 25,
     isVisible: true,
+    isFeatured: false,
     price: 12000,
   },
   {
@@ -53,6 +55,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 10,
     isVisible: true,
+    isFeatured: false,
     price: 18000,
   },
   // Motos - 2 productos
@@ -69,6 +72,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 40,
     isVisible: true,
+    isFeatured: false,
     price: 6500,
   },
   {
@@ -84,6 +88,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 35,
     isVisible: true,
+    isFeatured: false,
     price: 7800,
   },
   // Industrial - 2 productos
@@ -100,6 +105,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 20,
     isVisible: true,
+    isFeatured: false,
     price: 14500,
   },
   {
@@ -115,6 +121,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 15,
     isVisible: true,
+    isFeatured: false,
     price: 15500,
   },
   // Grasas - 2 productos
@@ -131,6 +138,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 60,
     isVisible: true,
+    isFeatured: false,
     price: 4200,
   },
   {
@@ -146,6 +154,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 30,
     isVisible: true,
+    isFeatured: false,
     price: 5800,
   },
   // Derivados y Aditivos - 2 productos
@@ -162,6 +171,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 45,
     isVisible: true,
+    isFeatured: false,
     price: 3500,
   },
   {
@@ -177,6 +187,7 @@ const MOCK_PRODUCTS: Product[] = [
     wholeSaler: 'KANSACO',
     stock: 25,
     isVisible: true,
+    isFeatured: false,
     price: 2800,
   },
 ];

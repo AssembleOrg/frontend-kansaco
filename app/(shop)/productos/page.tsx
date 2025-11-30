@@ -1,7 +1,7 @@
 // app/(shop)/productos/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo, Suspense } from 'react';
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { getProducts, getProductsPaginated } from '@/lib/api';
 import { Product } from '@/types';
@@ -13,7 +13,9 @@ import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import { useCart } from '@/features/cart/hooks/useCart';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
+import { X } from 'lucide-react';
 // import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 20;
@@ -22,6 +24,8 @@ function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
+  const [searchTerm, setSearchTerm] = useState<string>('');
+  const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const [pagination, setPagination] = useState<{
     total: number;
     page: number;
@@ -39,14 +43,64 @@ function ProductsContent() {
   const searchParams = useSearchParams();
   const { token } = useAuth();
   const { openCart } = useCart();
-  
+
   const currentPage = Number(searchParams.get('page')) || 1;
   const currentCategoryFilter = searchParams.get('category');
   const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
   const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
+  const searchQuery = searchParams.get('search') ?? undefined;
 
   // Usar categorías permitidas directamente (no necesitamos cargar del backend)
   const uniqueCategories = [...ALLOWED_PRODUCT_CATEGORIES];
+
+  // Sync searchTerm with URL parameter
+  useEffect(() => {
+    setSearchTerm(searchQuery ?? '');
+  }, [searchQuery]);
+
+  // Search handlers with debouncing
+  const handleSearchChange = (value: string) => {
+    setSearchTerm(value);
+
+    if (debounceTimer.current) {
+      clearTimeout(debounceTimer.current);
+    }
+
+    if (value.trim() === '') {
+      applySearch('');
+      return;
+    }
+
+    if (value.length < 3) {
+      return;
+    }
+
+    debounceTimer.current = setTimeout(() => {
+      applySearch(value.trim());
+    }, 500);
+  };
+
+  const applySearch = (searchValue: string) => {
+    const current = new URLSearchParams(Array.from(searchParams.entries()));
+
+    if (searchValue) {
+      current.set('search', searchValue);
+    } else {
+      current.delete('search');
+    }
+
+    current.delete('page');
+    current.delete('openCart');
+
+    const search = current.toString();
+    const query = search ? `?${search}` : '';
+    router.push(`${window.location.pathname}${query}`);
+  };
+
+  const handleClearSearch = () => {
+    setSearchTerm('');
+    applySearch('');
+  };
 
   // Cargar productos con paginación y filtros del servidor
   useEffect(() => {
@@ -61,6 +115,7 @@ function ProductsContent() {
           limit: number;
           category?: string[];
           isVisible?: boolean;
+          name?: string;
         } = {
           page: currentPage,
           limit: ITEMS_PER_PAGE,
@@ -70,6 +125,11 @@ function ProductsContent() {
         // Aplicar filtro de categoría si existe
         if (currentCategoryFilter) {
           filters.category = [currentCategoryFilter];
+        }
+
+        // Aplicar filtro de búsqueda si existe
+        if (searchQuery) {
+          filters.name = searchQuery;
         }
 
         try {
@@ -120,7 +180,7 @@ function ProductsContent() {
     };
 
     fetchProducts();
-  }, [currentPage, currentCategoryFilter, token]);
+  }, [currentPage, currentCategoryFilter, searchQuery, token]);
 
   const openCartParam = searchParams.get('openCart');
   
@@ -306,7 +366,36 @@ function ProductsContent() {
       <h1 className="mb-8 text-center text-3xl font-bold">
         Nuestros Productos
       </h1>
-      
+
+      {/* Search Bar */}
+      <div className="mb-6">
+        <div className="mx-auto max-w-xl">
+          <div className="relative">
+            <Input
+              type="text"
+              placeholder="Buscar productos por nombre..."
+              value={searchTerm}
+              onChange={(e) => handleSearchChange(e.target.value)}
+              className="h-12 pr-10 text-base"
+            />
+            {searchTerm && (
+              <button
+                onClick={handleClearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 transform text-gray-400 hover:text-gray-600"
+                aria-label="Limpiar búsqueda"
+              >
+                <X className="h-5 w-5" />
+              </button>
+            )}
+          </div>
+          {searchTerm.length > 0 && searchTerm.length < 3 && (
+            <p className="mt-2 text-center text-sm text-gray-500">
+              Ingresa al menos 3 caracteres para buscar
+            </p>
+          )}
+        </div>
+      </div>
+
       <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
         <aside className="md:col-span-1">
             <ProductFilters

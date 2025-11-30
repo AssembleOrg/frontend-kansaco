@@ -4,7 +4,7 @@ import { Product } from '@/types/product';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Edit, Search, Plus, Percent, ArrowUpDown } from 'lucide-react';
+import { Trash2, Edit, Search, Plus, Percent, ArrowUpDown, Star } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
 import { useState, useMemo, useEffect, useRef } from 'react';
@@ -228,6 +228,20 @@ export default function ProductsTable({
         >
           {row.original.isVisible ? 'Sí' : 'No'}
         </span>
+      ),
+    },
+    {
+      accessorKey: 'isFeatured',
+      header: 'Destacado',
+      enableSorting: true,
+      cell: ({ row }) => (
+        <div className="flex items-center justify-center">
+          {row.original.isFeatured ? (
+            <Star className="h-5 w-5 fill-yellow-400 text-yellow-500" />
+          ) : (
+            <Star className="h-5 w-5 text-gray-300" />
+          )}
+        </div>
       ),
     },
     {
@@ -522,6 +536,16 @@ export default function ProductsTable({
                     <p className="text-gray-500">Visible</p>
                     <p className="font-medium text-gray-900">
                       {product.isVisible ? '✓ Sí' : '✗ No'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500">Destacado</p>
+                    <p className="flex items-center gap-1">
+                      {product.isFeatured ? (
+                        <Star className="h-4 w-4 fill-yellow-400 text-yellow-500" />
+                      ) : (
+                        <Star className="h-4 w-4 text-gray-300" />
+                      )}
                     </p>
                   </div>
                 </div>

@@ -69,7 +69,7 @@ export default function ImagesPage() {
           Gestión de Imágenes
         </h1>
         <p className="mt-1 text-sm text-gray-600 sm:mt-2 sm:text-base">
-          Sube, visualiza y gestiona las imágenes de Digital Ocean Spaces.
+          Sube, visualiza y gestiona las imágenes de tu web
         </p>
       </div>
 
@@ -111,4 +111,3 @@ export default function ImagesPage() {
     </div>
   );
 }
-

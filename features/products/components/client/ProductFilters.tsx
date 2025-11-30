@@ -119,6 +119,7 @@ export default function ProductFilters({
     current.delete('category');
     current.delete('minPrice');
     current.delete('maxPrice');
+    current.delete('search'); // Eliminar búsqueda al limpiar filtros
     current.delete('page');
     current.delete('openCart'); // Eliminar openCart al limpiar filtros
 
@@ -141,8 +142,9 @@ export default function ProductFilters({
       return indexA - indexB;
     });
 
+  const currentSearch = searchParams.get('search');
   const hasActiveFilters =
-    currentCategory || initialMinPrice || initialMaxPrice;
+    currentCategory || initialMinPrice || initialMaxPrice || currentSearch;
 
   const isPriceRangeActive = (min: number, max: number | undefined) => {
     if (max === undefined) {

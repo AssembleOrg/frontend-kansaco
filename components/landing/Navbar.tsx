@@ -67,10 +67,18 @@ const Navbar = () => {
 
   const productLineCategories = [
     { name: 'Inicio', href: '/lineas-de-productos' },
-    { name: 'Línea Vehículo', href: '/lineas-de-productos?line=vehiculos' },
-    { name: 'Industria Pesada', href: '/lineas-de-productos?line=industria-pesada' },
-    { name: 'Especialidades', href: '/lineas-de-productos?line=especialidades' },
-    { name: 'Complementos', href: '/lineas-de-productos?line=complementos' },
+    { name: 'LÍNEA SINTÉTICA', href: '/lineas-de-productos#linea-sintetica' },
+    { name: 'LÍNEA PREMIUM', href: '/lineas-de-productos#linea-premium' },
+    { name: 'LÍNEA MINERAL', href: '/lineas-de-productos#linea-mineral' },
+    { name: 'DIESEL HEAVY LINE', href: '/lineas-de-productos#diesel-heavy-line' },
+    { name: 'LUBRICANTES INDUSTRIALES', href: '/lineas-de-productos#lubricantes-industriales' },
+    { name: 'LÍNEA CAJA Y DIFERENCIAL', href: '/lineas-de-productos#linea-caja-diferencial' },
+    { name: 'LUBRICANTES AGRO', href: '/lineas-de-productos#lubricantes-agro' },
+    { name: 'LUBRICANTES COMPETICIÓN', href: '/lineas-de-productos#lubricantes-competicion' },
+    { name: 'LUBRICANTES MOTOS', href: '/lineas-de-productos#lubricantes-motos' },
+    { name: 'LUBRICANTES NÁUTICA', href: '/lineas-de-productos#lubricantes-nautica' },
+    { name: 'GRASAS LUBRICANTES', href: '/lineas-de-productos#grasas-lubricantes' },
+    { name: 'DERIVADOS Y ADITIVOS', href: '/lineas-de-productos#derivados-aditivos' },
   ];
 
   const lubricantCategories = [
@@ -183,7 +191,7 @@ const Navbar = () => {
               <AnimatePresence>
                 {isProductLinesDropdownOpen && (
                   <motion.div
-                    className="absolute left-0 top-full mt-2 w-64 rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
+                    className="absolute left-0 top-full mt-2 w-64 max-h-[60vh] overflow-y-auto rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -448,6 +456,15 @@ const Navbar = () => {
                           {category.name}
                         </Link>
                       ))}
+                      <div className="mt-2 border-t border-gray-700 pt-2">
+                        <Link
+                          href="/productos"
+                          className="block py-1 font-medium text-[#16a245] transition-colors duration-200 hover:text-[#16a245]/80"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          Ver Todos los Productos
+                        </Link>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>

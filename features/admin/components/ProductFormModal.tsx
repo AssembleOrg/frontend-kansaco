@@ -39,6 +39,7 @@ export default function ProductFormModal({
     wholeSaler: '',
     stock: 0,
     isVisible: true,
+    isFeatured: false,
     price: 0,
   });
 
@@ -63,6 +64,7 @@ export default function ProductFormModal({
         price: product.price ?? 0,
         stock: product.stock ?? 0,
         imageUrl: product.imageUrl ?? '',
+        isFeatured: product.isFeatured ?? false,
       });
       
       // Cargar imágenes existentes del producto
@@ -442,6 +444,25 @@ export default function ProductFormModal({
             />
             <Label htmlFor="isVisible" className="cursor-pointer">
               Visible en la tienda
+            </Label>
+          </div>
+
+          {/* Destacado */}
+          <div className="flex items-center gap-3">
+            <Checkbox
+              id="isFeatured"
+              name="isFeatured"
+              checked={formData.isFeatured}
+              onCheckedChange={(checked) =>
+                setFormData((prev) => ({
+                  ...prev,
+                  isFeatured: checked as boolean,
+                }))
+              }
+              disabled={isLoading}
+            />
+            <Label htmlFor="isFeatured" className="cursor-pointer">
+              Destacar producto en página principal
             </Label>
           </div>
 

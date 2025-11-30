@@ -212,6 +212,7 @@ export async function getProductsPaginated(
     stock?: number;
     wholeSaler?: string;
     isVisible?: boolean;
+    isFeatured?: boolean;
   }
 ): Promise<PaginatedProductsResponse> {
   if (!API_BASE_URL) {
@@ -232,6 +233,8 @@ export async function getProductsPaginated(
   if (options?.wholeSaler) params.append('wholeSaler', options.wholeSaler);
   if (options?.isVisible !== undefined)
     params.append('isVisible', options.isVisible.toString());
+  if (options?.isFeatured !== undefined)
+    params.append('isFeatured', options.isFeatured.toString());
 
   const url = `${API_BASE_URL}/product?${params.toString()}`;
   apiLogger.request('GET', url);
@@ -301,6 +304,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 50,
       isVisible: true,
+      isFeatured: false,
       price: 8500,
     },
     {
@@ -317,6 +321,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 25,
       isVisible: true,
+      isFeatured: false,
       price: 12000,
     },
     {
@@ -333,6 +338,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 30,
       isVisible: true,
+      isFeatured: false,
       price: 15000,
     },
     {
@@ -349,6 +355,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 40,
       isVisible: true,
+      isFeatured: false,
       price: 6500,
     },
     {
@@ -364,6 +371,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 60,
       isVisible: true,
+      isFeatured: false,
       price: 4500,
     },
     {
@@ -380,6 +388,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 35,
       isVisible: true,
+      isFeatured: false,
       price: 3200,
     },
     {
@@ -396,6 +405,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 45,
       isVisible: true,
+      isFeatured: false,
       price: 2800,
     },
     {
@@ -411,6 +421,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 20,
       isVisible: true,
+      isFeatured: false,
       price: 9500,
     },
     {
@@ -426,6 +437,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 15,
       isVisible: true,
+      isFeatured: false,
       price: 18000,
     },
     {
@@ -441,6 +453,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 30,
       isVisible: true,
+      isFeatured: false,
       price: 14000,
     },
     {
@@ -456,6 +469,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 40,
       isVisible: true,
+      isFeatured: false,
       price: 3800,
     },
     {
@@ -472,6 +486,7 @@ function getMockProducts(): Product[] {
       wholeSaler: 'KANSACO',
       stock: 25,
       isVisible: true,
+      isFeatured: false,
       price: 11500,
     },
   ];

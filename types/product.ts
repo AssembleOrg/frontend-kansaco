@@ -14,5 +14,6 @@ export interface Product {
   wholeSaler: string;
   stock: number;
   isVisible: boolean;
+  isFeatured: boolean;
   price: number | null;
 }

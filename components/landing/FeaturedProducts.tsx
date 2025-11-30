@@ -16,23 +16,37 @@ const FeaturedProducts = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(3);
 
-  // Fetch productos reales (misma lógica que /productos)
+  // Fetch productos destacados con fallback
   useEffect(() => {
     const fetchProducts = async () => {
       try {
-        // Intentar primero con API paginada (como hace /productos)
+        // Intentar obtener productos destacados
         const result = await getProductsPaginated(null, {
           page: 1,
           limit: 9,
           isVisible: true,
+          isFeatured: true,
         });
-        setProducts(result.data);
+
+        // Fallback: si no hay destacados, mostrar productos visibles
+        if (result.data.length === 0) {
+          const fallbackResult = await getProductsPaginated(null, {
+            page: 1,
+            limit: 9,
+            isVisible: true,
+          });
+          setProducts(fallbackResult.data);
+        } else {
+          setProducts(result.data);
+        }
       } catch (error) {
-        // Fallback si falla el endpoint paginado
+        // Fallback en caso de error
         console.warn('Error using paginated endpoint, falling back:', error);
         try {
           const data = await getProducts(null);
-          const visibleProducts = data.filter((p) => p.isVisible).slice(0, 9);
+          const visibleProducts = data
+            .filter((p) => p.isVisible && (p.isFeatured || true))
+            .slice(0, 9);
           setProducts(visibleProducts);
         } catch (fallbackError) {
           console.error('Error fetching products:', fallbackError);
