@@ -26,6 +26,7 @@ export default function ProductsPage() {
     editProduct,
     removeProduct,
     bulkUpdatePrices,
+    loadProducts,
   } = useAdminProducts(token ?? null);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
@@ -104,7 +105,8 @@ export default function ProductsPage() {
     if (!selectedProduct || !token) return;
     setIsSubmitting(true);
     try {
-      await editProduct(selectedProduct.id, data);
+      // Editar producto SIN hacer refetch automático
+      await editProduct(selectedProduct.id, data, true);
       
       // Manejar imágenes si hay seleccionadas
       if (selectedImages !== undefined) {
@@ -205,6 +207,10 @@ export default function ProductsPage() {
           // No fallar la edición del producto si hay error con imágenes
         }
       }
+      
+      // Hacer refetch DESPUÉS de todo el proceso de imágenes (incluyendo reorder)
+      console.log('🔄 Refrescando lista de productos después de completar todas las operaciones');
+      await loadProducts(pagination.page, searchQuery, selectedCategory);
       
       setIsModalOpen(false);
       setSelectedProduct(null);
@@ -332,7 +338,7 @@ export default function ProductsPage() {
       {/* Products Table */}
       <ProductsTable
         products={products}
-        isLoading={isLoading}
+        isLoading={isLoading || isSubmitting}
         onEdit={(product) => handleOpenModal(product)}
         onDelete={handleDeleteProduct}
         onCreate={() => handleOpenModal()}

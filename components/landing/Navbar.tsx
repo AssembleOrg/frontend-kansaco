@@ -329,6 +329,7 @@ const Navbar = () => {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-56 border-gray-800/50 bg-black/95 backdrop-blur-md shadow-xl">
                     {isAdmin ? (
+                      <>  
                       <DropdownMenuItem
                         onClick={() => {
                           router.push('/admin/dashboard');
@@ -339,6 +340,17 @@ const Navbar = () => {
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Ir a Dashboard
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push('/mis-pedidos');
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        Ver historial de pedidos
+                      </DropdownMenuItem>
+                      </>
                     ) : (
                       <DropdownMenuItem
                         onClick={() => {
@@ -617,6 +629,7 @@ const Navbar = () => {
                       Hola, {user?.nombre || user?.email?.split('@')[0]}
                     </p>
                     {isAdmin ? (
+                      <>
                       <Link
                         href="/admin/dashboard"
                         className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
@@ -625,6 +638,15 @@ const Navbar = () => {
                         <LayoutDashboard className="mr-2 h-4 w-4" />
                         Ir a Dashboard
                       </Link>
+                        <Link
+                        href="/mis-pedidos"
+                        className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <Package className="mr-2 h-4 w-4" />
+                        Ver historial de pedidos
+                      </Link>
+                      </>
                     ) : (
                       <Link
                         href="/mis-pedidos"

@@ -331,15 +331,17 @@ export function useAdminProducts(token: string | null) {
 
   // Editar producto
   const editProduct = useCallback(
-    async (productId: number, productData: Partial<Product>) => {
+    async (productId: number, productData: Partial<Product>, skipRefetch = false) => {
       setError(null);
       try {
         if (!token) {
           throw new Error('Requiere autenticación para editar productos');
         }
         const updatedProduct = await updateProduct(token, productId, productData);
-        // Recargar productos después de editar
-        await loadProducts(pagination.page, searchQuery, selectedCategory);
+        // Recargar productos después de editar solo si no se omite el refetch
+        if (!skipRefetch) {
+          await loadProducts(pagination.page, searchQuery, selectedCategory);
+        }
         return updatedProduct;
       } catch (err) {
         const errorMessage =
