@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ShoppingCart, Menu, X, ChevronDown, LogOut, Package, LayoutDashboard } from 'lucide-react';
+import { User, ShoppingCart, Menu, X, ChevronDown, LogOut, Package, LayoutDashboard, FileText } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
@@ -350,6 +350,16 @@ const Navbar = () => {
                         <Package className="mr-2 h-4 w-4" />
                         Ver historial de pedidos
                       </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => {
+                          router.push('/admin/pedidos-solicitados');
+                          setIsUserDropdownOpen(false);
+                        }}
+                        className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Pedidos solicitados
+                      </DropdownMenuItem>
                       </>
                     ) : (
                       <DropdownMenuItem
@@ -645,6 +655,14 @@ const Navbar = () => {
                       >
                         <Package className="mr-2 h-4 w-4" />
                         Ver historial de pedidos
+                      </Link>
+                      <Link
+                        href="/admin/pedidos-solicitados"
+                        className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                        onClick={() => setIsMobileMenuOpen(false)}
+                      >
+                        <FileText className="mr-2 h-4 w-4" />
+                        Pedidos solicitados
                       </Link>
                       </>
                     ) : (

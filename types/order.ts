@@ -3,6 +3,7 @@ export interface OrderItem {
   productName: string;
   quantity: number;
   unitPrice?: number;
+  presentation?: string;
 }
 
 export interface OrderContactInfo {

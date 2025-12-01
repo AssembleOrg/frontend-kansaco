@@ -1,16 +1,29 @@
 import { useCallback, useEffect, useState } from 'react';
-import { Order, OrderStatus } from '@/types/order';
+import { Order, OrderStatus, PaginatedOrdersResponse } from '@/types/order';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { getOrders, updateOrderStatus, deleteOrder as deleteOrderApi } from '@/lib/api';
+import { getAllOrdersPaginated, updateOrderStatus } from '@/lib/api';
 
 export function useOrders() {
   const { token } = useAuth();
   const [orders, setOrders] = useState<Order[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [pagination, setPagination] = useState<{
+    page: number;
+    total: number;
+    totalPages: number;
+    hasNext: boolean;
+    hasPrev: boolean;
+  }>({
+    page: 1,
+    total: 0,
+    totalPages: 0,
+    hasNext: false,
+    hasPrev: false,
+  });
 
-  // Cargar órdenes desde la API
-  const fetchOrders = useCallback(async () => {
+  // Cargar órdenes desde la API con paginación
+  const fetchOrders = useCallback(async (page = 1, limit = 20) => {
     if (!token) {
       setIsLoading(false);
       return;
@@ -19,10 +32,15 @@ export function useOrders() {
     try {
       setIsLoading(true);
       setError(null);
-      const data = await getOrders(token);
-      // Extraer el array del objeto response si es necesario
-      const ordersArray = Array.isArray(data) ? data : ((data as any)?.data || []);
-      setOrders(ordersArray);
+      const response: PaginatedOrdersResponse = await getAllOrdersPaginated(token, { page, limit });
+      setOrders(response.data || []);
+      setPagination({
+        page: response.page || 1,
+        total: response.total || 0,
+        totalPages: response.totalPages || 0,
+        hasNext: response.hasNext || false,
+        hasPrev: response.hasPrev || false,
+      });
     } catch (err) {
       console.error('Error loading orders:', err);
       setError(err instanceof Error ? err.message : 'Error loading orders');
@@ -33,7 +51,7 @@ export function useOrders() {
   }, [token]);
 
   useEffect(() => {
-    fetchOrders();
+    fetchOrders(1, 20);
   }, [fetchOrders]);
 
   // Obtener orden por ID
@@ -59,33 +77,24 @@ export function useOrders() {
     }
   }, [token]);
 
-  // Eliminar orden
-  const deleteOrder = useCallback(async (id: string) => {
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    try {
-      await deleteOrderApi(token, id);
-      setOrders(prev => prev.filter(order => order.id !== id));
-    } catch (err) {
-      console.error('Error deleting order:', err);
-      throw err;
-    }
-  }, [token]);
-
   // Refrescar órdenes
   const refresh = useCallback(() => {
-    fetchOrders();
+    fetchOrders(pagination.page, 20);
+  }, [fetchOrders, pagination.page]);
+
+  // Cambiar página
+  const goToPage = useCallback((page: number) => {
+    fetchOrders(page, 20);
   }, [fetchOrders]);
 
   return {
     orders,
     isLoading,
     error,
+    pagination,
     getOrder,
     updateStatus,
-    deleteOrder,
     refresh,
+    goToPage,
   };
 }

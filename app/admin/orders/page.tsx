@@ -5,17 +5,18 @@ import { useOrders } from '@/features/admin/hooks/useOrders';
 import { Order, OrderStatus } from '@/types/order';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Trash2, Eye, Search, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
-// import { formatPrice } from '@/lib/utils';
+import { Download, Eye, Search, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/dateUtils';
+import { downloadOrderPDF } from '@/lib/api';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { OrderDetailsModal } from '@/features/orders/components/OrderDetailsModal';
+import { toast } from 'sonner';
 import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
   getSortedRowModel,
-  getPaginationRowModel,
   SortingState,
-  PaginationState,
   useReactTable,
 } from '@tanstack/react-table';
 
@@ -29,14 +30,13 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; bg: stri
 };
 
 export default function OrdersPage() {
-  const { orders, isLoading, error, deleteOrder, updateStatus, refresh } = useOrders();
+  const { token } = useAuth();
+  const { orders, isLoading, error, pagination, updateStatus, refresh, goToPage } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [sorting, setSorting] = useState<SortingState>([]);
-  const [pagination, setPagination] = useState<PaginationState>({
-    pageIndex: 0,
-    pageSize: 20,
-  });
 
   // Filtrar órdenes por búsqueda
   const filteredOrders = useMemo(() => {
@@ -52,23 +52,30 @@ export default function OrdersPage() {
     });
   }, [orders, searchTerm]);
 
-  const handleDelete = useCallback(async (orderId: string) => {
-    if (confirm('¿Estás seguro de que deseas eliminar esta orden?')) {
-      try {
-        await deleteOrder(orderId);
-      } catch {
-        alert('Error al eliminar la orden');
-      }
-    }
-  }, [deleteOrder]);
-
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     try {
       await updateStatus(orderId, newStatus);
+      toast.success('Estado actualizado correctamente');
+      refresh();
     } catch {
-      alert('Error al actualizar el estado');
+      toast.error('Error al actualizar el estado');
     }
-  }, [updateStatus]);
+  }, [updateStatus, refresh]);
+
+  const handleDownloadPDF = useCallback(async (orderId: string) => {
+    if (!token) return;
+
+    setDownloadingOrderId(orderId);
+    try {
+      await downloadOrderPDF(token, orderId);
+      toast.success('PDF descargado correctamente');
+    } catch (err) {
+      console.error('Error downloading PDF:', err);
+      toast.error('Error al descargar el PDF');
+    } finally {
+      setDownloadingOrderId(null);
+    }
+  }, [token]);
 
   // Definir columnas para TanStack
   const columns = useMemo<ColumnDef<Order>[]>(
@@ -191,7 +198,10 @@ export default function OrdersPage() {
           return (
             <div className="flex items-center justify-center gap-2">
               <Button
-                onClick={() => setSelectedOrder(order)}
+                onClick={() => {
+                  setSelectedOrder(order);
+                  setIsModalOpen(true);
+                }}
                 variant="outline"
                 size="sm"
                 className="gap-1"
@@ -200,12 +210,17 @@ export default function OrdersPage() {
                 Ver
               </Button>
               <Button
-                onClick={() => handleDelete(order.id)}
+                onClick={() => handleDownloadPDF(order.id)}
                 variant="outline"
                 size="sm"
-                className="gap-1 border-red-200 text-red-600 hover:bg-red-50"
+                className="gap-1"
+                disabled={downloadingOrderId === order.id}
               >
-                <Trash2 className="h-4 w-4" />
+                {downloadingOrderId === order.id ? (
+                  <RefreshCw className="h-4 w-4 animate-spin" />
+                ) : (
+                  <Download className="h-4 w-4" />
+                )}
               </Button>
             </div>
           );
@@ -213,22 +228,20 @@ export default function OrdersPage() {
         enableSorting: false,
       },
     ],
-    [handleDelete, handleStatusChange]
+    [handleStatusChange, handleDownloadPDF, downloadingOrderId]
   );
 
-  // TanStack Table instance
+  // TanStack Table instance (sin paginación del frontend, usamos la del backend)
   const table = useReactTable({
     data: filteredOrders,
     columns,
     state: {
       sorting,
-      pagination,
     },
     onSortingChange: setSorting,
-    onPaginationChange: setPagination,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
-    getPaginationRowModel: getPaginationRowModel(),
+    manualPagination: true,
   });
 
   if (isLoading) {
@@ -444,7 +457,10 @@ export default function OrdersPage() {
                   {/* Acciones */}
                   <div className="flex gap-2 pt-2">
                     <Button
-                      onClick={() => setSelectedOrder(order)}
+                      onClick={() => {
+                        setSelectedOrder(order);
+                        setIsModalOpen(true);
+                      }}
                       variant="outline"
                       size="sm"
                       className="flex-1 gap-1"
@@ -453,12 +469,17 @@ export default function OrdersPage() {
                       Ver
                     </Button>
                     <Button
-                      onClick={() => handleDelete(order.id)}
+                      onClick={() => handleDownloadPDF(order.id)}
                       variant="outline"
                       size="sm"
-                      className="gap-1 border-red-200 text-red-600 hover:bg-red-50"
+                      className="gap-1"
+                      disabled={downloadingOrderId === order.id}
                     >
-                      <Trash2 className="h-4 w-4" />
+                      {downloadingOrderId === order.id ? (
+                        <RefreshCw className="h-4 w-4 animate-spin" />
+                      ) : (
+                        <Download className="h-4 w-4" />
+                      )}
                     </Button>
                   </div>
                 </div>
@@ -469,27 +490,20 @@ export default function OrdersPage() {
       )}
 
       {/* Controles de Paginación */}
-      {filteredOrders.length > 20 && (
+      {pagination.totalPages > 0 && (
         <div className="flex items-center justify-between border-t border-gray-200 bg-white px-6 py-4 rounded-b-lg">
           <div className="text-sm text-gray-700">
-            Mostrando{' '}
-            <span className="font-medium">
-              {table.getState().pagination.pageIndex * table.getState().pagination.pageSize + 1}
-            </span>{' '}
-            a{' '}
-            <span className="font-medium">
-              {Math.min(
-                (table.getState().pagination.pageIndex + 1) * table.getState().pagination.pageSize,
-                filteredOrders.length
-              )}
-            </span>{' '}
+            Página{' '}
+            <span className="font-medium">{pagination.page}</span>{' '}
             de{' '}
-            <span className="font-medium">{filteredOrders.length}</span> pedidos
+            <span className="font-medium">{pagination.totalPages}</span>{' '}
+            •{' '}
+            <span className="font-medium">{pagination.total}</span> pedidos en total
           </div>
           <div className="flex gap-2">
             <Button
-              onClick={() => table.previousPage()}
-              disabled={!table.getCanPreviousPage()}
+              onClick={() => goToPage(pagination.page - 1)}
+              disabled={!pagination.hasPrev || isLoading}
               variant="outline"
               size="sm"
             >
@@ -497,8 +511,8 @@ export default function OrdersPage() {
               Anterior
             </Button>
             <Button
-              onClick={() => table.nextPage()}
-              disabled={!table.getCanNextPage()}
+              onClick={() => goToPage(pagination.page + 1)}
+              disabled={!pagination.hasNext || isLoading}
               variant="outline"
               size="sm"
             >
@@ -510,181 +524,11 @@ export default function OrdersPage() {
       )}
 
       {/* Modal - Detalle de Orden */}
-      {selectedOrder && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-          <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-lg">
-            {/* Header */}
-            <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Detalle de Orden</h2>
-                <p className="text-sm text-gray-500">ID: {selectedOrder.id.slice(0, 8)}...</p>
-              </div>
-              <button
-                onClick={() => setSelectedOrder(null)}
-                className="rounded-lg p-1 hover:bg-gray-100"
-              >
-                ✕
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="space-y-6 p-6">
-              {/* Estado */}
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Estado:</span>
-                <span className={`rounded-full px-3 py-1 text-sm font-medium ${statusConfig[selectedOrder.status].bg} ${statusConfig[selectedOrder.status].color}`}>
-                  {statusConfig[selectedOrder.status].label}
-                </span>
-              </div>
-
-              {/* Tipo de cliente */}
-              <div className={`p-3 rounded-lg ${
-                selectedOrder.customerType === 'CLIENTE_MAYORISTA'
-                  ? 'bg-amber-50 border border-amber-200'
-                  : 'bg-blue-50 border border-blue-200'
-              }`}>
-                <span className={`text-sm font-medium ${
-                  selectedOrder.customerType === 'CLIENTE_MAYORISTA'
-                    ? 'text-amber-800'
-                    : 'text-blue-800'
-                }`}>
-                  {selectedOrder.customerType === 'CLIENTE_MAYORISTA' ? 'Cliente Mayorista' : 'Cliente Minorista'}
-                </span>
-              </div>
-
-              {/* Información del Cliente */}
-              <div>
-                <h3 className="text-sm font-semibold uppercase text-gray-500">
-                  Información del Cliente
-                </h3>
-                <div className="mt-4 space-y-2">
-                  <p><span className="font-medium text-gray-700">Nombre:</span> {selectedOrder.contactInfo?.fullName || 'N/A'}</p>
-                  <p>
-                    <span className="font-medium text-gray-700">Email:</span>{' '}
-                    {selectedOrder.contactInfo?.email ? (
-                      <a href={`mailto:${selectedOrder.contactInfo.email}`} className="text-green-600 hover:underline">
-                        {selectedOrder.contactInfo.email}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">N/A</span>
-                    )}
-                  </p>
-                  <p>
-                    <span className="font-medium text-gray-700">Teléfono:</span>{' '}
-                    {selectedOrder.contactInfo?.phone ? (
-                      <a href={`tel:${selectedOrder.contactInfo.phone}`} className="text-green-600 hover:underline">
-                        {selectedOrder.contactInfo.phone}
-                      </a>
-                    ) : (
-                      <span className="text-gray-400">N/A</span>
-                    )}
-                  </p>
-                  <p><span className="font-medium text-gray-700">Dirección:</span> {selectedOrder.contactInfo?.address || 'N/A'}</p>
-                </div>
-              </div>
-
-              {/* Datos fiscales (mayoristas) */}
-              {selectedOrder.businessInfo && (
-                <>
-                  <hr className="border-gray-200" />
-                  <div>
-                    <h3 className="text-sm font-semibold uppercase text-gray-500">
-                      Datos Fiscales
-                    </h3>
-                    <div className="mt-4 space-y-2">
-                      <p><span className="font-medium text-gray-700">CUIT:</span> {selectedOrder.businessInfo.cuit}</p>
-                      <p><span className="font-medium text-gray-700">Situación AFIP:</span> {selectedOrder.businessInfo.situacionAfip}</p>
-                      {selectedOrder.businessInfo.razonSocial && (
-                        <p><span className="font-medium text-gray-700">Razón Social:</span> {selectedOrder.businessInfo.razonSocial}</p>
-                      )}
-                      {selectedOrder.businessInfo.codigoPostal && (
-                        <p><span className="font-medium text-gray-700">Código Postal:</span> {selectedOrder.businessInfo.codigoPostal}</p>
-                      )}
-                    </div>
-                  </div>
-                </>
-              )}
-
-              <hr className="border-gray-200" />
-
-              {/* Productos */}
-              <div>
-                <h3 className="text-sm font-semibold uppercase text-gray-500">
-                  Productos
-                </h3>
-                <div className="mt-4 space-y-3">
-                  {selectedOrder.items?.map((item, idx) => (
-                    <div
-                      key={idx}
-                      className="flex items-center justify-between rounded-lg bg-gray-50 p-4"
-                    >
-                      <div className="flex-1">
-                        <p className="font-medium text-gray-900">{item.productName}</p>
-                        <p className="text-sm text-gray-600">
-                          Cantidad: {item.quantity}
-                          {/* {item.unitPrice && ` @ ${formatPrice(item.unitPrice)}`} */}
-                        </p>
-                      </div>
-                      {/*
-                      {item.unitPrice && (
-                        <p className="font-semibold text-gray-900">
-                          {formatPrice(item.unitPrice * item.quantity)}
-                        </p>
-                      )}
-                      */}
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Notas */}
-              {selectedOrder.notes && (
-                <>
-                  <hr className="border-gray-200" />
-                  <div>
-                    <h3 className="text-sm font-semibold uppercase text-gray-500">Notas</h3>
-                    <p className="mt-2 text-sm text-gray-600">{selectedOrder.notes}</p>
-                  </div>
-                </>
-              )}
-
-              {/* Total y fechas */}
-              <hr className="border-gray-200" />
-              <div className="space-y-2">
-                {/*
-                {selectedOrder.totalAmount && (
-                  <div className="flex items-center justify-between">
-                    <span className="font-semibold text-gray-900">Total:</span>
-                    <span className="text-lg font-bold text-green-600">
-                      {(() => {
-                        const numAmount = typeof selectedOrder.totalAmount === 'string'
-                          ? parseFloat(selectedOrder.totalAmount)
-                          : selectedOrder.totalAmount;
-                        return formatPrice(isNaN(numAmount) ? 0 : numAmount);
-                      })()}
-                    </span>
-                  </div>
-                )}
-                */}
-                <div className="text-sm text-gray-500">
-                  <p>Creada: {formatDateForDisplay(selectedOrder.createdAt, 'datetime')}</p>
-                  <p>Actualizada: {formatDateForDisplay(selectedOrder.updatedAt, 'datetime')}</p>
-                </div>
-              </div>
-            </div>
-
-            {/* Footer */}
-            <div className="border-t border-gray-200 bg-gray-50 px-6 py-4">
-              <Button
-                onClick={() => setSelectedOrder(null)}
-                className="w-full bg-green-600 hover:bg-green-700"
-              >
-                Cerrar
-              </Button>
-            </div>
-          </div>
-        </div>
-      )}
+      <OrderDetailsModal
+        order={selectedOrder}
+        open={isModalOpen}
+        onOpenChange={setIsModalOpen}
+      />
     </div>
   );
 }

@@ -1203,6 +1203,116 @@ export async function getMyOrdersPaginated(
   }
 }
 
+export async function getAllOrdersPaginated(
+  token: string,
+  options?: {
+    page?: number;
+    limit?: number;
+  }
+): Promise<PaginatedOrdersResponse> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const params = new URLSearchParams();
+  if (options?.page) params.append('page', options.page.toString());
+  if (options?.limit) params.append('limit', options.limit.toString());
+
+  const url = `${API_BASE_URL}/order/all/paginated?${params.toString()}`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<{
+      status: string;
+      data: PaginatedOrdersResponse;
+    }>(response);
+    apiLogger.response('GET', url, response.status);
+
+    // Extraer los datos de la respuesta anidada (result.data contiene el PaginatedOrdersResponse)
+    if (result && 'data' in result && result.data) {
+      return result.data;
+    }
+
+    // Si la respuesta ya viene en el formato correcto
+    return result as unknown as PaginatedOrdersResponse;
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
+export async function downloadOrderPDF(
+  token: string,
+  orderId: string
+): Promise<void> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/order/${orderId}/pdf`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Failed to download PDF: ${errorText}`);
+    }
+
+    // Obtener el nombre del archivo del header Content-Disposition
+    const contentDisposition = response.headers.get('Content-Disposition');
+    let filename = `Presupuesto_${orderId}.pdf`;
+    if (contentDisposition) {
+      const filenameMatch = contentDisposition.match(/filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/);
+      if (filenameMatch && filenameMatch[1]) {
+        filename = filenameMatch[1].replace(/['"]/g, '');
+      }
+    }
+
+    // Obtener el blob del PDF
+    const blob = await response.blob();
+
+    // Crear un enlace temporal y descargar
+    const url_blob = window.URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url_blob;
+    link.download = filename;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    window.URL.revokeObjectURL(url_blob);
+
+    apiLogger.response('GET', url, response.status);
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
 export async function updateOrderStatus(
   token: string,
   orderId: string,

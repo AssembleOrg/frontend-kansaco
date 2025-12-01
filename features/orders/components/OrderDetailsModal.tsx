@@ -240,6 +240,11 @@ export function OrderDetailsModal({
                               <Package className="h-3.5 w-3.5" />
                               Cantidad: {item.quantity}
                             </span>
+                            {item.presentation && (
+                              <span className="flex items-center gap-1">
+                                Presentación: {item.presentation}
+                              </span>
+                            )}
                             {item.unitPrice && (
                               <span className="flex items-center gap-1">
                                 <CreditCard className="h-3.5 w-3.5" />
