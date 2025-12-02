@@ -17,6 +17,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 
 const Navbar = () => {
+  const [isVisible, setIsVisible] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);
@@ -46,7 +47,9 @@ const Navbar = () => {
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      const scrollPosition = window.scrollY;
+      setIsVisible(scrollPosition > 100);
+      setIsScrolled(scrollPosition > 20);
     };
 
     window.addEventListener('scroll', handleScroll);
@@ -100,7 +103,9 @@ const Navbar = () => {
 
   return (
     <nav
-      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-300 ${
+      className={`fixed left-0 right-0 top-0 z-50 transition-all duration-500 ${
+        isVisible ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0'
+      } ${
         isScrolled
           ? 'border-b border-gray-800/50 bg-black/95 shadow-2xl backdrop-blur-md'
           : 'border-b border-gray-900/30 bg-black/60 backdrop-blur-sm'
@@ -108,21 +113,15 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between lg:h-20">
-          <Link href="/" className="flex items-center space-x-3 group">
-            <div className="flex h-12 w-12 items-center justify-center rounded-lg shadow-lg transition-all duration-200 group-hover:scale-105">
+          <Link href="/" className="flex items-center group">
+            <div className="flex items-center justify-center transition-all duration-200 group-hover:scale-105">
               <Image
                 src="/landing/kansaco-logo.png"
                 alt="KANSACO Logo"
-                width={32}
-                height={32}
-                className="h-8 w-auto"
+                width={78}
+                height={78}
+                className="h-12 w-auto sm:h-16 lg:h-20"
               />
-            </div>
-            <div>
-              <h3 className="text-2xl font-black tracking-wider text-white group-hover:text-[#16a245] transition-colors duration-200">
-                KANSACO
-              </h3>
-              <p className="text-sm text-gray-400 group-hover:text-gray-300 transition-colors duration-200">Ingeniería Líquida</p>
             </div>
           </Link>
 

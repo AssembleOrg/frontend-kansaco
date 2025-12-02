@@ -148,40 +148,28 @@ const HeroBanner = () => {
     const video = videoRef.current;
     if (!video) return;
 
-    const handleLoadedData = () => {
-      console.log('Video loaded!'); // Debug log
+    const handleCanPlayThrough = () => {
       setIsVideoLoaded(true);
     };
 
-    const handleCanPlay = () => {
-      console.log('Video can play!'); // Debug log
-      setIsVideoLoaded(true);
+    const handleError = () => {
+      console.error('Video failed to load');
+      // Content stays centered, graceful degradation
     };
 
-    const handleError = (e: Event) => {
-      console.log('Video error:', e); // Debug log
-    };
-
-    video.addEventListener('loadeddata', handleLoadedData);
-    video.addEventListener('canplay', handleCanPlay);
+    video.addEventListener('canplaythrough', handleCanPlayThrough);
     video.addEventListener('error', handleError);
 
-    // Force set after a timeout as fallback
-    const fallbackTimeout = setTimeout(() => {
-      console.log('Setting video loaded via fallback'); // Debug log
+    // Check if already cached
+    if (video.readyState >= 3) {
       setIsVideoLoaded(true);
-    }, 2000);
+    }
 
     return () => {
-      video.removeEventListener('loadeddata', handleLoadedData);
-      video.removeEventListener('canplay', handleCanPlay);
+      video.removeEventListener('canplaythrough', handleCanPlayThrough);
       video.removeEventListener('error', handleError);
-      clearTimeout(fallbackTimeout);
     };
   }, []);
-
-  // Debug: Log current state
-  console.log('isVideoLoaded:', isVideoLoaded, 'isPlaying:', isPlaying);
 
   const togglePlay = () => {
     console.log('Toggle play clicked!'); // Debug log
@@ -220,7 +208,9 @@ const HeroBanner = () => {
   return (
     <section className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white lg:flex-row">
       {/* Video Section - 1/2 - OCULTO EN MÓVILES */}
-      <div className="relative hidden h-screen w-full bg-gradient-to-br from-gray-900 via-gray-800 to-black lg:block lg:w-1/2">
+      <div className={`relative h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black transition-all duration-700 ${
+        isVideoLoaded ? 'hidden lg:block lg:w-1/2' : 'hidden'
+      }`}>
         {/* Video Element */}
         <video
           ref={videoRef}
@@ -228,6 +218,7 @@ const HeroBanner = () => {
           loop
           muted
           playsInline
+          preload="metadata"
           className="h-full w-full object-contain"
           poster="/landing/business-kansaco.png"
         >
@@ -262,7 +253,8 @@ const HeroBanner = () => {
         </motion.div>
 
         {/* Subtle Animated Particles */}
-        <div className="absolute inset-0 hidden lg:block">
+        {isVideoLoaded && (
+          <div className="absolute inset-0 hidden lg:block">
           <motion.div
             className="absolute left-20 top-20 h-1 w-1 rounded-full bg-[#16a245] opacity-40"
             animate={{
@@ -302,17 +294,23 @@ const HeroBanner = () => {
             }}
           />
         </div>
+        )}
       </div>
 
       {/* Content Section - 1/2 en desktop, full width en móvil */}
-      <div className="relative flex min-h-screen w-full flex-col items-center justify-center text-center lg:h-screen lg:w-1/2 lg:items-start lg:text-left">
+      <div className={`relative flex min-h-screen flex-col transition-all duration-700 ${
+        isVideoLoaded
+          ? 'w-full lg:w-1/2 lg:items-start lg:text-left items-center justify-center text-center lg:h-screen'
+          : 'w-full items-center justify-center text-center'
+      }`}>
         {/* Simple Lightning Borders */}
-        <motion.div
-          className="pointer-events-none absolute inset-0 z-50"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 1, delay: 1 }}
-        >
+        {isVideoLoaded && (
+          <motion.div
+            className="pointer-events-none absolute inset-0 z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 1, delay: 1 }}
+          >
           {/* Top Lightning Border */}
           <motion.div
             className="absolute left-0 right-0 top-0 h-2 bg-gradient-to-r from-transparent via-[#16a245] to-transparent"
@@ -456,6 +454,7 @@ const HeroBanner = () => {
             }}
           />
         </motion.div>
+        )}
 
         <div
           ref={contentRef}
@@ -472,27 +471,14 @@ const HeroBanner = () => {
           {/* Animated Background Elements */}
           <div className="absolute inset-0 hidden lg:block">
             <motion.div
-              className="absolute right-10 top-10 h-32 w-32 rounded-full bg-[#16a245]/10 blur-3xl"
+              className="absolute right-10 top-10 h-24 w-24 rounded-full bg-[#16a245]/5 blur-3xl"
               animate={{
-                opacity: [0.1, 0.3, 0.1],
-                scale: [1, 1.1, 1],
+                opacity: [0.05, 0.15, 0.05],
+                scale: [1, 1.05, 1],
               }}
               transition={{
-                duration: 6,
+                duration: 8,
                 repeat: Infinity,
-                ease: 'easeInOut',
-              }}
-            />
-            <motion.div
-              className="absolute bottom-20 left-10 h-20 w-20 rounded-full bg-[#16a245]/20 blur-2xl"
-              animate={{
-                opacity: [0.2, 0.4, 0.2],
-                scale: [1, 1.2, 1],
-              }}
-              transition={{
-                duration: 4,
-                repeat: Infinity,
-                delay: 1,
                 ease: 'easeInOut',
               }}
             />
@@ -614,16 +600,7 @@ const HeroBanner = () => {
                   whileTap={{ scale: 0.95 }}
                   className="group flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)]"
                 >
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  >
-                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
-                  </motion.div>
+                  <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
                   <span>La Empresa</span>
                 </motion.button>
 
@@ -633,16 +610,7 @@ const HeroBanner = () => {
                   whileTap={{ scale: 0.95 }}
                   className="group flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)]"
                 >
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  >
-                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
-                  </motion.div>
+                  <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
                   <span>Categorías</span>
                 </motion.button>
 
@@ -652,16 +620,7 @@ const HeroBanner = () => {
                   whileTap={{ scale: 0.95 }}
                   className="group flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)]"
                 >
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  >
-                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
-                  </motion.div>
+                  <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
                   <span>Tecnología</span>
                 </motion.button>
 
@@ -671,16 +630,7 @@ const HeroBanner = () => {
                   whileTap={{ scale: 0.95 }}
                   className="group flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)]"
                 >
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  >
-                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
-                  </motion.div>
+                  <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
                   <span>Productos</span>
                 </motion.button>
 
@@ -690,16 +640,7 @@ const HeroBanner = () => {
                   whileTap={{ scale: 0.95 }}
                   className="group col-span-2 flex items-center justify-center gap-2 rounded-full border-2 border-[#16a245]/40 bg-black/30 px-4 py-2.5 text-sm font-semibold text-gray-300 backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white hover:shadow-[0_0_15px_rgba(22,162,69,0.3)] lg:col-span-1"
                 >
-                  <motion.div
-                    animate={{ scale: [1, 1.2, 1] }}
-                    transition={{
-                      duration: 1.5,
-                      repeat: Infinity,
-                      ease: 'easeInOut',
-                    }}
-                  >
-                    <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
-                  </motion.div>
+                  <ArrowDownRight className="h-4 w-4 text-[#16a245] transition-colors duration-300 group-hover:text-white" />
                   <span>Argentina</span>
                 </motion.button>
               </div>

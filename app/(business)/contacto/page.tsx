@@ -6,6 +6,7 @@ import { MapPin, Phone, Mail, Clock, Facebook, Instagram } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
+import ContactFormMailto from '@/components/forms/ContactFormMailto';
 
 export default function ContactoPage() {
   const socialLinks = [
@@ -119,7 +120,7 @@ export default function ContactoPage() {
                     <div>
                       <h4 className="font-semibold text-white">Horarios</h4>
                       <p className="text-gray-300">
-                        Lunes a Viernes: 8:00 - 18:00
+                        Lunes a Viernes: 9:00hs - 17:00hs
                       </p>
                     </div>
                   </div>
@@ -168,12 +169,6 @@ export default function ContactoPage() {
                       → Ver catálogo de productos
                     </Link>
                     <Link
-                      href="/mayorista"
-                      className="block text-gray-300 transition-colors hover:text-[#16a245]"
-                    >
-                      → Convertirse en mayorista
-                    </Link>
-                    <Link
                       href="/tecnologia-lubricantes"
                       className="block text-gray-300 transition-colors hover:text-[#16a245]"
                     >
@@ -189,6 +184,26 @@ export default function ContactoPage() {
                 </div>
               </motion.div>
             </div>
+
+            {/* Contact Form Section - Nueva */}
+            <motion.div
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="mx-auto mt-8 max-w-5xl"
+            >
+              <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-8 backdrop-blur-sm">
+                <h3 className="mb-4 text-2xl font-bold text-white text-center">
+                  ¿Quieres trabajar con nosotros?
+                </h3>
+                <p className="mb-6 text-center text-gray-300">
+                  Completa el formulario y te contactaremos
+                </p>
+
+                <ContactFormMailto />
+              </div>
+            </motion.div>
           </div>
         </div>
       </section>

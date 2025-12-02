@@ -47,22 +47,43 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
     loadImages();
   }, [product.id]);
 
-  // Determinar la imagen a mostrar
-  const displayImage = productImages.length > 0 
-    ? productImages[currentImageIndex]?.imageUrl 
-    : product.imageUrl || '/sauberatras.jpg';
+  // Usar todas las imágenes del producto
+  const filteredImages = productImages;
+
+  // Determinar la imagen a mostrar con validación robusta
+  const displayImage = (() => {
+    // Si hay imágenes filtradas, usar índice seguro
+    if (filteredImages.length > 0) {
+      // Asegurar que el índice está dentro del rango
+      const safeIndex = Math.min(currentImageIndex, filteredImages.length - 1);
+      const imageUrl = filteredImages[safeIndex]?.imageUrl;
+      if (imageUrl && imageUrl !== '') {
+        return imageUrl;
+      }
+    }
+
+    // Fallback: imagen del producto o placeholder
+    return product.imageUrl || '/sauberatras.jpg';
+  })();
 
   const handlePreviousImage = () => {
-    if (productImages.length > 0) {
-      setCurrentImageIndex((prev) => (prev === 0 ? productImages.length - 1 : prev - 1));
+    if (filteredImages.length > 0) {
+      setCurrentImageIndex((prev) => (prev === 0 ? filteredImages.length - 1 : prev - 1));
     }
   };
 
   const handleNextImage = () => {
-    if (productImages.length > 0) {
-      setCurrentImageIndex((prev) => (prev === productImages.length - 1 ? 0 : prev + 1));
+    if (filteredImages.length > 0) {
+      setCurrentImageIndex((prev) => (prev === filteredImages.length - 1 ? 0 : prev + 1));
     }
   };
+
+  // Validar que el índice esté dentro del rango de imágenes filtradas
+  useEffect(() => {
+    if (filteredImages.length > 0 && currentImageIndex >= filteredImages.length) {
+      setCurrentImageIndex(0);
+    }
+  }, [filteredImages.length, currentImageIndex]);
 
   return (
     <div className="container mx-auto px-4 py-8 mt-20">
@@ -102,7 +123,7 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
                   />
                   
                   {/* Controles del carrusel (solo si hay más de una imagen) */}
-                  {productImages.length > 1 && (
+                  {filteredImages.length > 1 && (
                     <>
                       <Button
                         variant="outline"
@@ -120,10 +141,10 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
                       >
                         <ChevronRight className="h-5 w-5" />
                       </Button>
-                      
+
                       {/* Indicador de imagen actual */}
                       <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-black/50 px-3 py-1 text-xs text-white">
-                        {currentImageIndex + 1} / {productImages.length}
+                        {currentImageIndex + 1} / {filteredImages.length}
                       </div>
                     </>
                   )}
@@ -132,9 +153,9 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
             </div>
             
             {/* Miniaturas (solo si hay más de una imagen) */}
-            {productImages.length > 1 && (
+            {filteredImages.length > 1 && (
               <div className="flex gap-2 overflow-x-auto pb-2">
-                {productImages.map((img, index) => (
+                {filteredImages.map((img, index) => (
                   <button
                     key={img.id}
                     onClick={() => setCurrentImageIndex(index)}

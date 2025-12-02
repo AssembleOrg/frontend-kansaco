@@ -1,11 +1,45 @@
 'use client';
 
+import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { Atom, Zap, Shield, Cog, ArrowRight, Beaker } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NeonBorders } from './HeroBanner';
 
 const TechnologySection = () => {
+  const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
+  const videoContainerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const container = videoContainerRef.current;
+    if (!container) return;
+
+    // Fallback para navegadores antiguos
+    if (!('IntersectionObserver' in window)) {
+      setShouldLoadVideo(true);
+      return;
+    }
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((entry) => {
+          if (entry.isIntersecting) {
+            setShouldLoadVideo(true);
+            observer.unobserve(entry.target);
+          }
+        });
+      },
+      {
+        rootMargin: '300px',
+        threshold: 0.1,
+      }
+    );
+
+    observer.observe(container);
+
+    return () => observer.disconnect();
+  }, []);
+
   const features = [
     {
       icon: Atom,
@@ -167,20 +201,28 @@ const TechnologySection = () => {
           {/* Visual Side */}
           <div className="relative">
             {/* Oil GIF Container */}
-            <div className="relative h-[600px] w-full overflow-hidden rounded-lg border border-gray-800/50 bg-gradient-to-br from-gray-900 to-black">
+            <div
+              ref={videoContainerRef}
+              className="relative h-[600px] w-full overflow-hidden rounded-lg border border-gray-800/50 bg-gradient-to-br from-gray-900 to-black"
+            >
               {/* Oil Science Image */}
               <div className="relative h-full w-full">
-                <video
-                  src="/landing/kansaco-oil.mp4"
-                  autoPlay
-                  loop
-                  muted
-                  playsInline
-                  className="h-full w-full object-cover"
-                >
-                  <source src="/landing/kansaco-oil.mp4" type="video/mp4" />
-                  Tu navegador no soporta videos HTML5.
-                </video>
+                {shouldLoadVideo ? (
+                  <video
+                    src="/landing/kansaco-oil.mp4"
+                    autoPlay
+                    loop
+                    muted
+                    playsInline
+                    className="h-full w-full object-cover"
+                  >
+                    <source src="/landing/kansaco-oil.mp4" type="video/mp4" />
+                  </video>
+                ) : (
+                  <div className="flex h-full w-full items-center justify-center">
+                    <div className="text-sm text-gray-600">Loading...</div>
+                  </div>
+                )}
               </div>
 
               {/* Overlay for better text visibility */}
