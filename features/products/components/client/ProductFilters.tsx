@@ -44,11 +44,20 @@ export default function ProductFilters({
 
   const [customMinPrice, setCustomMinPrice] = useState<string>('');
   const [customMaxPrice, setCustomMaxPrice] = useState<string>('');
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
     setCustomMinPrice(initialMinPrice?.toString() ?? '');
     setCustomMaxPrice(initialMaxPrice?.toString() ?? '');
   }, [initialMinPrice, initialMaxPrice]);
+
+  useEffect(() => {
+    const editMode = localStorage.getItem('editMode');
+    const orderId = localStorage.getItem('editingOrderId');
+    setIsEditMode(editMode === 'true' && !!orderId);
+    setEditingOrderId(orderId);
+  }, []);
 
   const handleCategoryChange = (categoryName: string | null) => {
     const current = new URLSearchParams(Array.from(searchParams.entries()));
@@ -273,8 +282,7 @@ export default function ProductFilters({
                       {item.product.name}
                     </p>
                     <p className="text-xs text-gray-500">
-                      {formatPrice(getProductPrice(item.product))} x{' '}
-                      {item.quantity}
+                      x {item.quantity}
                     </p>
                     {item.presentation && (
                       <p className="mt-0.5 text-xs font-medium text-gray-600">
@@ -299,9 +307,18 @@ export default function ProductFilters({
               <Button onClick={openCart} className="w-full" variant="outline">
                 Ver Carrito
               </Button>
-              <Link href="/checkout" className="block w-full">
-                <Button className="w-full">Proceder al Pago</Button>
-              </Link>
+              {isEditMode ? (
+                <Button
+                  className="w-full bg-green-600 hover:bg-green-700"
+                  onClick={openCart}
+                >
+                  Ver Carrito para Actualizar
+                </Button>
+              ) : (
+                <Link href="/checkout" className="block w-full">
+                  <Button className="w-full">Proceder al Pago</Button>
+                </Link>
+              )}
             </div>
           </div>
         ) : (

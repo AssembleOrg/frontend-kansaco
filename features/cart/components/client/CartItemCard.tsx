@@ -84,15 +84,9 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
               </span>
             )}
 
-            <div className="mt-auto flex items-center justify-between pt-2">
+            <div className="mt-auto pt-2">
               <div className="text-sm text-gray-600">
                 Cantidad: <span className="font-medium">{quantity}</span>
-              </div>
-
-              <div className="text-right">
-                <p className="text-sm font-semibold text-gray-900">
-                  {formatPrice(productPrice * quantity)}
-                </p>
               </div>
             </div>
           </div>

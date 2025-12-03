@@ -10,6 +10,8 @@ import {
   Store,
   Loader2,
   AlertCircle,
+  Package,
+  Home,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { PDFPedidoDownloadButton } from '@/features/shop/components/PDFPedido';
@@ -162,7 +164,7 @@ function OrderSuccessContent() {
               className={`mb-4 flex items-center gap-2 rounded-lg p-3 ${
                 isMayorista
                   ? 'border border-amber-200 bg-amber-50'
-                  : 'border border-blue-200 bg-blue-50'
+                  : 'border border-green-200 bg-green-50'
               }`}
             >
               {isMayorista ? (
@@ -174,8 +176,8 @@ function OrderSuccessContent() {
                 </>
               ) : (
                 <>
-                  <Store className="h-5 w-5 text-blue-600" />
-                  <span className="font-medium text-blue-800">
+                  <Store className="h-5 w-5 text-green-600" />
+                  <span className="font-medium text-green-800">
                     Pedido Minorista
                   </span>
                 </>
@@ -285,24 +287,37 @@ function OrderSuccessContent() {
         {/* Información importante - solo cuando hay datos */}
         {orderData && (
           <>
-            <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
-              <h3 className="mb-3 font-semibold text-gray-900">
-                Próximos pasos
-              </h3>
-              <p className="text-gray-700">
-                Un representante de Kansaco se pondrá en contacto contigo en
-                breve por teléfono o email
-                {orderData.contactInfo?.email && (
-                  <span className="font-semibold">
-                    {' '}
-                    ({orderData.contactInfo.email})
-                  </span>
-                )}{' '}
-                para coordinar el pago y el envío.
-              </p>
+            <div className="mb-6 space-y-6">
+              {/* Próximos Pasos */}
+              <div className="rounded-lg border-2 border-green-200 bg-green-50 p-6">
+                <h3 className="mb-4 text-lg font-semibold text-green-800">
+                  📋 Próximos Pasos
+                </h3>
+                <div className="space-y-3 text-gray-700">
+                  <p>• Recibirás un email de confirmación con todos los detalles de tu pedido</p>
+                  <p>• Nuestro equipo revisará tu solicitud y te contactará para coordinar el pago y envío</p>
+                  <p>• Puedes <strong>revisar, modificar o agregar productos</strong> a tu orden en cualquier momento mientras esté en estado <strong>PENDIENTE</strong> desde &ldquo;Mis Pedidos&rdquo;</p>
+                </div>
+              </div>
+
+              {/* Botones de Navegación */}
+              <div className="flex flex-col gap-3 sm:flex-row">
+                <Link href="/mis-pedidos" className="flex-1">
+                  <Button className="w-full bg-green-600 hover:bg-green-700">
+                    <Package className="mr-2 h-4 w-4" />
+                    Ver Mis Pedidos
+                  </Button>
+                </Link>
+                <Link href="/" className="flex-1">
+                  <Button variant="outline" className="w-full border-green-600 text-green-600 hover:bg-green-50">
+                    <Home className="mr-2 h-4 w-4" />
+                    Volver al Inicio
+                  </Button>
+                </Link>
+              </div>
             </div>
 
-            {/* Botones de acción */}
+            {/* Botón PDF */}
             <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
               <PDFPedidoDownloadButton
                 order={orderData}

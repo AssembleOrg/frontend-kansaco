@@ -27,11 +27,9 @@ export const CartProvider = ({ children }: CartProviderProps) => {
     }
 
     if (isAuthenticated && userId) {
-      console.log('CartProvider: Sincronizando carrito con servidor usando userId como cartId');
       syncWithServer();
       syncedRef.current = true;
     } else {
-      console.log('CartProvider: Usuario no autenticado, carrito local');
       syncedRef.current = false;
     }
   }, [isAuthReady, isAuthenticated, userId, syncWithServer]);

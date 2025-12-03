@@ -12,6 +12,7 @@ import {
   Order,
   OrderStatus,
   PaginatedOrdersResponse,
+  UpdateOrderDto,
 } from '@/types/order';
 import { logger, apiLogger } from './logger';
 
@@ -1145,10 +1146,55 @@ export async function getOrderById(
 
     const result = await handleResponse<OrderApiResponse>(response);
     apiLogger.response('GET', url, response.status);
-    return result.data;
+
+    const order = result.data;
+
+    // ⚠️ Backend retorna doble anidamiento: { data: { data: Order } }
+    if (order && typeof order === 'object' && 'data' in order && !('id' in order)) {
+      const nestedData = order as { data: Order };
+      return nestedData.data;
+    }
+
+    return order;
   } catch (error) {
     apiLogger.error('GET', url, error);
     throw error;
+  }
+}
+
+/**
+ * Valida si una orden existe y está disponible para edición
+ * @returns objeto con valid, reason y order opcional
+ */
+export async function validateOrderForEdit(
+  token: string,
+  orderId: string
+): Promise<{ valid: boolean; reason?: string; order?: Order }> {
+  try {
+    const order = await getOrderById(token, orderId);
+
+    if (!order) {
+      return { valid: false, reason: 'Order not found' };
+    }
+
+    if (order.status !== 'PENDIENTE') {
+      return {
+        valid: false,
+        reason: `Order status is ${order.status}, only PENDIENTE orders can be edited`,
+      };
+    }
+
+    return { valid: true, order };
+  } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : String(error);
+
+    // Si es 404, la orden no existe
+    if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+      return { valid: false, reason: 'Order not found (404)' };
+    }
+
+    // Otro error (403, 500, etc.)
+    return { valid: false, reason: errorMessage || 'Unknown error' };
   }
 }
 
@@ -1338,6 +1384,49 @@ export async function updateOrderStatus(
         Authorization: `Bearer ${token}`,
       },
       body: JSON.stringify({ status }),
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<OrderApiResponse>(response);
+    apiLogger.response('PATCH', url, response.status);
+
+    // Manejar doble-nested en caso de que backend cambie la respuesta
+    const order = result.data;
+    if (order && typeof order === 'object' && 'data' in order && !('id' in order)) {
+      return (order as { data: Order }).data;
+    }
+    return order;
+  } catch (error) {
+    apiLogger.error('PATCH', url, error);
+    throw error;
+  }
+}
+
+export async function updateOrder(
+  token: string,
+  orderId: string,
+  orderData: UpdateOrderDto
+): Promise<Order> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/order/${orderId}`;
+  apiLogger.request('PATCH', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(orderData),
       cache: 'no-store',
     });
 
@@ -1675,9 +1764,6 @@ export async function associateProductImage(
 
   const url = `${API_BASE_URL}/product/${productId}/image/associate${isPrimary ? '?isPrimary=true' : ''}`;
   apiLogger.request('POST', url);
-  console.log(
-    `🔗 Associating image to product ${productId}, isPrimary: ${isPrimary}, imageKey: ${imageKey}`
-  );
 
   try {
     const response = await fetch(url, {
@@ -1691,20 +1777,11 @@ export async function associateProductImage(
       cache: 'no-store',
     });
 
-    console.log(
-      `📥 Response status: ${response.status} ${response.statusText}`
-    );
-
     if (!response.ok) {
       // Si el endpoint no existe (404), intentar con upload
       if (response.status === 404) {
-        console.log(
-          '⚠️ Associate endpoint not available, falling back to upload'
-        );
         throw new Error('ASSOCIATE_ENDPOINT_NOT_AVAILABLE');
       }
-      const errorText = await response.text();
-      console.error(`❌ Error response body:`, errorText);
       throw new Error(
         `Failed to associate image: ${response.status} ${response.statusText}`
       );
@@ -1712,7 +1789,6 @@ export async function associateProductImage(
 
     const result = await handleResponse<ProductImage>(response);
     apiLogger.response('POST', url, response.status);
-    console.log(`✅ Image associated successfully:`, result);
     return result;
   } catch (error) {
     apiLogger.error('POST', url, error);
@@ -1722,7 +1798,6 @@ export async function associateProductImage(
     ) {
       throw error; // Re-throw para que el caller pueda manejar el fallback
     }
-    console.error(`❌ Error associating product image:`, error);
     throw error;
   }
 }
@@ -1748,9 +1823,6 @@ export async function uploadProductImage(
 
   const url = `${API_BASE_URL}/product/${productId}/image${isPrimary ? '?isPrimary=true' : ''}`;
   apiLogger.request('POST', url);
-  console.log(
-    `📤 Uploading image to product ${productId}, isPrimary: ${isPrimary}, file: ${file.name}, size: ${file.size} bytes, type: ${file.type}`
-  );
 
   try {
     const response = await fetch(url, {
@@ -1763,13 +1835,7 @@ export async function uploadProductImage(
       cache: 'no-store',
     });
 
-    console.log(
-      `📥 Response status: ${response.status} ${response.statusText}`
-    );
-
     if (!response.ok) {
-      const errorText = await response.text();
-      console.error(`❌ Error response body:`, errorText);
       throw new Error(
         `Failed to upload image: ${response.status} ${response.statusText}`
       );
@@ -1777,11 +1843,9 @@ export async function uploadProductImage(
 
     const result = await handleResponse<ProductImage>(response);
     apiLogger.response('POST', url, response.status);
-    console.log(`✅ Image uploaded successfully:`, result);
     return result;
   } catch (error) {
     apiLogger.error('POST', url, error);
-    console.error(`❌ Error uploading product image:`, error);
     throw error;
   }
 }

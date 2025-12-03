@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
@@ -14,9 +14,13 @@ import { Button } from '@/components/ui/button';
 import { CartItemCard } from './CartItemCard';
 import { ShoppingCart, LogIn } from 'lucide-react';
 import Link from 'next/link';
+import { updateOrder, validateOrderForEdit } from '@/lib/api';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 export const CartDrawer = () => {
   const { token } = useAuth();
+  const router = useRouter();
   const {
     cart,
     isCartOpen,
@@ -28,6 +32,9 @@ export const CartDrawer = () => {
     clearCart,
   } = useCart();
 
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+
   const isAuthenticated = !!token;
   const canProceedToCheckout = isAuthenticated && itemCount > 0;
 
@@ -37,8 +44,136 @@ export const CartDrawer = () => {
     }
   }, [isCartOpen, syncCart]);
 
+  // Detect edit mode from localStorage
+  useEffect(() => {
+    const validateEditMode = async () => {
+      const editMode = localStorage.getItem('editMode');
+      const orderId = localStorage.getItem('editingOrderId');
+
+      if (editMode === 'true' && orderId && token) {
+        // ✅ VALIDAR que la orden existe
+        const validation = await validateOrderForEdit(token, orderId);
+
+        if (!validation.valid) {
+          // ❌ Orden no válida → Limpiar y salir de modo edición
+          console.warn('⚠️ CartDrawer: Order validation failed:', validation.reason);
+          localStorage.removeItem('editMode');
+          localStorage.removeItem('editingOrderId');
+          localStorage.removeItem('editingOrderItems');
+
+          setIsEditMode(false);
+          setEditingOrderId(null);
+
+          toast.error('La orden que intentabas editar ya no está disponible');
+          return;
+        }
+
+        // ✅ Orden válida
+        setIsEditMode(true);
+        setEditingOrderId(orderId);
+      } else {
+        setIsEditMode(false);
+        setEditingOrderId(null);
+      }
+    };
+
+    validateEditMode();
+  }, [cart, token]);
+
   const handleProceedToCheckout = () => {
     closeCart();
+  };
+
+  const handleUpdateOrder = async () => {
+    if (!editingOrderId || !token) {
+      toast.error('No se puede actualizar la orden');
+      return;
+    }
+
+    try {
+      toast.loading('Actualizando orden...');
+
+      const orderItems = (cart?.items || []).map((item, index) => {
+        const price = item.product.price;
+        const unitPrice = typeof price === 'number'
+          ? price
+          : parseFloat(String(price || '0'));
+
+        const orderItem = {
+          productId: item.product.id,
+          productName: item.product.name,
+          quantity: item.quantity,
+          unitPrice,
+          presentation: item.presentation || '',
+        };
+
+        return orderItem;
+      });
+
+      if (orderItems.length === 0) {
+        toast.dismiss();
+        toast.error('Debes tener al menos 1 producto en el carrito');
+        return;
+      }
+
+      await updateOrder(token, editingOrderId, { items: orderItems });
+
+      localStorage.removeItem('editMode');
+      localStorage.removeItem('editingOrderId');
+      localStorage.removeItem('editingOrderItems');
+      clearCart();
+
+      toast.dismiss();
+      toast.success('✅ Orden actualizada correctamente');
+      closeCart();
+
+      setTimeout(() => router.push('/mis-pedidos'), 500);
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      toast.dismiss();
+
+      // ✅ MANEJAR 404 ESPECÍFICAMENTE
+      if (errorMessage.includes('404') || errorMessage.includes('not found')) {
+        // Orden no existe → Limpiar localStorage
+        localStorage.removeItem('editMode');
+        localStorage.removeItem('editingOrderId');
+        localStorage.removeItem('editingOrderItems');
+        clearCart();
+
+        toast.error(
+          'Esta orden ya no existe. Serás redirigido a Mis Pedidos.',
+          { duration: 4000 }
+        );
+
+        setTimeout(() => router.push('/mis-pedidos'), 2000);
+        return;
+      }
+
+      // ✅ MANEJAR 400 (orden no PENDIENTE)
+      if (errorMessage.includes('400') || errorMessage.includes('PENDIENTE')) {
+        toast.error(
+          'Esta orden ya no puede ser editada (fue procesada o cancelada)',
+          { duration: 4000 }
+        );
+
+        // Limpiar y redirigir
+        localStorage.removeItem('editMode');
+        localStorage.removeItem('editingOrderId');
+        localStorage.removeItem('editingOrderItems');
+
+        setTimeout(() => router.push('/mis-pedidos'), 2000);
+        return;
+      }
+
+      // ✅ MANEJAR 403 (sin permisos)
+      if (errorMessage.includes('403') || errorMessage.includes('permisos')) {
+        toast.error('No tienes permisos para editar esta orden');
+        return;
+      }
+
+      // ❌ Error genérico
+      toast.error('Error al actualizar la orden. Por favor, intenta nuevamente.');
+    }
   };
 
   return (
@@ -103,7 +238,14 @@ export const CartDrawer = () => {
               </div>
 
               <div className="flex flex-col gap-2">
-                {canProceedToCheckout ? (
+                {isEditMode ? (
+                  <Button
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    onClick={handleUpdateOrder}
+                  >
+                    Actualizar Orden
+                  </Button>
+                ) : canProceedToCheckout ? (
                   <Link href="/checkout" className="w-full">
                     <Button
                       className="w-full bg-green-600 hover:bg-green-700"
@@ -115,7 +257,7 @@ export const CartDrawer = () => {
                 ) : (
                   <div className="space-y-2">
                     {!isAuthenticated && (
-                      <div className="flex items-center rounded-md bg-blue-50 p-2 text-xs text-blue-600">
+                      <div className="flex items-center rounded-md bg-green-50 p-2 text-xs text-green-600">
                         <LogIn className="mr-1 h-4 w-4" />
                         <span>Debes iniciar sesión para proceder al pago</span>
                       </div>

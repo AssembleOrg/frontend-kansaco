@@ -43,7 +43,6 @@ export const AddToCartButton = ({
 
   const handleClick = () => {
     if (!isAuthenticated) {
-      console.log('AddToCartButton: Usuario no autenticado, redirigiendo a login');
       router.push('/login');
       return;
     }
@@ -55,22 +54,16 @@ export const AddToCartButton = ({
   const handleConfirm = async (selectedQuantity: number, selectedPresentation: string) => {
     setIsLoading(true);
     try {
-      console.log(`AddToCartButton: Agregando producto ${product.id} al carrito con cantidad ${selectedQuantity} y presentación ${selectedPresentation}`);
-      
       await addToCart(product, selectedQuantity, selectedPresentation);
-      
+
       // Solo mostrar éxito si no hay error en el store
       const currentError = useCartStore.getState().error;
       if (!currentError) {
-        console.log('AddToCartButton: Producto agregado exitosamente, abriendo carrito');
         // Abrir el carrito para mostrar el producto agregado
         openCart();
-      } else {
-        console.warn('AddToCartButton: Error del servidor:', currentError);
         // No mostrar error al usuario, pero tampoco decir que fue exitoso
       }
     } catch (error) {
-      console.warn('AddToCartButton: Error agregando producto:', error);
       // No mostrar error al usuario, el backend tiene problemas temporales
     } finally {
       setIsLoading(false);

@@ -212,6 +212,7 @@ export default function CheckoutPage() {
           productName: item.product.name,
           quantity: item.quantity,
           unitPrice: getProductPrice(item.product),
+          presentation: item.presentation || '',
         })),
         totalAmount: subtotal,
         notes: notes || undefined,
@@ -239,11 +240,8 @@ export default function CheckoutPage() {
         }
       }
 
-      // Mostrar notificación de éxito
-      toast.success('¡Pedido confirmado!', {
-        description: `Tu pedido #${response.orderId} ha sido registrado correctamente. Te contactaremos pronto.`,
-        duration: 6000,
-      });
+      // NO mostrar toast aquí - se muestra en order-success page
+      // El toast se mostrará en la página de confirmación para mejor UX
 
       // Marcar que el pedido fue confirmado antes de limpiar el carrito
       setOrderConfirmed(true);
@@ -306,7 +304,7 @@ export default function CheckoutPage() {
       <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
         isMayorista
           ? 'bg-amber-50 border border-amber-200'
-          : 'bg-blue-50 border border-blue-200'
+          : 'bg-green-50 border border-green-200'
       }`}>
         {isMayorista ? (
           <>
@@ -317,8 +315,8 @@ export default function CheckoutPage() {
           </>
         ) : (
           <>
-            <Store className="h-5 w-5 text-blue-600" />
-            <span className="font-medium text-blue-800">
+            <Store className="h-5 w-5 text-green-600" />
+            <span className="font-medium text-green-800">
               Estás comprando como Cliente Minorista
             </span>
           </>

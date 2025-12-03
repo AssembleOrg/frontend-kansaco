@@ -81,6 +81,11 @@ function OrdersHistoryContent() {
     }
   };
 
+  const refresh = () => {
+    // Re-fetch orders by triggering the useEffect
+    setPagination((prev) => ({ ...prev, page: prev.page }));
+  };
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'COMPLETADO':
@@ -176,13 +181,18 @@ function OrdersHistoryContent() {
               >
                 <div className="flex flex-col gap-3 md:flex-row md:items-center md:justify-between">
                   <div className="flex-1">
-                    <div className="mb-2 flex items-center gap-3">
+                    <div className="mb-2 flex items-center gap-2 flex-wrap">
                       <h3 className="text-base font-semibold text-gray-900">
                         Pedido #{order.id.slice(0, 8)}
                       </h3>
                       <Badge variant={getStatusBadgeVariant(order.status)}>
                         {getStatusLabel(order.status)}
                       </Badge>
+                      {order.status === 'PENDIENTE' && (
+                        <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">
+                          EDITABLE
+                        </Badge>
+                      )}
                     </div>
 
                     <div className="space-y-1.5 text-sm text-gray-600">
@@ -263,6 +273,10 @@ function OrdersHistoryContent() {
         order={selectedOrder}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+        onOrderUpdated={() => {
+          refresh();
+          setIsModalOpen(false);
+        }}
       />
     </div>
   );

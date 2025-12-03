@@ -188,7 +188,7 @@ const LaEmpresaSection = () => {
 
             {/* Floating Card 1 - Top Right */}
             <motion.div
-              className="absolute right-[10%] top-[20%] w-[200px] sm:w-[250px]"
+              className="absolute right-[10%] top-[20%] w-[150px] sm:w-[180px] lg:w-[200px]"
               initial={{ opacity: 0, y: 20, rotate: 0 }}
               whileInView={{ opacity: 1, y: 0, rotate: 6 }}
               viewport={{ once: true }}
@@ -229,7 +229,7 @@ const LaEmpresaSection = () => {
 
             {/* Floating Card 2 - Bottom Left */}
             <motion.div
-              className="absolute left-[15%] top-[65%] w-[200px] sm:w-[250px]"
+              className="absolute left-[15%] top-[65%] w-[150px] sm:w-[180px] lg:w-[200px]"
               initial={{ opacity: 0, y: 20, rotate: 0 }}
               whileInView={{ opacity: 1, y: 0, rotate: -5 }}
               viewport={{ once: true }}

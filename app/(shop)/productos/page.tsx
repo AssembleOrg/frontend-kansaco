@@ -1,9 +1,9 @@
 // app/(shop)/productos/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
+import { useState, useEffect, useMemo, useCallback, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getProducts, getProductsPaginated } from '@/lib/api';
+import { getProducts, getProductsPaginated, validateOrderForEdit } from '@/lib/api';
 import { Product } from '@/types';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
@@ -14,8 +14,10 @@ import { useCart } from '@/features/cart/hooks/useCart';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Alert, AlertDescription } from '@/components/ui/alert';
 import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
-import { X } from 'lucide-react';
+import { X, Info } from 'lucide-react';
+import { toast } from 'sonner';
 // import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 20;
@@ -42,7 +44,11 @@ function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { token } = useAuth();
-  const { openCart } = useCart();
+  const { addToCart, openCart, clearCart, itemCount } = useCart();
+
+  // Estados para modo edición
+  const [isEditMode, setIsEditMode] = useState(false);
+  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
 
   const currentPage = Number(searchParams.get('page')) || 1;
   const currentCategoryFilter = searchParams.get('category');
@@ -197,6 +203,157 @@ function ProductsContent() {
       router.replace(newUrl, { scroll: false });
     }
   }, [openCartParam, openCart, router, searchParams]);
+
+  // Detectar modo edición y pre-cargar items al carrito
+  useEffect(() => {
+    const validateAndLoadEditMode = async () => {
+      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+      console.log('🛒 [ProductosPage] DETECTANDO MODO EDICIÓN');
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+      const editMode = localStorage.getItem('editMode');
+      const orderId = localStorage.getItem('editingOrderId');
+      const orderItemsJson = localStorage.getItem('editingOrderItems');
+
+      console.log('📖 LocalStorage READ:', {
+        editMode,
+        orderId: orderId ? {
+          value: orderId,
+          type: typeof orderId,
+          length: orderId.length,
+          preview: `${orderId.slice(0, 8)}...${orderId.slice(-8)}`
+        } : null,
+        itemsPresent: !!orderItemsJson,
+        tokenPresent: !!token
+      });
+
+      if (editMode === 'true' && orderId && orderItemsJson && token) {
+        console.log('✅ Condiciones cumplidas, validando orden...');
+
+        // ✅ VALIDAR que la orden existe y está PENDIENTE
+        const validation = await validateOrderForEdit(token, orderId);
+
+        console.log('🔍 VALIDACIÓN RESULTADO:', {
+          valid: validation.valid,
+          reason: validation.reason,
+          orderStatus: validation.order?.status,
+          orderExists: !!validation.order
+        });
+
+        if (!validation.valid) {
+          // ❌ Orden no válida → Limpiar localStorage y mostrar toast
+          console.warn('⚠️ Order validation failed:', validation.reason);
+          console.log('🧹 Limpiando localStorage...');
+          localStorage.removeItem('editMode');
+          localStorage.removeItem('editingOrderId');
+          localStorage.removeItem('editingOrderItems');
+
+          toast.error(
+            validation.reason?.includes('not found')
+              ? 'La orden que intentabas editar ya no existe'
+              : 'Esta orden no puede ser editada (estado: ' + validation.order?.status + ')'
+          );
+
+          setIsEditMode(false);
+          setEditingOrderId(null);
+          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+          return;
+        }
+
+        // ✅ Orden válida → Proceder con modo edición
+        console.log('✅ Order validated for edit:', orderId);
+        setIsEditMode(true);
+        setEditingOrderId(orderId);
+
+        // Pre-cargar items de la orden al carrito
+        try {
+          const items = JSON.parse(orderItemsJson);
+          console.log('📦 Pre-cargando items al carrito:', items.length);
+
+          // Limpiar carrito actual primero
+          clearCart();
+
+          // Agregar cada item de la orden al carrito
+          items.forEach((item: { productId: number; productName: string; unitPrice: number; quantity: number; presentation?: string }, index: number) => {
+            console.log(`  [${index + 1}] ${item.productName} x${item.quantity}`);
+            // Construir objeto Product mínimo desde OrderItem
+            const product: Product = {
+              id: item.productId,
+              name: item.productName,
+              price: parseFloat(item.unitPrice?.toString() || '0'),
+              sku: '',
+              slug: '',
+              category: [],
+              description: '',
+              presentation: item.presentation || '',
+              aplication: '',
+              imageUrl: null,
+              wholeSaler: '',
+              stock: 0,
+              isVisible: true,
+              isFeatured: false,
+            };
+
+            addToCart(product, item.quantity, item.presentation);
+          });
+
+          console.log(`✅ Pre-loaded ${items.length} items to cart for editing`);
+          toast.success(`${items.length} producto${items.length !== 1 ? 's' : ''} cargado${items.length !== 1 ? 's' : ''} al carrito`);
+        } catch (error) {
+          console.error('❌ Error parsing stored items:', error);
+          toast.error('Error al cargar los productos de la orden');
+        }
+      } else {
+        console.log('❌ Condiciones NO cumplidas para modo edición:', {
+          hasEditMode: editMode === 'true',
+          hasOrderId: !!orderId,
+          hasItems: !!orderItemsJson,
+          hasToken: !!token
+        });
+      }
+
+      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
+    };
+
+    validateAndLoadEditMode();
+  }, [token, addToCart, clearCart]);
+
+  const handleCancelEdit = useCallback(() => {
+    // Limpiar localStorage
+    localStorage.removeItem('editMode');
+    localStorage.removeItem('editingOrderId');
+    localStorage.removeItem('editingOrderItems');
+
+    // Limpiar carrito
+    clearCart();
+
+    // Resetear estados
+    setIsEditMode(false);
+    setEditingOrderId(null);
+
+    // Redirigir a mis pedidos
+    toast.info('Edición cancelada');
+    router.push('/mis-pedidos');
+  }, [clearCart, router]);
+
+  // Protección contra navegación accidental en edit mode
+  useEffect(() => {
+    if (!isEditMode) return;
+
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      // Solo advertir si hay items en el carrito
+      if (itemCount > 0) {
+        e.preventDefault();
+        e.returnValue = ''; // Chrome requiere esto
+      }
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, [isEditMode, itemCount]);
 
   // Filtrar por precio (filtro local ya que el backend no lo soporta directamente)
   const filteredProducts = useMemo(() => {
@@ -366,6 +523,33 @@ function ProductsContent() {
       <h1 className="mb-8 text-center text-3xl font-bold">
         Nuestros Productos
       </h1>
+
+      {/* Banner de modo edición */}
+      {isEditMode && (
+        <Alert className="mb-6 bg-green-50 border-green-300 border-2">
+          <Info className="h-5 w-5 text-green-600" />
+          <AlertDescription className="text-green-900">
+            <div className="flex items-start justify-between gap-4">
+              <div className="flex-1">
+                <p className="font-semibold mb-1">
+                  ✏️ Editando orden #{editingOrderId?.slice(0, 8)}
+                </p>
+                <p className="text-sm">
+                  Modifica los productos en el carrito y haz clic en <strong>&quot;Actualizar Orden&quot;</strong> para guardar los cambios.
+                </p>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleCancelEdit}
+                className="border-green-300 text-green-700 hover:bg-green-100"
+              >
+                Cancelar edición
+              </Button>
+            </div>
+          </AlertDescription>
+        </Alert>
+      )}
 
       {/* Search Bar */}
       <div className="mb-6">

@@ -70,3 +70,10 @@ export interface PaginatedOrdersResponse {
   hasNext: boolean;
   hasPrev: boolean;
 }
+
+export interface UpdateOrderDto {
+  contactInfo?: OrderContactInfo;
+  businessInfo?: BusinessInfo;
+  items?: OrderItem[];
+  notes?: string;
+}

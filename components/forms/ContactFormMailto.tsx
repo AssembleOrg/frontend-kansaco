@@ -10,7 +10,9 @@ export default function ContactFormMailto() {
   const [mensaje, setMensaje] = useState('');
 
   // Detectar si es móvil
-  const isMobile = typeof window !== 'undefined' && /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const isMobile =
+    typeof window !== 'undefined' &&
+    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -46,7 +48,15 @@ Este email fue enviado desde el formulario de contacto de Kansaco
     } else {
       // En desktop: usar Gmail URL (funciona mejor en navegador)
       const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emailDestino)}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-      window.open(gmailUrl, '_blank');
+
+      try {
+        window.open(gmailUrl, '_blank', 'noopener,noreferrer');
+      } catch (error) {
+        // Solo si el popup es bloqueado completamente
+        console.warn('Popup bloqueado, usando mailto:', error);
+        const mailtoLink = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
+        window.location.href = mailtoLink;
+      }
     }
   };
 
@@ -54,13 +64,18 @@ Este email fue enviado desde el formulario de contacto de Kansaco
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Dropdown de tipo */}
       <div>
-        <label htmlFor="formType" className="block text-sm font-medium text-gray-300 mb-2">
+        <label
+          htmlFor="formType"
+          className="mb-2 block text-sm font-medium text-gray-300"
+        >
           Tipo de solicitud <span className="text-red-500">*</span>
         </label>
         <select
           id="formType"
           value={formType}
-          onChange={(e) => setFormType(e.target.value as 'mayorista' | 'proveedor' | '')}
+          onChange={(e) =>
+            setFormType(e.target.value as 'mayorista' | 'proveedor' | '')
+          }
           className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
           required
         >
@@ -72,7 +87,10 @@ Este email fue enviado desde el formulario de contacto de Kansaco
 
       {/* Campo Nombre */}
       <div>
-        <label htmlFor="nombre" className="block text-sm font-medium text-gray-300 mb-2">
+        <label
+          htmlFor="nombre"
+          className="mb-2 block text-sm font-medium text-gray-300"
+        >
           Nombre completo <span className="text-red-500">*</span>
         </label>
         <input
@@ -88,7 +106,10 @@ Este email fue enviado desde el formulario de contacto de Kansaco
 
       {/* Campo Email */}
       <div>
-        <label htmlFor="email" className="block text-sm font-medium text-gray-300 mb-2">
+        <label
+          htmlFor="email"
+          className="mb-2 block text-sm font-medium text-gray-300"
+        >
           Email <span className="text-red-500">*</span>
         </label>
         <input
@@ -104,8 +125,11 @@ Este email fue enviado desde el formulario de contacto de Kansaco
 
       {/* Campo Mensaje */}
       <div>
-        <label htmlFor="mensaje" className="block text-sm font-medium text-gray-300 mb-2">
-          Mensaje (opcional)
+        <label
+          htmlFor="mensaje"
+          className="mb-2 block text-sm font-medium text-gray-300"
+        >
+          Detallanos tus datos (opcional)
         </label>
         <textarea
           id="mensaje"
@@ -113,21 +137,23 @@ Este email fue enviado desde el formulario de contacto de Kansaco
           onChange={(e) => setMensaje(e.target.value)}
           rows={4}
           className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-          placeholder="Cuéntanos más sobre tu interés..."
+          placeholder="Contanos información sobre vos... Nos comunicaremos a la brevedad."
         />
       </div>
 
       {/* Botón Submit */}
       <button
         type="submit"
-        className="w-full flex items-center justify-center gap-2 rounded-lg bg-[#16a245] px-6 py-3 text-white font-semibold transition-all hover:bg-[#128a38] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
+        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#16a245] px-6 py-3 font-semibold text-white transition-all hover:bg-[#128a38] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
       >
         <Mail className="h-5 w-5" />
         Enviar Consulta
       </button>
 
-      <p className="text-xs text-center text-gray-400">
-        Al hacer clic, se abrirá {isMobile ? 'tu app de correo' : 'Gmail en una nueva pestaña'} con los datos pre-llenados
+      <p className="text-center text-xs text-gray-400">
+        Al hacer clic, se abrirá{' '}
+        {isMobile ? 'tu app de correo' : 'Gmail en una nueva pestaña'} con los
+        datos pre-llenados
       </p>
     </form>
   );

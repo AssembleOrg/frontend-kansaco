@@ -4,7 +4,17 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
-import { User, ShoppingCart, Menu, X, ChevronDown, LogOut, Package, LayoutDashboard, FileText } from 'lucide-react';
+import {
+  User,
+  ShoppingCart,
+  Menu,
+  X,
+  ChevronDown,
+  LogOut,
+  Package,
+  LayoutDashboard,
+  FileText,
+} from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
@@ -20,22 +30,32 @@ const Navbar = () => {
   const [isVisible, setIsVisible] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const [isProductsDropdownOpen, setIsProductsDropdownOpen] = useState(false);
-  const [isProductLinesDropdownOpen, setIsProductLinesDropdownOpen] = useState(false);
-  const [isLubricantDropdownOpen, setIsLubricantDropdownOpen] = useState(false);
-  const [isAboutUsDropdownOpen, setIsAboutUsDropdownOpen] = useState(false);
+
+  // Desktop dropdown states
+  const [isDesktopProductsDropdownOpen, setIsDesktopProductsDropdownOpen] = useState(false);
+  const [isDesktopProductLinesDropdownOpen, setIsDesktopProductLinesDropdownOpen] = useState(false);
+  const [isDesktopLubricantDropdownOpen, setIsDesktopLubricantDropdownOpen] = useState(false);
+  const [isDesktopAboutUsDropdownOpen, setIsDesktopAboutUsDropdownOpen] = useState(false);
+
+  // Mobile dropdown states
+  const [isMobileProductsDropdownOpen, setIsMobileProductsDropdownOpen] = useState(false);
+  const [isMobileProductLinesDropdownOpen, setIsMobileProductLinesDropdownOpen] = useState(false);
+  const [isMobileLubricantDropdownOpen, setIsMobileLubricantDropdownOpen] = useState(false);
+  const [isMobileAboutUsDropdownOpen, setIsMobileAboutUsDropdownOpen] = useState(false);
+
   const [isUserDropdownOpen, setIsUserDropdownOpen] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
   const { user, token, isAuthReady } = useAuth();
   const { logout } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
-  
+
   // Use cart store directly to avoid hook order issues
   const cart = useCartStore((state) => state.cart);
   const openCart = useCartStore((state) => state.openCart);
-  const totalItems = cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
-  
+  const totalItems =
+    cart?.items?.reduce((sum, item) => sum + item.quantity, 0) || 0;
+
   // Solo mostrar estado de autenticación después de la hidratación
   const isAuthenticated = isHydrated && isAuthReady && !!token;
   const isAdmin = isAuthenticated && user?.rol === 'ADMIN';
@@ -56,9 +76,25 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
+  // Reset mobile dropdowns when burger menu closes
+  useEffect(() => {
+    if (!isMobileMenuOpen) {
+      setIsMobileProductsDropdownOpen(false);
+      setIsMobileProductLinesDropdownOpen(false);
+      setIsMobileLubricantDropdownOpen(false);
+      setIsMobileAboutUsDropdownOpen(false);
+    }
+  }, [isMobileMenuOpen]);
+
   const productCategories = [
-    { name: 'Lubricantes para Vehículos', href: '/productos?category=Vehículos' },
-    { name: 'Lubricantes Industriales', href: '/productos?category=Industrial' },
+    {
+      name: 'Lubricantes para Vehículos',
+      href: '/productos?category=Vehículos',
+    },
+    {
+      name: 'Lubricantes Industriales',
+      href: '/productos?category=Industrial',
+    },
     { name: 'Lubricantes para Motos', href: '/productos?category=Motos' },
     { name: 'Grasas Lubricantes', href: '/productos?category=Grasas' },
     { name: 'Agro Lubricantes', href: '/productos?category=Agro' },
@@ -73,24 +109,63 @@ const Navbar = () => {
     { name: 'LÍNEA SINTÉTICA', href: '/lineas-de-productos#linea-sintetica' },
     { name: 'LÍNEA PREMIUM', href: '/lineas-de-productos#linea-premium' },
     { name: 'LÍNEA MINERAL', href: '/lineas-de-productos#linea-mineral' },
-    { name: 'DIESEL HEAVY LINE', href: '/lineas-de-productos#diesel-heavy-line' },
-    { name: 'LUBRICANTES INDUSTRIALES', href: '/lineas-de-productos#lubricantes-industriales' },
-    { name: 'LÍNEA CAJA Y DIFERENCIAL', href: '/lineas-de-productos#linea-caja-diferencial' },
+    {
+      name: 'DIESEL HEAVY LINE',
+      href: '/lineas-de-productos#diesel-heavy-line',
+    },
+    {
+      name: 'LUBRICANTES INDUSTRIALES',
+      href: '/lineas-de-productos#lubricantes-industriales',
+    },
+    {
+      name: 'LÍNEA CAJA Y DIFERENCIAL',
+      href: '/lineas-de-productos#linea-caja-diferencial',
+    },
     { name: 'LUBRICANTES AGRO', href: '/lineas-de-productos#lubricantes-agro' },
-    { name: 'LUBRICANTES COMPETICIÓN', href: '/lineas-de-productos#lubricantes-competicion' },
-    { name: 'LUBRICANTES MOTOS', href: '/lineas-de-productos#lubricantes-motos' },
-    { name: 'LUBRICANTES NÁUTICA', href: '/lineas-de-productos#lubricantes-nautica' },
-    { name: 'GRASAS LUBRICANTES', href: '/lineas-de-productos#grasas-lubricantes' },
-    { name: 'DERIVADOS Y ADITIVOS', href: '/lineas-de-productos#derivados-aditivos' },
+    {
+      name: 'LUBRICANTES COMPETICIÓN',
+      href: '/lineas-de-productos#lubricantes-competicion',
+    },
+    {
+      name: 'LUBRICANTES MOTOS',
+      href: '/lineas-de-productos#lubricantes-motos',
+    },
+    {
+      name: 'LUBRICANTES NÁUTICA',
+      href: '/lineas-de-productos#lubricantes-nautica',
+    },
+    {
+      name: 'GRASAS LUBRICANTES',
+      href: '/lineas-de-productos#grasas-lubricantes',
+    },
+    {
+      name: 'DERIVADOS Y ADITIVOS',
+      href: '/lineas-de-productos#derivados-aditivos',
+    },
   ];
 
   const lubricantCategories = [
     { name: 'Inicio', href: '/tecnologia-lubricantes' },
-    { name: 'Función Principal', href: '/tecnologia-lubricantes?section=funcion-principal' },
-    { name: 'Protección Avanzada', href: '/tecnologia-lubricantes?section=proteccion-desgaste' },
-    { name: 'Tecnología Exclusiva', href: '/tecnologia-lubricantes?section=polymers-protection' },
-    { name: 'Proceso Detallado', href: '/tecnologia-lubricantes?section=como-funciona' },
-    { name: 'Evolución Constante', href: '/tecnologia-lubricantes?section=evolucion' },
+    {
+      name: 'Función Principal',
+      href: '/tecnologia-lubricantes?section=funcion-principal',
+    },
+    {
+      name: 'Protección Avanzada',
+      href: '/tecnologia-lubricantes?section=proteccion-desgaste',
+    },
+    {
+      name: 'Tecnología Exclusiva',
+      href: '/tecnologia-lubricantes?section=polymers-protection',
+    },
+    {
+      name: 'Proceso Detallado',
+      href: '/tecnologia-lubricantes?section=como-funciona',
+    },
+    {
+      name: 'Evolución Constante',
+      href: '/tecnologia-lubricantes?section=evolucion',
+    },
   ];
 
   const aboutUsCategories = [
@@ -113,7 +188,7 @@ const Navbar = () => {
     >
       <div className="container mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex h-16 items-center justify-between lg:h-20">
-          <Link href="/" className="flex items-center group">
+          <Link href="/" className="group flex items-center">
             <div className="flex items-center justify-center transition-all duration-200 group-hover:scale-105">
               <Image
                 src="/landing/kansaco-logo.png"
@@ -125,23 +200,23 @@ const Navbar = () => {
             </div>
           </Link>
 
-          <div className="hidden items-center space-x-8 lg:flex">
+          <div className="hidden items-center space-x-8 xl:flex">
             <div
               className="relative"
-              onMouseEnter={() => setIsProductsDropdownOpen(true)}
-              onMouseLeave={() => setIsProductsDropdownOpen(false)}
+              onMouseEnter={() => setIsDesktopProductsDropdownOpen(true)}
+              onMouseLeave={() => setIsDesktopProductsDropdownOpen(false)}
             >
               <button className="flex items-center space-x-1 font-medium text-white transition-colors duration-200 hover:text-[#16a245]">
                 <span>Productos</span>
                 <ChevronDown
                   className={`h-4 w-4 transition-transform duration-200 ${
-                    isProductsDropdownOpen ? 'rotate-180' : ''
+                    isDesktopProductsDropdownOpen ? 'rotate-180' : ''
                   }`}
                 />
               </button>
 
               <AnimatePresence>
-                {isProductsDropdownOpen && (
+                {isDesktopProductsDropdownOpen && (
                   <motion.div
                     className="absolute left-0 top-full mt-2 w-64 rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
                     initial={{ opacity: 0, y: -10 }}
@@ -175,22 +250,22 @@ const Navbar = () => {
 
             <div
               className="relative"
-              onMouseEnter={() => setIsProductLinesDropdownOpen(true)}
-              onMouseLeave={() => setIsProductLinesDropdownOpen(false)}
+              onMouseEnter={() => setIsDesktopProductLinesDropdownOpen(true)}
+              onMouseLeave={() => setIsDesktopProductLinesDropdownOpen(false)}
             >
               <button className="flex items-center space-x-1 font-medium text-white transition-colors duration-200 hover:text-[#16a245]">
                 <span>Nuestra Línea</span>
                 <ChevronDown
                   className={`h-4 w-4 transition-transform duration-200 ${
-                    isProductLinesDropdownOpen ? 'rotate-180' : ''
+                    isDesktopProductLinesDropdownOpen ? 'rotate-180' : ''
                   }`}
                 />
               </button>
 
               <AnimatePresence>
-                {isProductLinesDropdownOpen && (
+                {isDesktopProductLinesDropdownOpen && (
                   <motion.div
-                    className="absolute left-0 top-full mt-2 w-64 max-h-[60vh] overflow-y-auto rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
+                    className="absolute left-0 top-full mt-2 max-h-[60vh] w-64 overflow-y-auto rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     exit={{ opacity: 0, y: -10 }}
@@ -214,20 +289,20 @@ const Navbar = () => {
 
             <div
               className="relative"
-              onMouseEnter={() => setIsLubricantDropdownOpen(true)}
-              onMouseLeave={() => setIsLubricantDropdownOpen(false)}
+              onMouseEnter={() => setIsDesktopLubricantDropdownOpen(true)}
+              onMouseLeave={() => setIsDesktopLubricantDropdownOpen(false)}
             >
               <button className="flex items-center space-x-1 font-medium text-white transition-colors duration-200 hover:text-[#16a245]">
                 <span>El Lubricante</span>
                 <ChevronDown
                   className={`h-4 w-4 transition-transform duration-200 ${
-                    isLubricantDropdownOpen ? 'rotate-180' : ''
+                    isDesktopLubricantDropdownOpen ? 'rotate-180' : ''
                   }`}
                 />
               </button>
 
               <AnimatePresence>
-                {isLubricantDropdownOpen && (
+                {isDesktopLubricantDropdownOpen && (
                   <motion.div
                     className="absolute left-0 top-full mt-2 w-64 rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
                     initial={{ opacity: 0, y: -10 }}
@@ -253,20 +328,20 @@ const Navbar = () => {
 
             <div
               className="relative"
-              onMouseEnter={() => setIsAboutUsDropdownOpen(true)}
-              onMouseLeave={() => setIsAboutUsDropdownOpen(false)}
+              onMouseEnter={() => setIsDesktopAboutUsDropdownOpen(true)}
+              onMouseLeave={() => setIsDesktopAboutUsDropdownOpen(false)}
             >
               <button className="flex items-center space-x-1 font-medium text-white transition-colors duration-200 hover:text-[#16a245]">
                 <span>Sobre Nosotros</span>
                 <ChevronDown
                   className={`h-4 w-4 transition-transform duration-200 ${
-                    isAboutUsDropdownOpen ? 'rotate-180' : ''
+                    isDesktopAboutUsDropdownOpen ? 'rotate-180' : ''
                   }`}
                 />
               </button>
 
               <AnimatePresence>
-                {isAboutUsDropdownOpen && (
+                {isDesktopAboutUsDropdownOpen && (
                   <motion.div
                     className="absolute left-0 top-full mt-2 w-64 rounded-lg border border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
                     initial={{ opacity: 0, y: -10 }}
@@ -308,7 +383,6 @@ const Navbar = () => {
           </div>
 
           <div className="flex items-center space-x-4">
-
             {!isHydrated ? (
               // Estado neutral durante la hidratación para evitar mismatch
               <div className="flex items-center p-2 text-white">
@@ -316,7 +390,10 @@ const Navbar = () => {
               </div>
             ) : isAuthenticated ? (
               <div className="flex items-center space-x-2">
-                <DropdownMenu open={isUserDropdownOpen} onOpenChange={setIsUserDropdownOpen}>
+                <DropdownMenu
+                  open={isUserDropdownOpen}
+                  onOpenChange={setIsUserDropdownOpen}
+                >
                   <DropdownMenuTrigger asChild>
                     <button className="flex items-center p-2 text-white transition-colors duration-200 hover:text-[#16a245]">
                       <User className="h-5 w-5" />
@@ -326,39 +403,42 @@ const Navbar = () => {
                       <ChevronDown className="ml-1 h-4 w-4" />
                     </button>
                   </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56 border-gray-800/50 bg-black/95 backdrop-blur-md shadow-xl">
+                  <DropdownMenuContent
+                    align="end"
+                    className="w-56 border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
+                  >
                     {isAdmin ? (
-                      <>  
-                      <DropdownMenuItem
-                        onClick={() => {
-                          router.push('/admin/dashboard');
-                          setIsUserDropdownOpen(false);
-                        }}
-                        className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
-                      >
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Ir a Dashboard
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          router.push('/mis-pedidos');
-                          setIsUserDropdownOpen(false);
-                        }}
-                        className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
-                      >
-                        <Package className="mr-2 h-4 w-4" />
-                        Ver historial de pedidos
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => {
-                          router.push('/admin/pedidos-solicitados');
-                          setIsUserDropdownOpen(false);
-                        }}
-                        className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
-                      >
-                        <FileText className="mr-2 h-4 w-4" />
-                        Pedidos solicitados
-                      </DropdownMenuItem>
+                      <>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            router.push('/admin/dashboard');
+                            setIsUserDropdownOpen(false);
+                          }}
+                          className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
+                        >
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Ir a Dashboard
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            router.push('/mis-pedidos');
+                            setIsUserDropdownOpen(false);
+                          }}
+                          className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
+                        >
+                          <Package className="mr-2 h-4 w-4" />
+                          Ver historial de pedidos
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            router.push('/admin/pedidos-solicitados');
+                            setIsUserDropdownOpen(false);
+                          }}
+                          className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          Pedidos solicitados
+                        </DropdownMenuItem>
                       </>
                     ) : (
                       <DropdownMenuItem
@@ -420,7 +500,7 @@ const Navbar = () => {
             </div>
 
             <button
-              className="p-2 text-white transition-colors duration-200 hover:text-[#16a245] lg:hidden"
+              className="p-2 text-white transition-colors duration-200 hover:text-[#16a245] xl:hidden"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             >
               {isMobileMenuOpen ? (
@@ -436,7 +516,7 @@ const Navbar = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            className="border-t border-gray-800/50 bg-black/95 backdrop-blur-md lg:hidden"
+            className="border-t border-gray-800/50 bg-black/95 backdrop-blur-md xl:hidden"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
@@ -446,20 +526,20 @@ const Navbar = () => {
               <div>
                 <button
                   onClick={() =>
-                    setIsProductsDropdownOpen(!isProductsDropdownOpen)
+                    setIsMobileProductsDropdownOpen(!isMobileProductsDropdownOpen)
                   }
                   className="flex w-full items-center justify-between py-2 font-medium text-white"
                 >
                   <span>Productos</span>
                   <ChevronDown
                     className={`h-4 w-4 transition-transform duration-200 ${
-                      isProductsDropdownOpen ? 'rotate-180' : ''
+                      isMobileProductsDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
 
                 <AnimatePresence>
-                  {isProductsDropdownOpen && (
+                  {isMobileProductsDropdownOpen && (
                     <motion.div
                       className="mt-2 space-y-2 pl-4"
                       initial={{ opacity: 0, height: 0 }}
@@ -494,20 +574,20 @@ const Navbar = () => {
               <div>
                 <button
                   onClick={() =>
-                    setIsProductLinesDropdownOpen(!isProductLinesDropdownOpen)
+                    setIsMobileProductLinesDropdownOpen(!isMobileProductLinesDropdownOpen)
                   }
                   className="flex w-full items-center justify-between py-2 font-medium text-white"
                 >
                   <span>Nuestra Línea</span>
                   <ChevronDown
                     className={`h-4 w-4 transition-transform duration-200 ${
-                      isProductLinesDropdownOpen ? 'rotate-180' : ''
+                      isMobileProductLinesDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
 
                 <AnimatePresence>
-                  {isProductLinesDropdownOpen && (
+                  {isMobileProductLinesDropdownOpen && (
                     <motion.div
                       className="mt-2 space-y-2 pl-4"
                       initial={{ opacity: 0, height: 0 }}
@@ -533,20 +613,20 @@ const Navbar = () => {
               <div>
                 <button
                   onClick={() =>
-                    setIsLubricantDropdownOpen(!isLubricantDropdownOpen)
+                    setIsMobileLubricantDropdownOpen(!isMobileLubricantDropdownOpen)
                   }
                   className="flex w-full items-center justify-between py-2 font-medium text-white"
                 >
                   <span>El Lubricante</span>
                   <ChevronDown
                     className={`h-4 w-4 transition-transform duration-200 ${
-                      isLubricantDropdownOpen ? 'rotate-180' : ''
+                      isMobileLubricantDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
 
                 <AnimatePresence>
-                  {isLubricantDropdownOpen && (
+                  {isMobileLubricantDropdownOpen && (
                     <motion.div
                       className="mt-2 space-y-2 pl-4"
                       initial={{ opacity: 0, height: 0 }}
@@ -572,20 +652,20 @@ const Navbar = () => {
               <div>
                 <button
                   onClick={() =>
-                    setIsAboutUsDropdownOpen(!isAboutUsDropdownOpen)
+                    setIsMobileAboutUsDropdownOpen(!isMobileAboutUsDropdownOpen)
                   }
                   className="flex w-full items-center justify-between py-2 font-medium text-white"
                 >
                   <span>Sobre Nosotros</span>
                   <ChevronDown
                     className={`h-4 w-4 transition-transform duration-200 ${
-                      isAboutUsDropdownOpen ? 'rotate-180' : ''
+                      isMobileAboutUsDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
                 </button>
 
                 <AnimatePresence>
-                  {isAboutUsDropdownOpen && (
+                  {isMobileAboutUsDropdownOpen && (
                     <motion.div
                       className="mt-2 space-y-2 pl-4"
                       initial={{ opacity: 0, height: 0 }}
@@ -629,9 +709,7 @@ const Navbar = () => {
               <div className="border-t border-gray-700 pt-4">
                 {!isHydrated ? (
                   // Estado neutral durante la hidratación
-                  <div className="py-2 text-gray-400">
-                    Cargando...
-                  </div>
+                  <div className="py-2 text-gray-400">Cargando...</div>
                 ) : isAuthenticated ? (
                   <div className="space-y-2">
                     <p className="text-sm text-gray-300">
@@ -639,30 +717,30 @@ const Navbar = () => {
                     </p>
                     {isAdmin ? (
                       <>
-                      <Link
-                        href="/admin/dashboard"
-                        className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <LayoutDashboard className="mr-2 h-4 w-4" />
-                        Ir a Dashboard
-                      </Link>
                         <Link
-                        href="/mis-pedidos"
-                        className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <Package className="mr-2 h-4 w-4" />
-                        Ver historial de pedidos
-                      </Link>
-                      <Link
-                        href="/admin/pedidos-solicitados"
-                        className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
-                        onClick={() => setIsMobileMenuOpen(false)}
-                      >
-                        <FileText className="mr-2 h-4 w-4" />
-                        Pedidos solicitados
-                      </Link>
+                          href="/admin/dashboard"
+                          className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Ir a Dashboard
+                        </Link>
+                        <Link
+                          href="/mis-pedidos"
+                          className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <Package className="mr-2 h-4 w-4" />
+                          Ver historial de pedidos
+                        </Link>
+                        <Link
+                          href="/admin/pedidos-solicitados"
+                          className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                          onClick={() => setIsMobileMenuOpen(false)}
+                        >
+                          <FileText className="mr-2 h-4 w-4" />
+                          Pedidos solicitados
+                        </Link>
                       </>
                     ) : (
                       <Link
