@@ -256,7 +256,7 @@ export function OrderEditModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>Editar Orden</DialogTitle>
           <DialogDescription>
@@ -264,7 +264,7 @@ export function OrderEditModal({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
+        <form onSubmit={handleSubmit} className="space-y-6 px-1 sm:px-0">
           {/* Información de Contacto */}
           <div className="space-y-4">
             <h3 className="text-lg font-semibold">Información de Contacto</h3>
@@ -383,12 +383,10 @@ export function OrderEditModal({
           {/* Productos del Pedido */}
           <div className="space-y-4">
             <Separator />
-            <div className="flex items-center justify-between">
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
               <h3 className="text-lg font-semibold">Productos del Pedido</h3>
               <Button
                 type="button"
-                variant="outline"
-                size="sm"
                 onClick={async () => {
                   // ✅ VALIDAR que la orden sigue siendo editable
                   if (token) {
@@ -434,10 +432,10 @@ export function OrderEditModal({
                   window.location.href = '/productos';
                 }}
                 disabled={isSubmitting}
-                className="text-green-600 hover:text-green-700 hover:bg-green-50"
+                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Agregar más productos
+                <Plus className="h-5 w-5" />
+                Agregar Productos
               </Button>
             </div>
 

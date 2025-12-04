@@ -169,42 +169,30 @@ export function OrderDetailsModal({
                       Información de Contacto
                     </h3>
                     <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                      <div className="space-y-3">
-                        <div className="flex items-start gap-3">
-                          <User className="mt-0.5 h-4 w-4 text-gray-400" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium text-gray-500">Nombre Completo</p>
-                            <p className="text-sm font-medium text-gray-900 break-words">
-                              {order.contactInfo.fullName}
-                            </p>
-                          </div>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <div>
+                          <p className="text-xs font-medium text-gray-500">Nombre Completo</p>
+                          <p className="text-sm font-medium text-gray-900 break-words">
+                            {order.contactInfo.fullName}
+                          </p>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <Mail className="mt-0.5 h-4 w-4 text-gray-400" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium text-gray-500">Email</p>
-                            <p className="text-sm font-medium text-gray-900 break-words">
-                              {order.contactInfo.email}
-                            </p>
-                          </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500">Email</p>
+                          <p className="text-sm font-medium text-gray-900 break-words">
+                            {order.contactInfo.email}
+                          </p>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <Phone className="mt-0.5 h-4 w-4 text-gray-400" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium text-gray-500">Teléfono</p>
-                            <p className="text-sm font-medium text-gray-900">
-                              {order.contactInfo.phone}
-                            </p>
-                          </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500">Teléfono</p>
+                          <p className="text-sm font-medium text-gray-900">
+                            {order.contactInfo.phone}
+                          </p>
                         </div>
-                        <div className="flex items-start gap-3">
-                          <MapPin className="mt-0.5 h-4 w-4 text-gray-400" />
-                          <div className="min-w-0 flex-1">
-                            <p className="text-xs font-medium text-gray-500">Dirección</p>
-                            <p className="text-sm font-medium text-gray-900 break-words">
-                              {order.contactInfo.address}
-                            </p>
-                          </div>
+                        <div>
+                          <p className="text-xs font-medium text-gray-500">Dirección</p>
+                          <p className="text-sm font-medium text-gray-900 break-words">
+                            {order.contactInfo.address}
+                          </p>
                         </div>
                       </div>
                     </div>
@@ -316,26 +304,48 @@ export function OrderDetailsModal({
         {/* Footer con botón o mensaje */}
         <Separator />
         <DialogFooter className="flex-col sm:flex-col gap-3">
-          {/* Botón Descargar PDF - SIEMPRE visible */}
-          <Button
-            onClick={handleDownloadPDF}
-            disabled={isDownloading}
-            variant="outline"
-            className="w-full"
-          >
-            {isDownloading ? (
-              <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Download className="mr-2 h-4 w-4" />
-            )}
-            Descargar Presupuesto PDF
-          </Button>
+          {/* Download PDF Card - Cuadro Verde Destacado */}
+          <div className="rounded-lg border-2 border-green-600 bg-green-50 p-4">
+            <div className="flex flex-col gap-3">
+              <div className="flex items-start gap-3">
+                <div className="rounded-full bg-green-100 p-2">
+                  <Download className="h-5 w-5 text-green-700" />
+                </div>
+                <div className="flex-1">
+                  <h4 className="text-sm font-semibold text-gray-900">
+                    Descargar Presupuesto
+                  </h4>
+                  <p className="text-xs text-gray-600 mt-0.5">
+                    Genera y descarga el PDF con todos los detalles del pedido
+                  </p>
+                </div>
+              </div>
+              <Button
+                onClick={handleDownloadPDF}
+                disabled={isDownloading}
+                className="w-full bg-green-600 hover:bg-green-700"
+              >
+                {isDownloading ? (
+                  <>
+                    <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                    Generando PDF...
+                  </>
+                ) : (
+                  <>
+                    <Download className="mr-2 h-4 w-4" />
+                    Descargar PDF
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
 
           {/* Botón Editar - solo si PENDIENTE */}
           {isPendiente ? (
             <Button
               onClick={() => setIsEditModalOpen(true)}
-              className="w-full bg-green-600 hover:bg-green-700"
+              variant="outline"
+              className="w-full border-2 border-gray-300 text-gray-700 hover:border-green-600 hover:text-green-700 hover:bg-green-50 font-semibold transition-colors"
             >
               <Edit className="mr-2 h-4 w-4" />
               Editar Orden

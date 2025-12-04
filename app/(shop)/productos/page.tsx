@@ -1,9 +1,20 @@
 // app/(shop)/productos/page.tsx
 'use client';
 
-import { useState, useEffect, useMemo, useCallback, Suspense, useRef } from 'react';
+import {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  Suspense,
+  useRef,
+} from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getProducts, getProductsPaginated, validateOrderForEdit } from '@/lib/api';
+import {
+  getProducts,
+  getProductsPaginated,
+  validateOrderForEdit,
+} from '@/lib/api';
 import { Product } from '@/types';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
@@ -52,8 +63,12 @@ function ProductsContent() {
 
   const currentPage = Number(searchParams.get('page')) || 1;
   const currentCategoryFilter = searchParams.get('category');
-  const minPrice = searchParams.get('minPrice') ? Number(searchParams.get('minPrice')) : undefined;
-  const maxPrice = searchParams.get('maxPrice') ? Number(searchParams.get('maxPrice')) : undefined;
+  const minPrice = searchParams.get('minPrice')
+    ? Number(searchParams.get('minPrice'))
+    : undefined;
+  const maxPrice = searchParams.get('maxPrice')
+    ? Number(searchParams.get('maxPrice'))
+    : undefined;
   const searchQuery = searchParams.get('search') ?? undefined;
 
   // Usar categorías permitidas directamente (no necesitamos cargar del backend)
@@ -150,11 +165,14 @@ function ProductsContent() {
           });
         } catch (paginatedError) {
           // Si falla el endpoint paginado (puede requerir auth), usar fallback
-          console.warn('Error using paginated endpoint, falling back to all products:', paginatedError);
-        const fetchedProducts = await getProducts(null);
+          console.warn(
+            'Error using paginated endpoint, falling back to all products:',
+            paginatedError
+          );
+          const fetchedProducts = await getProducts(null);
           // Filtrar localmente por visibilidad y categoría
           let filtered = fetchedProducts.filter((p) => p.isVisible);
-          
+
           if (currentCategoryFilter) {
             filtered = filtered.filter((p) =>
               p.category?.includes(currentCategoryFilter)
@@ -165,7 +183,7 @@ function ProductsContent() {
           const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
           const endIndex = startIndex + ITEMS_PER_PAGE;
           const paginated = filtered.slice(startIndex, endIndex);
-          
+
           setProducts(paginated);
           setPagination({
             total: filtered.length,
@@ -189,17 +207,19 @@ function ProductsContent() {
   }, [currentPage, currentCategoryFilter, searchQuery, token]);
 
   const openCartParam = searchParams.get('openCart');
-  
+
   useEffect(() => {
     const shouldOpenCart = openCartParam === 'true';
-    
+
     if (shouldOpenCart) {
       openCart();
-      
+
       // Limpiar el parámetro openCart de la URL después de usarlo
       const newSearchParams = new URLSearchParams(searchParams.toString());
       newSearchParams.delete('openCart');
-      const newUrl = newSearchParams.toString() ? `?${newSearchParams.toString()}` : '/productos';
+      const newUrl = newSearchParams.toString()
+        ? `?${newSearchParams.toString()}`
+        : '/productos';
       router.replace(newUrl, { scroll: false });
     }
   }, [openCartParam, openCart, router, searchParams]);
@@ -217,14 +237,16 @@ function ProductsContent() {
 
       console.log('📖 LocalStorage READ:', {
         editMode,
-        orderId: orderId ? {
-          value: orderId,
-          type: typeof orderId,
-          length: orderId.length,
-          preview: `${orderId.slice(0, 8)}...${orderId.slice(-8)}`
-        } : null,
+        orderId: orderId
+          ? {
+              value: orderId,
+              type: typeof orderId,
+              length: orderId.length,
+              preview: `${orderId.slice(0, 8)}...${orderId.slice(-8)}`,
+            }
+          : null,
         itemsPresent: !!orderItemsJson,
-        tokenPresent: !!token
+        tokenPresent: !!token,
       });
 
       if (editMode === 'true' && orderId && orderItemsJson && token) {
@@ -237,7 +259,7 @@ function ProductsContent() {
           valid: validation.valid,
           reason: validation.reason,
           orderStatus: validation.order?.status,
-          orderExists: !!validation.order
+          orderExists: !!validation.order,
         });
 
         if (!validation.valid) {
@@ -251,7 +273,9 @@ function ProductsContent() {
           toast.error(
             validation.reason?.includes('not found')
               ? 'La orden que intentabas editar ya no existe'
-              : 'Esta orden no puede ser editada (estado: ' + validation.order?.status + ')'
+              : 'Esta orden no puede ser editada (estado: ' +
+                  validation.order?.status +
+                  ')'
           );
 
           setIsEditMode(false);
@@ -274,31 +298,48 @@ function ProductsContent() {
           clearCart();
 
           // Agregar cada item de la orden al carrito
-          items.forEach((item: { productId: number; productName: string; unitPrice: number; quantity: number; presentation?: string }, index: number) => {
-            console.log(`  [${index + 1}] ${item.productName} x${item.quantity}`);
-            // Construir objeto Product mínimo desde OrderItem
-            const product: Product = {
-              id: item.productId,
-              name: item.productName,
-              price: parseFloat(item.unitPrice?.toString() || '0'),
-              sku: '',
-              slug: '',
-              category: [],
-              description: '',
-              presentation: item.presentation || '',
-              aplication: '',
-              imageUrl: null,
-              wholeSaler: '',
-              stock: 0,
-              isVisible: true,
-              isFeatured: false,
-            };
+          items.forEach(
+            (
+              item: {
+                productId: number;
+                productName: string;
+                unitPrice: number;
+                quantity: number;
+                presentation?: string;
+              },
+              index: number
+            ) => {
+              console.log(
+                `  [${index + 1}] ${item.productName} x${item.quantity}`
+              );
+              // Construir objeto Product mínimo desde OrderItem
+              const product: Product = {
+                id: item.productId,
+                name: item.productName,
+                price: parseFloat(item.unitPrice?.toString() || '0'),
+                sku: '',
+                slug: '',
+                category: [],
+                description: '',
+                presentation: item.presentation || '',
+                aplication: '',
+                imageUrl: null,
+                wholeSaler: '',
+                stock: 0,
+                isVisible: true,
+                isFeatured: false,
+              };
 
-            addToCart(product, item.quantity, item.presentation);
-          });
+              addToCart(product, item.quantity, item.presentation);
+            }
+          );
 
-          console.log(`✅ Pre-loaded ${items.length} items to cart for editing`);
-          toast.success(`${items.length} producto${items.length !== 1 ? 's' : ''} cargado${items.length !== 1 ? 's' : ''} al carrito`);
+          console.log(
+            `✅ Pre-loaded ${items.length} items to cart for editing`
+          );
+          toast.success(
+            `${items.length} producto${items.length !== 1 ? 's' : ''} cargado${items.length !== 1 ? 's' : ''} al carrito`
+          );
         } catch (error) {
           console.error('❌ Error parsing stored items:', error);
           toast.error('Error al cargar los productos de la orden');
@@ -308,7 +349,7 @@ function ProductsContent() {
           hasEditMode: editMode === 'true',
           hasOrderId: !!orderId,
           hasItems: !!orderItemsJson,
-          hasToken: !!token
+          hasToken: !!token,
         });
       }
 
@@ -358,27 +399,28 @@ function ProductsContent() {
   // Filtrar por precio (filtro local ya que el backend no lo soporta directamente)
   const filteredProducts = useMemo(() => {
     let result = products;
-    
+
     // Filtrar por precio (solo si hay filtros de precio)
     if (minPrice !== undefined || maxPrice !== undefined) {
       result = result.filter((p) => {
-        const price = typeof p.price === 'string' ? parseFloat(p.price) : (p.price ?? 0);
-        
+        const price =
+          typeof p.price === 'string' ? parseFloat(p.price) : (p.price ?? 0);
+
         // Si hay precio mínimo y máximo
         if (minPrice !== undefined && maxPrice !== undefined) {
           return price >= minPrice && price <= maxPrice;
         }
-        
+
         // Si solo hay precio mínimo
         if (minPrice !== undefined) {
           return price >= minPrice;
         }
-        
+
         // Si solo hay precio máximo
         if (maxPrice !== undefined) {
           return price <= maxPrice;
         }
-        
+
         return true;
       });
     }
@@ -408,7 +450,7 @@ function ProductsContent() {
       pages.push(
         <Button
           key={pageNum}
-          variant={currentPage === pageNum ? "default" : "outline"}
+          variant={currentPage === pageNum ? 'default' : 'outline'}
           size="sm"
           onClick={() => handlePageChange(pageNum)}
           className="min-w-[2rem]"
@@ -515,8 +557,8 @@ function ProductsContent() {
           <div className="h-10 w-full animate-pulse rounded bg-gray-200"></div>
         </div>
       </div>
-      </div>
-    );
+    </div>
+  );
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -526,16 +568,18 @@ function ProductsContent() {
 
       {/* Banner de modo edición */}
       {isEditMode && (
-        <Alert className="mb-6 bg-green-50 border-green-300 border-2">
+        <Alert className="mb-6 border-2 border-green-300 bg-green-50">
           <Info className="h-5 w-5 text-green-600" />
           <AlertDescription className="text-green-900">
             <div className="flex items-start justify-between gap-4">
               <div className="flex-1">
-                <p className="font-semibold mb-1">
-                  ✏️ Editando orden #{editingOrderId?.slice(0, 8)}
+                <p className="mb-1 font-semibold">
+                  Editando orden #{editingOrderId?.slice(0, 8)}
                 </p>
                 <p className="text-sm">
-                  Modifica los productos en el carrito y haz clic en <strong>&quot;Actualizar Orden&quot;</strong> para guardar los cambios.
+                  Modifica los productos en el carrito y haz clic en{' '}
+                  <strong>&quot;Actualizar Orden&quot;</strong> para guardar los
+                  cambios.
                 </p>
               </div>
               <Button
@@ -582,12 +626,12 @@ function ProductsContent() {
 
       <div className="grid grid-cols-1 gap-8 md:grid-cols-4">
         <aside className="md:col-span-1">
-            <ProductFilters
-              availableCategories={uniqueCategories}
-              currentCategory={currentCategoryFilter ?? undefined}
-              minPrice={minPrice}
-              maxPrice={maxPrice}
-            />
+          <ProductFilters
+            availableCategories={uniqueCategories}
+            currentCategory={currentCategoryFilter ?? undefined}
+            minPrice={minPrice}
+            maxPrice={maxPrice}
+          />
         </aside>
         <main className="md:col-span-3">
           {error ? (
@@ -609,12 +653,10 @@ function ProductsContent() {
                   <ProductCard key={product.id} product={product} />
                 ))}
               </div>
-              
+
               {/* Paginación */}
               {totalPages > 1 && (
-                <div className="mt-8">
-                  {renderPagination()}
-                </div>
+                <div className="mt-8">{renderPagination()}</div>
               )}
             </>
           ) : (

@@ -14,7 +14,10 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 
 interface ProductFormModalProps {
   product?: Product;
-  onSubmit: (data: Omit<Product, 'id' | 'slug'>, selectedImages?: ImageListItem[]) => Promise<void>;
+  onSubmit: (
+    data: Omit<Product, 'id' | 'slug'>,
+    selectedImages?: ImageListItem[]
+  ) => Promise<void>;
   onClose: () => void;
   isLoading?: boolean;
 }
@@ -66,19 +69,21 @@ export default function ProductFormModal({
         imageUrl: product.imageUrl ?? '',
         isFeatured: product.isFeatured ?? false,
       });
-      
+
       // Cargar imágenes existentes del producto
       if (product.id && token) {
         setIsLoadingImages(true);
         getProductImages(token, product.id)
           .then((productImages) => {
             // Convertir ProductImage[] a ImageListItem[]
-            const imageListItems: ImageListItem[] = productImages.map((img) => ({
-              key: img.imageKey,
-              url: img.imageUrl,
-              lastModified: img.createdAt,
-              size: 0, // No tenemos el tamaño en ProductImage
-            }));
+            const imageListItems: ImageListItem[] = productImages.map(
+              (img) => ({
+                key: img.imageKey,
+                url: img.imageUrl,
+                lastModified: img.createdAt,
+                size: 0, // No tenemos el tamaño en ProductImage
+              })
+            );
             // Ordenar por order y luego por id
             const sorted = imageListItems.sort((a, b) => {
               const imgA = productImages.find((img) => img.imageKey === a.key);
@@ -154,17 +159,25 @@ export default function ProductFormModal({
       setError('El nombre del producto es requerido');
       return;
     }
-    if (!formData.sku.trim()) {
-      setError('El SKU es requerido');
-      return;
+
+    // Validar formato de SKU si se proporciona
+    if (formData.sku.trim()) {
+      const skuPattern = /^[a-zA-Z0-9_-]+$/;
+      if (!skuPattern.test(formData.sku.trim())) {
+        setError(
+          'El SKU solo puede contener letras, números, guiones (-) y guiones bajos (_)'
+        );
+        return;
+      }
     }
-    
+
     // Convertir precio a número y validar
-    const priceValue = typeof formData.price === 'string' 
-      ? parseFloat(formData.price) 
-      : formData.price;
+    const priceValue =
+      typeof formData.price === 'string'
+        ? parseFloat(formData.price)
+        : formData.price;
     const finalPrice = isNaN(priceValue) || priceValue <= 0 ? 1 : priceValue;
-    
+
     if (finalPrice <= 0) {
       setError('El precio debe ser mayor a 0');
       return;
@@ -177,7 +190,7 @@ export default function ProductFormModal({
         ...dataToSubmit,
         price: finalPrice,
       };
-      
+
       await onSubmit(submitData, selectedImages);
       onClose();
     } catch (err) {
@@ -229,16 +242,18 @@ export default function ProductFormModal({
           <div className="grid grid-cols-2 gap-4">
             {/* SKU */}
             <div>
-              <Label htmlFor="sku">SKU *</Label>
+              <Label htmlFor="sku">SKU</Label>
               <Input
                 id="sku"
                 name="sku"
                 value={formData.sku}
                 onChange={handleInputChange}
-                placeholder="Ej: SKU-001"
+                placeholder="Ej: PROD-123 (letras, números, - y _)"
                 disabled={isLoading}
-                required
               />
+              <p className="mt-1 text-xs text-gray-500">
+                Solo letras, números, guiones (-) y guiones bajos (_)
+              </p>
             </div>
 
             {/* Presentación */}
@@ -377,11 +392,13 @@ export default function ProductFormModal({
                   ? `Editar Imágenes (${selectedImages.length} seleccionada${selectedImages.length > 1 ? 's' : ''})`
                   : 'Seleccionar Imágenes'}
               </Button>
-              
+
               {selectedImages.length > 0 && (
                 <div className="space-y-2">
                   <p className="text-sm text-gray-600">
-                    {selectedImages.length} imagen{selectedImages.length > 1 ? 'es' : ''} seleccionada{selectedImages.length > 1 ? 's' : ''}
+                    {selectedImages.length} imagen
+                    {selectedImages.length > 1 ? 'es' : ''} seleccionada
+                    {selectedImages.length > 1 ? 's' : ''}
                   </p>
                   <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 md:grid-cols-4">
                     {selectedImages.map((img, index) => (
@@ -396,7 +413,7 @@ export default function ProductFormModal({
                             className="h-full w-full object-cover"
                           />
                         </div>
-                        <div className="absolute top-1 left-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
+                        <div className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
                           {index + 1}
                         </div>
                         {index === 0 && (
@@ -408,7 +425,8 @@ export default function ProductFormModal({
                     ))}
                   </div>
                   <p className="text-xs text-gray-500">
-                    La primera imagen será la portada del producto. Las demás aparecerán en el carrusel de detalles.
+                    La primera imagen será la portada del producto. Las demás
+                    aparecerán en el carrusel de detalles.
                   </p>
                 </div>
               )}
