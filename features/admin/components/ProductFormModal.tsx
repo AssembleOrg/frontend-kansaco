@@ -2,15 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { Product } from '@/types/product';
-import { X, Loader2, Image as ImageIcon } from 'lucide-react';
+import { X, Loader2, Image as ImageIcon, ArrowUpToLine } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import ImageSelectionModal from './ImageSelectionModal';
-import { ImageListItem, getProductImages } from '@/lib/api';
+import {
+  ImageListItem,
+  getProductImages,
+  setProductImageAsPrimary,
+} from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { toast } from 'sonner';
 
 interface ProductFormModalProps {
   product?: Product;
@@ -148,6 +153,57 @@ export default function ProductFormModal({
       ...prev,
       category: prev.category.filter((_, i) => i !== index),
     }));
+  };
+  //Lo agregado para el upload de portada.
+  const handleSetAsPrimary = async (imageKey: string) => {
+    if (!token || !product) return;
+
+    const loadingToast = toast.loading('Cambiando portada...');
+
+    try {
+      const allImages = await getProductImages(token, product.id);
+      const targetImage = allImages.find((img) => img.imageKey === imageKey);
+
+      if (!targetImage) {
+        toast.dismiss(loadingToast);
+        toast.error('Imagen no encontrada', {
+          description: 'No se pudo encontrar la imagen seleccionada',
+          duration: 4000,
+        });
+        return;
+      }
+
+      await setProductImageAsPrimary(token, product.id, targetImage.id);
+
+      setSelectedImages((prevImages) => {
+        const targetIndex = prevImages.findIndex((img) => img.key === imageKey);
+        if (targetIndex === -1) return prevImages;
+        const newImages = [...prevImages];
+        const [movedImage] = newImages.splice(targetIndex, 1);
+        newImages.unshift(movedImage);
+
+        return newImages;
+      });
+      toast.dismiss(loadingToast);
+      toast.success('Portada cambiada', {
+        description: 'Esta imagen ahora es la portada del producto',
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Error setting primary image:', error);
+
+      toast.dismiss(loadingToast);
+
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : 'Ocurrió un error al cambiar la portada';
+
+      toast.error('Error al cambiar portada', {
+        description: errorMessage,
+        duration: 5000,
+      });
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -416,10 +472,21 @@ export default function ProductFormModal({
                         <div className="absolute left-1 top-1 flex h-6 w-6 items-center justify-center rounded-full bg-green-600 text-xs font-bold text-white">
                           {index + 1}
                         </div>
-                        {index === 0 && (
+                        {index === 0 ? (
                           <div className="absolute bottom-0 left-0 right-0 bg-green-600/90 px-2 py-1 text-center text-xs font-medium text-white">
                             Portada
                           </div>
+                        ) : (
+                          product && (
+                            <button
+                              onClick={() => handleSetAsPrimary(img.key)}
+                              className="absolute bottom-1 right-1 rounded-full bg-white/90 p-1.5 opacity-0 shadow-md transition-all hover:scale-110 hover:bg-white group-hover:opacity-100"
+                              title="Establecer como imagen de portada"
+                              type="button"
+                            >
+                              <ArrowUpToLine className="h-4 w-4 text-green-600" />
+                            </button>
+                          )
                         )}
                       </div>
                     ))}
