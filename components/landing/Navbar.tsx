@@ -97,6 +97,10 @@ const Navbar = () => {
     },
     { name: 'Lubricantes para Motos', href: '/productos?category=Motos' },
     { name: 'Grasas Lubricantes', href: '/productos?category=Grasas' },
+    {
+      name: 'Caja y Diferencial',
+      href: '/productos?category=Caja y Diferencial',
+    },
     { name: 'Agro Lubricantes', href: '/productos?category=Agro' },
     {
       name: 'Derivados y Aditivos',

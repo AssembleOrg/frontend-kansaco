@@ -16,6 +16,7 @@ import {
 } from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { toast } from 'sonner';
+import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
 
 interface ProductFormModalProps {
   product?: Product;
@@ -139,13 +140,24 @@ export default function ProductFormModal({
   };
 
   const handleAddCategory = () => {
-    if (categoryInput.trim()) {
-      setFormData((prev) => ({
-        ...prev,
-        category: [...prev.category, categoryInput.trim()],
-      }));
+    const trimmedCategory = categoryInput.trim();
+
+    // Validación: campo vacío
+    if (!trimmedCategory) return;
+
+    // Validación: duplicados
+    if (formData.category.includes(trimmedCategory)) {
+      toast.error('Esta categoría ya está asignada a este producto');
       setCategoryInput('');
+      return;
     }
+
+    // Agregar categoría
+    setFormData((prev) => ({
+      ...prev,
+      category: [...prev.category, trimmedCategory],
+    }));
+    setCategoryInput('');
   };
 
   const handleRemoveCategory = (index: number) => {
@@ -357,23 +369,24 @@ export default function ProductFormModal({
           <div>
             <Label>Categorías</Label>
             <div className="flex gap-2">
-              <Input
+              <select
                 value={categoryInput}
                 onChange={(e) => setCategoryInput(e.target.value)}
-                placeholder="Nueva categoría..."
+                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                 disabled={isLoading}
-                onKeyPress={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddCategory();
-                  }
-                }}
-              />
+              >
+                <option value="">Seleccionar categoría...</option>
+                {ALLOWED_PRODUCT_CATEGORIES.map((cat) => (
+                  <option key={cat} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
               <Button
                 type="button"
                 onClick={handleAddCategory}
                 variant="outline"
-                disabled={isLoading}
+                disabled={isLoading || !categoryInput}
               >
                 Agregar
               </Button>
