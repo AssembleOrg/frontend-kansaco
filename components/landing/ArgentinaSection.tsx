@@ -1,6 +1,5 @@
 'use client';
 
-import Image from 'next/image';
 import { MapPin, Award, Heart } from 'lucide-react';
 import { NeonBorders } from './HeroBanner';
 
@@ -24,9 +23,9 @@ const ArgentinaSection = () => {
       </div>
 
       <div className="container relative z-10 mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="grid grid-cols-1 items-center gap-12 lg:grid-cols-2">
+        <div className="flex items-center justify-center">
           {/* Content Side */}
-          <div className="space-y-8 text-center lg:text-left">
+          <div className="max-w-4xl space-y-8 text-center">
             <div className="space-y-4">
               <div className="relative inline-flex items-center gap-3 rounded-lg border border-blue-800/50 bg-blue-900/20 px-4 py-2 text-sm font-medium text-blue-300">
                 <NeonBorders intensity={0.3} />
@@ -65,7 +64,7 @@ const ArgentinaSection = () => {
             </div>
 
             <div className="space-y-3">
-              <div className="flex items-center justify-center gap-2 text-sm text-gray-400 lg:justify-start">
+              <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                 <MapPin className="h-4 w-4 text-blue-400" />
                 <span>Buenos Aires, Argentina</span>
               </div>
@@ -74,31 +73,6 @@ const ArgentinaSection = () => {
                 país&rdquo;
               </p>
             </div>
-          </div>
-
-          {/* Image Side */}
-          <div className="relative">
-            <div className="relative overflow-hidden rounded-2xl">
-              {/* Background overlay to blend the image better */}
-              <div className="absolute inset-0 z-10 bg-gradient-to-br from-blue-900/20 via-transparent to-gray-900/40" />
-
-              {/* Image container */}
-              <div className="relative h-[400px] w-full lg:h-[500px]">
-                <Image
-                  src="/landing/mujer-bandera.png"
-                  alt="Orgullo argentino - KANSACO"
-                  fill
-                  className="object-cover object-center"
-                />
-              </div>
-
-              {/* Subtle frame effect */}
-              <div className="absolute inset-0 z-20 rounded-2xl border border-blue-400/20" />
-            </div>
-
-            {/* Decorative elements */}
-            <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-gradient-to-br from-blue-400/20 to-white/10 blur-xl" />
-            <div className="absolute -bottom-4 -left-4 h-32 w-32 rounded-full bg-gradient-to-tr from-blue-400/15 to-transparent blur-2xl" />
           </div>
         </div>
       </div>
