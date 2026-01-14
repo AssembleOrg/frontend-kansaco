@@ -54,11 +54,17 @@ export default function ProductCard({ product }: ProductCardProps) {
           </div>
         )}
         <div className="absolute left-2 top-2 flex flex-wrap gap-1">
-          {product.category.map((cat) => (
-            <Badge key={cat} variant="secondary" className="text-xs">
-              {cat}
-            </Badge>
-          ))}
+          {(() => {
+            // Preferir usar categories si está disponible, sino usar category
+            const categoryNames = product.categories && product.categories.length > 0
+              ? product.categories.map((cat) => cat.name)
+              : product.category || [];
+            return categoryNames.map((cat) => (
+              <Badge key={cat} variant="secondary" className="text-xs">
+                {cat}
+              </Badge>
+            ));
+          })()}
         </div>
       </CardHeader>
       <CardContent className="flex flex-1 flex-col p-4">

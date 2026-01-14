@@ -16,7 +16,8 @@ import {
 } from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { toast } from 'sonner';
-import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
+import { getCategories } from '@/lib/api';
+import { Category } from '@/types/category';
 
 interface ProductFormModalProps {
   product?: Product;
@@ -58,6 +59,28 @@ export default function ProductFormModal({
   const [selectedImages, setSelectedImages] = useState<ImageListItem[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
+  const [isLoadingCategories, setIsLoadingCategories] = useState(false);
+
+  // Cargar categorías disponibles desde la API
+  useEffect(() => {
+    if (token) {
+      setIsLoadingCategories(true);
+      getCategories(token)
+        .then((categories) => {
+          setAvailableCategories(categories);
+        })
+        .catch((err) => {
+          console.error('Error loading categories:', err);
+          toast.error('Error al cargar categorías', {
+            description: 'No se pudieron cargar las categorías. Puedes escribir el nombre manualmente.',
+          });
+        })
+        .finally(() => {
+          setIsLoadingCategories(false);
+        });
+    }
+  }, [token]);
 
   useEffect(() => {
     if (product) {
@@ -373,12 +396,14 @@ export default function ProductFormModal({
                 value={categoryInput}
                 onChange={(e) => setCategoryInput(e.target.value)}
                 className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isLoading}
+                disabled={isLoading || isLoadingCategories}
               >
-                <option value="">Seleccionar categoría...</option>
-                {ALLOWED_PRODUCT_CATEGORIES.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
+                <option value="">
+                  {isLoadingCategories ? 'Cargando categorías...' : 'Seleccionar categoría...'}
+                </option>
+                {availableCategories.map((cat) => (
+                  <option key={cat.id} value={cat.name}>
+                    {cat.name}
                   </option>
                 ))}
               </select>
@@ -386,11 +411,14 @@ export default function ProductFormModal({
                 type="button"
                 onClick={handleAddCategory}
                 variant="outline"
-                disabled={isLoading || !categoryInput}
+                disabled={isLoading || !categoryInput || isLoadingCategories}
               >
                 Agregar
               </Button>
             </div>
+            <p className="mt-1 text-xs text-gray-500">
+              También puedes escribir el nombre de una categoría nueva. Se creará automáticamente.
+            </p>
             {formData.category.length > 0 && (
               <div className="mt-2 flex flex-wrap gap-2">
                 {formData.category.map((cat, index) => (

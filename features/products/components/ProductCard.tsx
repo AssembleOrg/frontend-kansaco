@@ -28,10 +28,11 @@ export default function ProductCard({ product }: { product: Product }) {
 
   const imageUrl = product.imageUrl || '/sauberatras.jpg';
   const imageAlt = product.name;
-  const uniqueCategories =
-    product.category && Array.isArray(product.category)
-      ? [...new Set(product.category)]
-      : [];
+    // Preferir usar categories si está disponible, sino usar category
+  const categoryNames = product.categories && product.categories.length > 0
+    ? product.categories.map((cat) => cat.name)
+    : product.category || [];
+  const uniqueCategories = [...new Set(categoryNames)];
 
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border shadow-md transition-all duration-300 hover:scale-[1.02] hover:border-green-500 hover:shadow-xl">

@@ -15,7 +15,6 @@ import {
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
-import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
 
 interface ProductFiltersProps {
   availableCategories: string[];
@@ -137,19 +136,10 @@ export default function ProductFilters({
     router.push(`${pathname}${query}`);
   };
 
-  // Filtrar y ordenar solo las categorías permitidas que estén disponibles
-  const sortedCategories = [...availableCategories]
-    .filter((cat): cat is (typeof ALLOWED_PRODUCT_CATEGORIES)[number] =>
-      ALLOWED_PRODUCT_CATEGORIES.includes(
-        cat as (typeof ALLOWED_PRODUCT_CATEGORIES)[number]
-      )
-    )
-    .sort((a, b) => {
-      // Ordenar según el orden de ALLOWED_PRODUCT_CATEGORIES
-      const indexA = ALLOWED_PRODUCT_CATEGORIES.indexOf(a);
-      const indexB = ALLOWED_PRODUCT_CATEGORIES.indexOf(b);
-      return indexA - indexB;
-    });
+  // Ordenar categorías alfabéticamente
+  const sortedCategories = [...availableCategories].sort((a, b) =>
+    a.localeCompare(b, 'es', { sensitivity: 'base' })
+  );
 
   const currentSearch = searchParams.get('search');
   const hasActiveFilters =

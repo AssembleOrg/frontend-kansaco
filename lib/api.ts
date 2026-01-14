@@ -14,6 +14,11 @@ import {
   PaginatedOrdersResponse,
   UpdateOrderDto,
 } from '@/types/order';
+import type {
+  Category,
+  CategoryCreateRequest,
+  CategoryUpdateRequest,
+} from '@/types/category';
 import { logger, apiLogger } from './logger';
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL;
@@ -2031,6 +2036,213 @@ export async function reorderProductImages(
     apiLogger.response('PATCH', url, response.status);
   } catch (error) {
     apiLogger.error('PATCH', url, error);
+    throw error;
+  }
+}
+
+// ============================================
+// CATEGORY API FUNCTIONS
+// ============================================
+
+/**
+ * Obtener todas las categorías
+ * GET /api/category
+ */
+export async function getCategories(token: string): Promise<Category[]> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/category`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<Category[] | { status: string; data: Category[] }>(response);
+    apiLogger.response('GET', url, response.status);
+    
+    // Manejar respuesta envuelta (con status y data) o directa
+    if ('status' in result && 'data' in result) {
+      // Respuesta envuelta: { status: "success", data: Category[] }
+      return Array.isArray(result.data) ? result.data : [];
+    }
+    
+    // Respuesta directa
+    return Array.isArray(result) ? result : [];
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
+/**
+ * Obtener una categoría por ID
+ * GET /api/category/:id
+ */
+export async function getCategoryById(
+  token: string,
+  categoryId: number
+): Promise<Category> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/category/${categoryId}`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<Category>(response);
+    apiLogger.response('GET', url, response.status);
+    return result;
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
+/**
+ * Crear una nueva categoría
+ * POST /api/category
+ * Requiere roles: ADMIN o ASISTENTE
+ */
+export async function createCategory(
+  token: string,
+  data: CategoryCreateRequest
+): Promise<Category> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/category`;
+  apiLogger.request('POST', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<Category>(response);
+    apiLogger.response('POST', url, response.status);
+    return result;
+  } catch (error) {
+    apiLogger.error('POST', url, error);
+    throw error;
+  }
+}
+
+/**
+ * Actualizar una categoría
+ * PUT /api/category/:id
+ * Requiere roles: ADMIN o ASISTENTE
+ */
+export async function updateCategory(
+  token: string,
+  categoryId: number,
+  data: CategoryUpdateRequest
+): Promise<Category> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/category/${categoryId}`;
+  apiLogger.request('PUT', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      body: JSON.stringify(data),
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<Category>(response);
+    apiLogger.response('PUT', url, response.status);
+    return result;
+  } catch (error) {
+    apiLogger.error('PUT', url, error);
+    throw error;
+  }
+}
+
+/**
+ * Eliminar una categoría
+ * DELETE /api/category/:id
+ * Requiere roles: ADMIN o ASISTENTE
+ * No se puede eliminar si está siendo usada por productos
+ */
+export async function deleteCategory(
+  token: string,
+  categoryId: number
+): Promise<void> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  if (!token) {
+    throw new Error('Authentication required.');
+  }
+
+  const url = `${API_BASE_URL}/category/${categoryId}`;
+  apiLogger.request('DELETE', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'DELETE',
+      headers: {
+        Accept: 'application/json',
+        Authorization: `Bearer ${token}`,
+      },
+      cache: 'no-store',
+    });
+
+    await handleResponse<{ message: string }>(response);
+    apiLogger.response('DELETE', url, response.status);
+  } catch (error) {
+    apiLogger.error('DELETE', url, error);
     throw error;
   }
 }

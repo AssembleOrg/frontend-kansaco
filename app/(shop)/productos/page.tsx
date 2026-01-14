@@ -26,7 +26,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
+import { getCategories } from '@/lib/api';
+import { Category } from '@/types/category';
 import { X, Info } from 'lucide-react';
 import { toast } from 'sonner';
 // import { ChevronLeft, ChevronRight } from 'lucide-react';
@@ -71,8 +72,32 @@ function ProductsContent() {
     : undefined;
   const searchQuery = searchParams.get('search') ?? undefined;
 
-  // Usar categorías permitidas directamente (no necesitamos cargar del backend)
-  const uniqueCategories = [...ALLOWED_PRODUCT_CATEGORIES];
+  // Cargar categorías desde la API
+  const [categories, setCategories] = useState<Category[]>([]);
+
+  useEffect(() => {
+    const loadCategories = async () => {
+      if (!token) {
+        // Si no hay token, usar array vacío (las categorías se mostrarán cuando haya productos)
+        setCategories([]);
+        return;
+      }
+
+      try {
+        const data = await getCategories(token);
+        setCategories(data);
+      } catch (err) {
+        console.error('Error loading categories:', err);
+        // En caso de error, usar array vacío
+        setCategories([]);
+      }
+    };
+
+    loadCategories();
+  }, [token]);
+
+  // Extraer nombres de categorías para los filtros
+  const uniqueCategories = categories.map((cat) => cat.name);
 
   // Sync searchTerm with URL parameter
   useEffect(() => {

@@ -14,6 +14,7 @@ import {
   Package,
   LayoutDashboard,
   FileText,
+  Tag,
 } from 'lucide-react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
@@ -442,6 +443,16 @@ const Navbar = () => {
                         >
                           <FileText className="mr-2 h-4 w-4" />
                           Pedidos solicitados
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={() => {
+                            router.push('/admin/categories');
+                            setIsUserDropdownOpen(false);
+                          }}
+                          className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
+                        >
+                          <Tag className="mr-2 h-4 w-4" />
+                          Gestionar Categorías
                         </DropdownMenuItem>
                       </>
                     ) : (

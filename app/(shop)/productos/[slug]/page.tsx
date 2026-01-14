@@ -184,10 +184,14 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
               <h1 className="mb-3 text-3xl font-bold text-gray-900 md:text-4xl">
                 {product.name}
               </h1>
-              {product.category && product.category.length > 0 && (() => {
+              {(() => {
+                // Preferir usar categories si está disponible, sino usar category
+                const categoryNames = product.categories && product.categories.length > 0
+                  ? product.categories.map((cat) => cat.name)
+                  : product.category || [];
                 // Filtrar categorías duplicadas
-                const uniqueCategories = [...new Set(product.category)];
-                return (
+                const uniqueCategories = [...new Set(categoryNames)];
+                return uniqueCategories.length > 0 ? (
                   <div className="mb-4 flex flex-wrap gap-2">
                     {uniqueCategories.map((cat) => (
                       <Badge
@@ -199,7 +203,7 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
                       </Badge>
                     ))}
                   </div>
-                );
+                ) : null;
               })()}
             </div>
 

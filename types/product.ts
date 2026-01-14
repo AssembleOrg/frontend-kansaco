@@ -1,12 +1,15 @@
 // /types/product.ts
 
+import { Category } from './category';
+
 //
 export interface Product {
   id: number;
   name: string;
   sku: string;
   slug: string;
-  category: string[];
+  category: string[]; // Array legacy (siempre presente para compatibilidad)
+  categories?: Category[]; // NUEVO: Categorías relacionadas con IDs
   description: string;
   presentation: string;
   aplication: string;
