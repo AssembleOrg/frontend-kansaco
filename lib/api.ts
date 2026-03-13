@@ -923,8 +923,9 @@ export async function createProduct(
     throw new Error('API URL not configured.');
   }
 
-  // Asegurar que price sea un número válido
+  // Limpiar campos que no acepta el DTO del backend
   const cleanData: Omit<Product, 'id' | 'slug'> = { ...productData };
+  delete (cleanData as Record<string, unknown>).categories;
   if (cleanData.price !== undefined && cleanData.price !== null) {
     const priceValue =
       typeof cleanData.price === 'string'
@@ -960,11 +961,12 @@ export async function updateProduct(
   }
 
   // Limpiar campos que no deben enviarse al backend
-  // Omitir id y slug del tipo Product
+  // Omitir id, slug y categories (relación, no campo del DTO)
   type ProductDataWithoutId = Omit<Product, 'id' | 'slug'>;
   const cleanData: Partial<ProductDataWithoutId> = { ...productData };
   delete (cleanData as Partial<Product>).id;
   delete (cleanData as Partial<Product>).slug;
+  delete (cleanData as Record<string, unknown>).categories;
 
   // Asegurar que price sea un número válido
   if (cleanData.price !== undefined) {

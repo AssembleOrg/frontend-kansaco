@@ -8,7 +8,6 @@ import { Trash2, Edit, Search, Plus, Percent, ArrowUpDown, Star } from 'lucide-r
 import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
 import { useState, useMemo, useEffect, useRef } from 'react';
-import { ALLOWED_PRODUCT_CATEGORIES } from '@/lib/constants';
 import {
   ColumnDef,
   flexRender,
@@ -27,6 +26,7 @@ interface ProductsTableProps {
   onSelectionChange?: (selectedIds: number[]) => void;
   onBulkUpdateClick?: () => void;
   onCategoryChange?: (category: string) => void;
+  categories?: string[];
   onSearch?: (query: string) => void;
   onPageChange?: (page: number) => void;
   pagination?: {
@@ -49,6 +49,7 @@ export default function ProductsTable({
   onSelectionChange,
   onBulkUpdateClick,
   onCategoryChange,
+  categories = [],
   onSearch,
   onPageChange,
   pagination,
@@ -327,7 +328,7 @@ export default function ProductsTable({
           className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 focus:border-green-500 focus:outline-none"
         >
           <option value="all">Todas las categorías</option>
-          {ALLOWED_PRODUCT_CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <option key={category} value={category}>
               {category}
             </option>

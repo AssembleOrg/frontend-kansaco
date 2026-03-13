@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAdminProducts } from '@/features/admin/hooks/useAdminProducts';
 import ProductsTable from '@/features/admin/components/ProductsTable';
@@ -8,7 +8,7 @@ import ProductFormModal from '@/features/admin/components/ProductFormModal';
 import BulkUpdateModal from '@/features/admin/components/BulkUpdateModal';
 import { Product } from '@/types/product';
 import { Percent } from 'lucide-react';
-import { ImageListItem, associateProductImage, getProductImages, deleteProductImage, reorderProductImages } from '@/lib/api';
+import { ImageListItem, associateProductImage, getProductImages, deleteProductImage, reorderProductImages, getCategories } from '@/lib/api';
 
 export default function ProductsPage() {
   const { token } = useAuth();
@@ -28,6 +28,15 @@ export default function ProductsPage() {
     bulkUpdatePrices,
     loadProducts,
   } = useAdminProducts(token ?? null);
+
+  const [categoryNames, setCategoryNames] = useState<string[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    getCategories(token).then((cats) => {
+      setCategoryNames(cats.map((c) => c.name));
+    }).catch(() => {});
+  }, [token]);
 
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -266,6 +275,7 @@ export default function ProductsPage() {
         onSelectionChange={handleSelectionChange}
         onBulkUpdateClick={handleOpenBulkModal}
         onCategoryChange={filterByCategory}
+        categories={categoryNames}
         onSearch={search}
         onPageChange={goToPage}
         pagination={pagination}
