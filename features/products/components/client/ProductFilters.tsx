@@ -15,6 +15,7 @@ import {
 } from '@/components/ui/sheet';
 import { Input } from '@/components/ui/input';
 import { useState, useEffect } from 'react';
+import { siteConfig } from '@/lib/site-config';
 
 interface ProductFiltersProps {
   availableCategories: string[];
@@ -23,11 +24,7 @@ interface ProductFiltersProps {
   maxPrice?: number;
 }
 
-const PRICE_RANGES = [
-  { label: 'Hasta $10.000', min: 0, max: 10000 },
-  { label: '$10.000 a $30.000', min: 10000, max: 30000 },
-  { label: 'Más de $30.000', min: 30000, max: undefined },
-];
+const PRICE_RANGES = siteConfig.business.priceRanges;
 
 export default function ProductFilters({
   availableCategories,

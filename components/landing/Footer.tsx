@@ -12,6 +12,7 @@ import {
   ArrowUp,
 } from 'lucide-react';
 import OilDropEffect from './OilDropEffect';
+import { siteConfig } from '@/lib/site-config';
 
 const Footer = () => {
   const scrollToTop = () => {
@@ -43,12 +44,12 @@ const Footer = () => {
   const socialLinks = [
     {
       icon: Facebook,
-      href: 'https://www.facebook.com/kansacolubs/',
+      href: siteConfig.social.facebook,
       label: 'Facebook',
     },
     {
       icon: Instagram,
-      href: 'https://www.instagram.com/kansaco',
+      href: siteConfig.social.instagram,
       label: 'Instagram',
     },
   ];
@@ -81,7 +82,7 @@ const Footer = () => {
                   KANSACO
                 </h3>
                 <p className="text-sm text-gray-400 transition-colors duration-200 group-hover:text-gray-300">
-                  Ingeniería Líquida
+                  {siteConfig.company.tagline}
                 </p>
               </div>
             </Link>
@@ -94,19 +95,19 @@ const Footer = () => {
             <div className="space-y-3">
               <div className="flex items-center space-x-3 text-gray-400">
                 <MapPin className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
-                <span className="text-sm">Buenos Aires, Argentina</span>
+                <span className="text-sm">{siteConfig.contact.location}</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-400">
                 <Phone className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
-                <span className="text-sm">4237-2636/1365/0813</span>
+                <span className="text-sm">{siteConfig.contact.phoneDisplay}</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-400">
                 <Mail className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
-                <span className="text-sm">info@kansaco.com</span>
+                <span className="text-sm">{siteConfig.contact.email}</span>
               </div>
               <div className="flex items-center space-x-3 text-gray-400">
                 <Clock className="h-5 w-5 flex-shrink-0 text-[#16a245]" />
-                <span className="text-sm">Lun - Vie: 8:00 - 18:00</span>
+                <span className="text-sm">{siteConfig.contact.businessHours}</span>
               </div>
             </div>
           </div>
@@ -192,12 +193,12 @@ const Footer = () => {
               <div className="text-center text-sm text-gray-400">
                 Desarrollado por{' '}
                 <a
-                  href="https://wa.me/5491138207230"
+                  href={siteConfig.developer.whatsapp}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold text-yellow-400 transition-colors duration-200 hover:text-yellow-300"
                 >
-                  Pistech
+                  {siteConfig.developer.name}
                 </a>
               </div>
 

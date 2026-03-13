@@ -7,18 +7,19 @@ import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import ContactFormMailto from '@/components/forms/ContactFormMailto';
+import { siteConfig } from '@/lib/site-config';
 
 export default function ContactoPage() {
   const socialLinks = [
     {
       icon: Facebook,
-      href: 'https://www.facebook.com/kansacolubs/',
+      href: siteConfig.social.facebook,
       label: 'Facebook',
       color: 'hover:bg-blue-600',
     },
     {
       icon: Instagram,
-      href: 'https://www.instagram.com/kansaco',
+      href: siteConfig.social.instagram,
       label: 'Instagram',
       color: 'hover:bg-pink-600',
     },
@@ -84,7 +85,7 @@ export default function ContactoPage() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-white">Dirección</h4>
-                      <p className="text-gray-300">Buenos Aires, Argentina</p>
+                      <p className="text-gray-300">{siteConfig.contact.location}</p>
                     </div>
                   </div>
 
@@ -94,7 +95,7 @@ export default function ContactoPage() {
                     </div>
                     <div>
                       <h4 className="font-semibold text-white">Teléfonos</h4>
-                      <p className="text-gray-300">4237-2636 / 1365 / 0813</p>
+                      <p className="text-gray-300">{siteConfig.contact.phoneDisplay}</p>
                     </div>
                   </div>
 
@@ -105,10 +106,10 @@ export default function ContactoPage() {
                     <div>
                       <h4 className="font-semibold text-white">Email</h4>
                       <a
-                        href="mailto:info@kansaco.com"
+                        href={`mailto:${siteConfig.contact.email}`}
                         className="text-gray-300 transition-colors hover:text-[#16a245]"
                       >
-                        info@kansaco.com
+                        {siteConfig.contact.email}
                       </a>
                     </div>
                   </div>

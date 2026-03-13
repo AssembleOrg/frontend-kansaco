@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import {
   uploadImage,
   uploadMultipleImages,
@@ -154,14 +154,29 @@ export function useImages(token: string | null) {
     [token]
   );
 
-  // Filtrar por prefijo
+  // Filtrar por prefijo con debounce
+  const debounceTimerRef = useRef<NodeJS.Timeout | null>(null);
   const filterByPrefix = useCallback(
     (prefix: string) => {
       setSelectedPrefix(prefix);
-      fetchImages(prefix);
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+      debounceTimerRef.current = setTimeout(() => {
+        fetchImages(prefix);
+      }, 400);
     },
     [fetchImages]
   );
+
+  // Cleanup debounce timer
+  useEffect(() => {
+    return () => {
+      if (debounceTimerRef.current) {
+        clearTimeout(debounceTimerRef.current);
+      }
+    };
+  }, []);
 
   // Cargar imágenes al montar o cambiar token
   useEffect(() => {

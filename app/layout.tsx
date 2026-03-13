@@ -1,19 +1,19 @@
 import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
+import { siteConfig } from '@/lib/site-config';
 
 export const viewport: Viewport = {
   width: 'device-width',
   initialScale: 1,
   maximumScale: 5,
   userScalable: true,
-  themeColor: '#16a245',
+  themeColor: siteConfig.brand.primaryColor,
 };
 
 export const metadata: Metadata = {
-  title: 'Kansaco',
-  description:
-    'Kansaco - Plataforma ecommerce. Productos dirigidos a los sistemas de lubricación',
+  title: siteConfig.company.name,
+  description: siteConfig.company.description,
   manifest: '/site.webmanifest',
   icons: {
     icon: [

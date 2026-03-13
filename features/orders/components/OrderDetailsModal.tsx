@@ -31,6 +31,7 @@ import {
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { OrderEditModal } from './OrderEditModal';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { siteConfig } from '@/lib/site-config';
 import { downloadOrderPDF } from '@/lib/api';
 import { toast } from 'sonner';
 
@@ -359,8 +360,8 @@ export function OrderDetailsModal({
                 <div className="mt-2 space-y-1">
                   <div>
                     <Mail className="inline h-3 w-3 mr-1" />
-                    <a href="mailto:ventas@kansaco.com" className="text-green-600 hover:underline">
-                      ventas@kansaco.com
+                    <a href={`mailto:${siteConfig.contact.salesEmail}`} className="text-green-600 hover:underline">
+                      {siteConfig.contact.salesEmail}
                     </a>
                   </div>
                   <div>

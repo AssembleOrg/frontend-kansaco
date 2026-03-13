@@ -2,6 +2,7 @@
 
 import { useState, FormEvent } from 'react';
 import { Mail } from 'lucide-react';
+import { siteConfig } from '@/lib/site-config';
 
 export default function ContactFormMailto() {
   const [formType, setFormType] = useState<'mayorista' | 'proveedor' | ''>('');
@@ -39,7 +40,7 @@ ${mensaje ? `Mensaje:\n${mensaje}` : ''}
 Este email fue enviado desde el formulario de contacto de Kansaco
     `.trim();
 
-    const emailDestino = 'info@kansaco.com';
+    const emailDestino = siteConfig.contact.email;
 
     if (isMobile) {
       // En móvil: usar mailto (funciona mejor con apps nativas)

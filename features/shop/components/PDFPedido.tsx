@@ -14,6 +14,7 @@ import { Button } from '@/components/ui/button';
 import { Download } from 'lucide-react';
 import { Order, SendOrderEmailData } from '@/types/order';
 import { formatDateForDisplay, getCurrentDateTime } from '@/lib/dateUtils';
+import { siteConfig } from '@/lib/site-config';
 
 const styles = StyleSheet.create({
   page: {
@@ -215,15 +216,15 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
           </View>
 
           <View style={styles.companyInfo}>
-            <Text style={styles.companyName}>Kansaco Petroquimica S.A</Text>
+            <Text style={styles.companyName}>{siteConfig.company.legalName}</Text>
             <Text style={{ marginTop: 3, fontSize: 8 }}>
-              CUIT: 30-58610901-0
+              CUIT: {siteConfig.company.cuit}
             </Text>
             <Text style={{ fontSize: 8 }}>
               Magallanes 2031 Florencio Varela
             </Text>
-            <Text style={{ marginTop: 2, fontSize: 8 }}>Tel: 4237-2636</Text>
-            <Text style={{ fontSize: 8 }}>Email: info@kansaco.com</Text>
+            <Text style={{ marginTop: 2, fontSize: 8 }}>Tel: {siteConfig.contact.phones[0]}</Text>
+            <Text style={{ fontSize: 8 }}>Email: {siteConfig.contact.email}</Text>
           </View>
 
           <View style={styles.orderInfo}>
@@ -382,7 +383,7 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
             </Text>
           </View>
           <View style={styles.footerRow}>
-            <Text>Para consultas: info@kansaco.com</Text>
+            <Text>Para consultas: {siteConfig.contact.email}</Text>
           </View>
           <View style={styles.footerRow}>
             <Text style={{ fontSize: 7, color: '#999' }}>
