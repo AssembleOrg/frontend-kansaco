@@ -26,7 +26,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Alert, AlertDescription } from '@/components/ui/alert';
-import { getCategories } from '@/lib/api';
+import { getCategories, getPublicCategories } from '@/lib/api';
 import { Category } from '@/types/category';
 import { X, Info } from 'lucide-react';
 import { toast } from 'sonner';
@@ -77,18 +77,13 @@ function ProductsContent() {
 
   useEffect(() => {
     const loadCategories = async () => {
-      if (!token) {
-        // Si no hay token, usar array vacío (las categorías se mostrarán cuando haya productos)
-        setCategories([]);
-        return;
-      }
-
       try {
-        const data = await getCategories(token);
+        const data = token
+          ? await getCategories(token)
+          : await getPublicCategories();
         setCategories(data);
       } catch (err) {
         console.error('Error loading categories:', err);
-        // En caso de error, usar array vacío
         setCategories([]);
       }
     };
@@ -190,10 +185,6 @@ function ProductsContent() {
           });
         } catch (paginatedError) {
           // Si falla el endpoint paginado (puede requerir auth), usar fallback
-          console.warn(
-            'Error using paginated endpoint, falling back to all products:',
-            paginatedError
-          );
           const fetchedProducts = await getProducts(null);
           // Filtrar localmente por visibilidad y categoría
           let filtered = fetchedProducts.filter((p) => p.isVisible);
@@ -252,45 +243,16 @@ function ProductsContent() {
   // Detectar modo edición y pre-cargar items al carrito
   useEffect(() => {
     const validateAndLoadEditMode = async () => {
-      console.log('\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-      console.log('🛒 [ProductosPage] DETECTANDO MODO EDICIÓN');
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-
       const editMode = localStorage.getItem('editMode');
       const orderId = localStorage.getItem('editingOrderId');
       const orderItemsJson = localStorage.getItem('editingOrderItems');
 
-      console.log('📖 LocalStorage READ:', {
-        editMode,
-        orderId: orderId
-          ? {
-              value: orderId,
-              type: typeof orderId,
-              length: orderId.length,
-              preview: `${orderId.slice(0, 8)}...${orderId.slice(-8)}`,
-            }
-          : null,
-        itemsPresent: !!orderItemsJson,
-        tokenPresent: !!token,
-      });
-
       if (editMode === 'true' && orderId && orderItemsJson && token) {
-        console.log('✅ Condiciones cumplidas, validando orden...');
-
         // ✅ VALIDAR que la orden existe y está PENDIENTE
         const validation = await validateOrderForEdit(token, orderId);
 
-        console.log('🔍 VALIDACIÓN RESULTADO:', {
-          valid: validation.valid,
-          reason: validation.reason,
-          orderStatus: validation.order?.status,
-          orderExists: !!validation.order,
-        });
-
         if (!validation.valid) {
           // ❌ Orden no válida → Limpiar localStorage y mostrar toast
-          console.warn('⚠️ Order validation failed:', validation.reason);
-          console.log('🧹 Limpiando localStorage...');
           localStorage.removeItem('editMode');
           localStorage.removeItem('editingOrderId');
           localStorage.removeItem('editingOrderItems');
@@ -305,19 +267,16 @@ function ProductsContent() {
 
           setIsEditMode(false);
           setEditingOrderId(null);
-          console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
           return;
         }
 
         // ✅ Orden válida → Proceder con modo edición
-        console.log('✅ Order validated for edit:', orderId);
         setIsEditMode(true);
         setEditingOrderId(orderId);
 
         // Pre-cargar items de la orden al carrito
         try {
           const items = JSON.parse(orderItemsJson);
-          console.log('📦 Pre-cargando items al carrito:', items.length);
 
           // Limpiar carrito actual primero
           clearCart();
@@ -334,9 +293,6 @@ function ProductsContent() {
               },
               index: number
             ) => {
-              console.log(
-                `  [${index + 1}] ${item.productName} x${item.quantity}`
-              );
               // Construir objeto Product mínimo desde OrderItem
               const product: Product = {
                 id: item.productId,
@@ -358,10 +314,6 @@ function ProductsContent() {
               addToCart(product, item.quantity, item.presentation);
             }
           );
-
-          console.log(
-            `✅ Pre-loaded ${items.length} items to cart for editing`
-          );
           toast.success(
             `${items.length} producto${items.length !== 1 ? 's' : ''} cargado${items.length !== 1 ? 's' : ''} al carrito`
           );
@@ -369,16 +321,7 @@ function ProductsContent() {
           console.error('❌ Error parsing stored items:', error);
           toast.error('Error al cargar los productos de la orden');
         }
-      } else {
-        console.log('❌ Condiciones NO cumplidas para modo edición:', {
-          hasEditMode: editMode === 'true',
-          hasOrderId: !!orderId,
-          hasItems: !!orderItemsJson,
-          hasToken: !!token,
-        });
       }
-
-      console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
     };
 
     validateAndLoadEditMode();

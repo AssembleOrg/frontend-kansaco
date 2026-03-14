@@ -75,12 +75,9 @@ function LoginContent() {
     setIsLoading(true);
     setError(null);
     try {
-      console.log('LoginPage: Iniciando proceso de login');
-      
       // Usar el método login del authStore que hace la llamada real a la API
       await login({ email, password });
-      
-      console.log('LoginPage: Login exitoso, redirigiendo');
+
       const redirectUrl = searchParams.get('redirect') || '/productos';
       router.push(redirectUrl);
     } catch (err: unknown) {

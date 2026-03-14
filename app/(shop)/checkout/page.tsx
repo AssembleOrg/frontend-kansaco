@@ -93,21 +93,16 @@ export default function CheckoutPage() {
     }
 
     if (!token) {
-      console.log('Checkout: No autenticado, redirigiendo a login.');
       router.replace(`/login?redirect=/checkout`);
       return;
     }
 
     if (!cart || cart.items.length === 0) {
-      console.log('Checkout: Carrito vacío, redirigiendo a productos.');
       router.replace('/productos');
       return;
     }
 
     // if (!hasReachedMinimumPurchase) {
-    //   console.log(
-    //     'Checkout: No se ha alcanzado el mínimo de compra, redirigiendo a productos.'
-    //   );
     //   router.replace('/productos?openCart=true');
     //   return;
     // }

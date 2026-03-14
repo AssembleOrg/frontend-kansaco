@@ -6,7 +6,7 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { notFound, useParams, useSearchParams } from 'next/navigation';
 import { Product } from '@/types/product';
-import { getProductBySlug, getProductImages, ProductImage } from '@/lib/api';
+import { getProductBySlug, getProductImages, ProductImage, trackPublicEvent } from '@/lib/api';
 import { AddToCartButton } from '@/features/cart/components/client/AddToCartButton';
 import { useCart } from '@/features/cart/hooks/useCart';
 import { Loader2, ArrowLeft, Info, Droplet, Box, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -328,6 +328,19 @@ function ProductDetailPageContent() {
         const productData = await getProductBySlug(slug);
         if (productData) {
           setProduct(productData);
+          // Track product view (debounced per product, 30 min cooldown)
+          const viewKey = `pv_${productData.id}`;
+          const lastView = localStorage.getItem(viewKey);
+          const now = Date.now();
+          if (!lastView || now - Number(lastView) > 30 * 60 * 1000) {
+            localStorage.setItem(viewKey, String(now));
+            trackPublicEvent({
+              eventType: 'product_view',
+              productId: productData.id,
+              productName: productData.name,
+              productSlug: productData.slug,
+            });
+          }
         } else {
           setError('Producto no encontrado');
         }

@@ -6,7 +6,6 @@ export const scrollToSection = (
 
   const section = document.getElementById(sectionId);
   if (!section) {
-    console.warn(`Section with id "${sectionId}" not found`);
     return;
   }
 

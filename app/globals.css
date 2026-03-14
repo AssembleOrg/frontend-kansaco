@@ -2,6 +2,105 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ============================================= */
+/* Date Range Picker Styles                      */
+/* ============================================= */
+.drp-root {
+  --rdp-accent-color: #10b981;
+  --rdp-accent-background-color: #ecfdf5;
+  --rdp-range_middle-background-color: #ecfdf5;
+  --rdp-range_middle-color: #065f46;
+  font-size: 14px;
+}
+
+.drp-months {
+  display: flex;
+  gap: 2rem;
+}
+
+.drp-caption {
+  font-weight: 600;
+  font-size: 0.875rem;
+  color: #111827;
+  text-transform: capitalize;
+}
+
+.drp-nav button {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #6b7280;
+  transition: all 0.15s;
+}
+
+.drp-nav button:hover {
+  background-color: #f3f4f6;
+  color: #111827;
+}
+
+.drp-day {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  font-size: 0.8125rem;
+  transition: all 0.1s;
+}
+
+.drp-day:hover:not(.drp-selected):not(.drp-range-middle) {
+  background-color: #f3f4f6;
+}
+
+.drp-today:not(.drp-selected):not(.drp-range-middle) {
+  font-weight: 700;
+  color: #10b981;
+  background-color: #ecfdf5;
+}
+
+.drp-selected {
+  background-color: #10b981 !important;
+  color: white !important;
+  font-weight: 600;
+}
+
+.drp-range-start {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  background-color: #10b981 !important;
+  color: white !important;
+}
+
+.drp-range-end {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  background-color: #10b981 !important;
+  color: white !important;
+}
+
+.drp-range-middle {
+  border-radius: 0;
+  background-color: #ecfdf5 !important;
+  color: #065f46 !important;
+}
+
+/* Animate-in for the dropdown */
+@keyframes fade-in-scale {
+  from {
+    opacity: 0;
+    transform: scale(0.96) translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+.animate-in {
+  animation: fade-in-scale 0.15s ease-out;
+}
+
 /* Mobile Optimization - Prevent horizontal overflow */
 html, body {
   overflow-x: hidden;
@@ -106,4 +205,50 @@ main {
       'rlig' 1,
       'calt' 1;
   }
+}
+
+/* Phone Input Custom Styles */
+.phone-input-custom {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.phone-input-custom .PhoneInputCountry {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  background: white;
+}
+
+.phone-input-custom .PhoneInputCountryIcon {
+  width: 1.5rem;
+  height: 1rem;
+}
+
+.phone-input-custom .PhoneInputCountrySelectArrow {
+  margin-left: 0.25rem;
+  opacity: 0.5;
+}
+
+.phone-input-custom .PhoneInputInput {
+  flex: 1;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  font-size: 0.875rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.phone-input-custom .PhoneInputInput:focus {
+  border-color: #16a245;
+  box-shadow: 0 0 0 1px #16a245;
+}
+
+.phone-input-custom .PhoneInputInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }

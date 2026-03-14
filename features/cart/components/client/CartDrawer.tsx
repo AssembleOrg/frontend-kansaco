@@ -56,7 +56,6 @@ export const CartDrawer = () => {
 
         if (!validation.valid) {
           // ❌ Orden no válida → Limpiar y salir de modo edición
-          console.warn('⚠️ CartDrawer: Order validation failed:', validation.reason);
           localStorage.removeItem('editMode');
           localStorage.removeItem('editingOrderId');
           localStorage.removeItem('editingOrderItems');

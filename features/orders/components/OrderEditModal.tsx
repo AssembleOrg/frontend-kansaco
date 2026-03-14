@@ -404,21 +404,6 @@ export function OrderEditModal({
                     }
                   }
 
-                  // Guardar contexto completo de edición
-                  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-                  console.log('📋 [OrderEditModal] GUARDANDO ORDEN EN LOCALSTORAGE');
-                  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
-                  console.log('🆔 Order ID:', {
-                    value: order.id,
-                    type: typeof order.id,
-                    length: order.id.length,
-                    firstChars: order.id.slice(0, 10),
-                    lastChars: order.id.slice(-10)
-                  });
-                  console.log('📦 Order Items Count:', orderItems.length);
-                  console.log('🔑 Token presente:', !!token);
-                  console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n');
-
                   localStorage.setItem('editingOrderId', order.id);
                   localStorage.setItem('editMode', 'true');
 

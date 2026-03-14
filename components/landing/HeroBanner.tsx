@@ -153,7 +153,6 @@ const HeroBanner = () => {
     };
 
     const handleError = () => {
-      console.error('Video failed to load');
       // Content stays centered, graceful degradation
     };
 
@@ -172,7 +171,6 @@ const HeroBanner = () => {
   }, []);
 
   const togglePlay = () => {
-    console.log('Toggle play clicked!'); // Debug log
     const video = videoRef.current;
     if (!video) return;
 

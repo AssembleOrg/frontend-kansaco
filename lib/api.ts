@@ -116,11 +116,8 @@ async function handleResponse<T>(response: Response): Promise<T> {
 
     try {
       errorData = (await response.json()) as BackendErrorResponse;
-    } catch (jsonParseError) {
-      console.warn(
-        'Could not parse error response body as JSON:',
-        jsonParseError
-      );
+    } catch {
+      // Ignore JSON parsing errors and keep default error message.
     }
 
     if (errorData) {
@@ -500,7 +497,6 @@ function getMockProducts(): Product[] {
 
 export async function getProductBySlug(slug: string): Promise<Product | null> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured.');
     return null;
   }
 
@@ -528,10 +524,6 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     ) {
       return fullResponse.data[0];
     } else {
-      console.warn(
-        `No product found with slug: ${slug} via /product/filter endpoint, or response structure was unexpected.`,
-        fullResponse
-      );
       return null;
     }
   } catch (error) {
@@ -612,12 +604,10 @@ export async function getCartById(
   token: string | null
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured.');
     return null;
   }
 
   if (!token) {
-    console.warn('getCartById called without a token.');
     return null;
   }
 
@@ -851,12 +841,10 @@ export async function removeProductFromCart(
   token: string | null
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured.');
     return null;
   }
 
   if (!token) {
-    console.warn('removeProductFromCart called without a token.');
     return null;
   }
 
@@ -888,12 +876,10 @@ export async function emptyCart(
   token: string | null
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
-    console.error('API URL not configured.');
     return null;
   }
 
   if (!token) {
-    console.warn('emptyCart called without a token.');
     return null;
   }
 
@@ -2090,6 +2076,39 @@ export async function getCategories(token: string): Promise<Category[]> {
 }
 
 /**
+ * Obtener todas las categorías (sin autenticación)
+ * GET /api/category
+ */
+export async function getPublicCategories(): Promise<Category[]> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const url = `${API_BASE_URL}/category`;
+  apiLogger.request('GET', url);
+
+  try {
+    const response = await fetch(url, {
+      method: 'GET',
+      headers: { Accept: 'application/json' },
+      cache: 'no-store',
+    });
+
+    const result = await handleResponse<Category[] | { status: string; data: Category[] }>(response);
+    apiLogger.response('GET', url, response.status);
+
+    if ('status' in result && 'data' in result) {
+      return Array.isArray(result.data) ? result.data : [];
+    }
+
+    return Array.isArray(result) ? result : [];
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
+
+/**
  * Obtener una categoría por ID
  * GET /api/category/:id
  */
@@ -2247,4 +2266,223 @@ export async function deleteCategory(
     apiLogger.error('DELETE', url, error);
     throw error;
   }
+}
+
+// =============================================
+// Analytics
+// =============================================
+
+export interface AnalyticsEvent {
+  id: number;
+  userId: string | null;
+  eventType: string;
+  payload: Record<string, any> | null;
+  createdAt: string;
+}
+
+export interface PaginatedEventsResponse {
+  data: AnalyticsEvent[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface AnalyticsStats {
+  totalUsers: number;
+  totalEvents: number;
+  logins: { today: number; week: number; month: number };
+  searches: { today: number; week: number; month: number };
+}
+
+export interface TopSearch {
+  query: string;
+  count: number;
+}
+
+export interface AnalyticsUser {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  telefono: string;
+  rol: string;
+}
+
+export interface PaginatedUsersResponse {
+  data: AnalyticsUser[];
+  total: number;
+  page: number;
+  limit: number;
+  totalPages: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+export interface ProductRankingItem {
+  productId: number;
+  productName: string;
+  totalSold: number;
+  orderCount: number;
+}
+
+export interface UserActivity {
+  lastLogin: string | null;
+  loginCount: number;
+  searchCount: number;
+}
+
+// Helper to unwrap { status: "success", data: T } backend wrapper
+async function fetchAnalytics<T>(token: string, path: string): Promise<T> {
+  const url = `${API_BASE_URL}/analytics/${path}`;
+  apiLogger.request('GET', url);
+  const response = await fetch(url, {
+    headers: { Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const json = await handleResponse<{ status: string; data: T } | T>(response);
+  // Unwrap if backend wraps in { status, data }
+  if (json && typeof json === 'object' && 'status' in json && 'data' in json) {
+    return (json as { status: string; data: T }).data;
+  }
+  return json as T;
+}
+
+export interface TopViewedProduct {
+  productId: number;
+  productName: string;
+  productSlug: string;
+  views: number;
+}
+
+export interface AnalyticsDashboard {
+  stats: AnalyticsStats;
+  topSearches: TopSearch[];
+  anonymousSearches: TopSearch[];
+  topProducts: ProductRankingItem[];
+  bottomProducts: ProductRankingItem[];
+  topViewed: TopViewedProduct[];
+}
+
+export async function getAnalyticsDashboard(
+  token: string,
+  period?: string,
+  dateFrom?: string,
+  dateTo?: string,
+): Promise<AnalyticsDashboard> {
+  const params = new URLSearchParams();
+  if (period && period !== 'all') params.set('period', period);
+  if (dateFrom) params.set('dateFrom', dateFrom);
+  if (dateTo) params.set('dateTo', dateTo);
+  const qs = params.toString();
+  return fetchAnalytics<AnalyticsDashboard>(token, qs ? `dashboard?${qs}` : 'dashboard');
+}
+
+// Public tracking (no auth required)
+export async function trackPublicEvent(event: {
+  eventType: string;
+  productId?: number;
+  productName?: string;
+  productSlug?: string;
+  query?: string;
+}): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/analytics/track`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(event),
+    });
+  } catch {
+    // Silent fail - analytics should never break the app
+  }
+}
+
+export async function getAnalyticsEvents(
+  token: string,
+  options?: {
+    page?: number;
+    limit?: number;
+    userId?: string;
+    eventType?: string;
+    dateFrom?: string;
+    dateTo?: string;
+    search?: string;
+  },
+): Promise<PaginatedEventsResponse> {
+  const params = new URLSearchParams();
+  if (options?.page) params.set('page', String(options.page));
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.userId) params.set('userId', options.userId);
+  if (options?.eventType) params.set('eventType', options.eventType);
+  if (options?.dateFrom) params.set('dateFrom', options.dateFrom);
+  if (options?.dateTo) params.set('dateTo', options.dateTo);
+  if (options?.search) params.set('search', options.search);
+  return fetchAnalytics<PaginatedEventsResponse>(token, `events?${params.toString()}`);
+}
+
+export async function getAnalyticsUsers(
+  token: string,
+  options?: { page?: number; limit?: number; search?: string },
+): Promise<PaginatedUsersResponse> {
+  const params = new URLSearchParams();
+  if (options?.page) params.set('page', String(options.page));
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.search) params.set('search', options.search);
+  return fetchAnalytics<PaginatedUsersResponse>(token, `users?${params.toString()}`);
+}
+
+export async function getProductRanking(
+  token: string,
+  options?: { order?: 'top' | 'bottom'; limit?: number; period?: string; dateFrom?: string; dateTo?: string },
+): Promise<ProductRankingItem[]> {
+  const params = new URLSearchParams();
+  if (options?.order) params.set('order', options.order);
+  if (options?.limit) params.set('limit', String(options.limit));
+  if (options?.period) params.set('period', options.period);
+  if (options?.dateFrom) params.set('dateFrom', options.dateFrom);
+  if (options?.dateTo) params.set('dateTo', options.dateTo);
+  return fetchAnalytics<ProductRankingItem[]>(token, `product-ranking?${params.toString()}`);
+}
+
+export interface ProductCompareItem {
+  productId: number;
+  productName: string;
+  periodA: { totalSold: number; orderCount: number };
+  periodB: { totalSold: number; orderCount: number };
+  soldDiff: number;
+  soldDiffPercent: number | null;
+}
+
+export interface ProductCompareResult {
+  periodA: { from: string; to: string };
+  periodB: { from: string; to: string };
+  products: ProductCompareItem[];
+}
+
+export async function compareProducts(
+  token: string,
+  options: {
+    periodAFrom: string;
+    periodATo: string;
+    periodBFrom: string;
+    periodBTo: string;
+    limit?: number;
+  },
+): Promise<ProductCompareResult> {
+  const params = new URLSearchParams();
+  params.set('periodAFrom', options.periodAFrom);
+  params.set('periodATo', options.periodATo);
+  params.set('periodBFrom', options.periodBFrom);
+  params.set('periodBTo', options.periodBTo);
+  if (options.limit) params.set('limit', String(options.limit));
+  return fetchAnalytics<ProductCompareResult>(token, `products/compare?${params.toString()}`);
+}
+
+export async function getUserActivity(
+  token: string,
+  userId: string,
+): Promise<UserActivity> {
+  return fetchAnalytics<UserActivity>(token, `user-activity?userId=${userId}`);
 }

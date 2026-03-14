@@ -41,7 +41,6 @@ const FeaturedProducts = () => {
         }
       } catch (error) {
         // Fallback en caso de error
-        console.warn('Error using paginated endpoint, falling back:', error);
         try {
           const data = await getProducts(null);
           const visibleProducts = data

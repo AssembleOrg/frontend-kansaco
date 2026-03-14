@@ -7,6 +7,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { UserRole } from '@/types/auth';
+import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
+import 'react-phone-number-input/style.css';
 import {
   Card,
   CardContent,
@@ -39,7 +41,7 @@ export default function RegisterPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [telefono, setTelefono] = useState('');
+  const [telefono, setTelefono] = useState<string | undefined>(undefined);
   const [direccion, setDireccion] = useState('');
   const [rol, setRol] = useState<UserRole>('CLIENTE_MINORISTA');
   const [showPassword, setShowPassword] = useState(false);
@@ -80,7 +82,16 @@ export default function RegisterPage() {
       return;
     }
 
+    if (!telefono || !isValidPhoneNumber(telefono)) {
+      setError('Por favor ingresa un numero de telefono valido.');
+      return;
+    }
+
     setIsRegistering(true);
+
+    // Parsear telefono a formato WhatsApp (sin +, solo numeros)
+    // Ej: "+5491136585581" -> "5491136585581"
+    const telefonoWhatsapp = telefono.replace(/\D/g, '');
 
     try {
       const payload = {
@@ -88,7 +99,7 @@ export default function RegisterPage() {
         password,
         nombre,
         apellido,
-        telefono,
+        telefono: telefonoWhatsapp,
         direccion: direccion || undefined,
         rol,
       };
@@ -102,7 +113,7 @@ export default function RegisterPage() {
       setConfirmPassword('');
       setNombre('');
       setApellido('');
-      setTelefono('');
+      setTelefono(undefined);
       setDireccion('');
       setRol('CLIENTE_MINORISTA');
     } catch (err) {
@@ -269,19 +280,18 @@ export default function RegisterPage() {
                 <Label htmlFor="telefono" className="text-gray-700 font-medium">
                   Teléfono
                 </Label>
-                <div className="relative">
-                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
-                  <Input
-                    id="telefono"
-                    type="tel"
-                    placeholder="+5491112345678"
-                    required
-                    value={telefono}
-                    onChange={(e) => setTelefono(e.target.value)}
-                    disabled={isRegistering}
-                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
-                  />
-                </div>
+                <PhoneInput
+                  international
+                  defaultCountry="AR"
+                  countryCallingCodeEditable={false}
+                  value={telefono}
+                  onChange={setTelefono}
+                  disabled={isRegistering}
+                  className="phone-input-custom"
+                />
+                {telefono && !isValidPhoneNumber(telefono) && (
+                  <p className="text-xs text-red-600">Numero de telefono invalido</p>
+                )}
               </div>
 
               {/* Dirección */}

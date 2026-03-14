@@ -52,9 +52,8 @@ Este email fue enviado desde el formulario de contacto de Kansaco
 
       try {
         window.open(gmailUrl, '_blank', 'noopener,noreferrer');
-      } catch (error) {
+      } catch {
         // Solo si el popup es bloqueado completamente
-        console.warn('Popup bloqueado, usando mailto:', error);
         const mailtoLink = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
         window.location.href = mailtoLink;
       }
