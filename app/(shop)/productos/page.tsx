@@ -183,7 +183,7 @@ function ProductsContent() {
             hasNext: result.hasNext,
             hasPrev: result.hasPrev,
           });
-        } catch (paginatedError) {
+        } catch {
           // Si falla el endpoint paginado (puede requerir auth), usar fallback
           const fetchedProducts = await getProducts(null);
           // Filtrar localmente por visibilidad y categoría
@@ -291,7 +291,6 @@ function ProductsContent() {
                 quantity: number;
                 presentation?: string;
               },
-              index: number
             ) => {
               // Construir objeto Product mínimo desde OrderItem
               const product: Product = {

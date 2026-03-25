@@ -2276,6 +2276,7 @@ export interface AnalyticsEvent {
   id: number;
   userId: string | null;
   eventType: string;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload: Record<string, any> | null;
   createdAt: string;
 }

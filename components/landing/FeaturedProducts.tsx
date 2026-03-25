@@ -39,7 +39,7 @@ const FeaturedProducts = () => {
         } else {
           setProducts(result.data);
         }
-      } catch (error) {
+      } catch {
         // Fallback en caso de error
         try {
           const data = await getProducts(null);

@@ -15,10 +15,7 @@ import {
   AnalyticsUser,
   ProductRankingItem,
   TopViewedProduct,
-  ProductCompareItem,
   ProductCompareResult,
-  PaginatedEventsResponse,
-  PaginatedUsersResponse,
 } from '@/lib/api';
 import {
   BarChart3,
@@ -138,7 +135,7 @@ export default function AnalyticsPage() {
     try {
       let df: string | undefined;
       let dt: string | undefined;
-      let p = period;
+      const p = period;
       if (period === 'custom' && customDateRange.from) {
         df = format(customDateRange.from, 'yyyy-MM-dd');
         dt = customDateRange.to ? format(customDateRange.to, 'yyyy-MM-dd') : undefined;
@@ -272,6 +269,7 @@ export default function AnalyticsPage() {
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => loadUsers(), 500);
     return () => { if (debounceRef.current) clearTimeout(debounceRef.current); };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [userSearch]);
 
   const formatDate = (dateStr: string) => {

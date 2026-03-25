@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-unused-vars */
 // lib/logger.ts
 export const logger = {
   log: (..._args: unknown[]) => {},
@@ -21,4 +22,4 @@ export const apiLogger = {
     _data?: unknown
   ) => {},
   error: (_method: string, _url: string, _error: unknown) => {}
-}; 
+};

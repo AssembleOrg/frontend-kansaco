@@ -143,6 +143,7 @@ export default function CategoriesPage() {
       return;
     }
     loadCategories();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [token, user?.rol, router]);
 
   if (isLoading && categories.length === 0) {

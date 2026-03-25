@@ -189,11 +189,16 @@ export default function ProductFormModal({
   // Load product data and images
   useEffect(() => {
     if (product) {
+      // Derive category names from categories objects if available (more reliable than category string array)
+      const categoryNames = product.categories && product.categories.length > 0
+        ? product.categories.map((c) => c.name)
+        : product.category ?? [];
       setFormData({
         ...product,
         name: product.name ?? '',
         sku: product.sku ?? '',
         slug: product.slug ?? '',
+        category: categoryNames,
         description: product.description ?? '',
         presentation: product.presentation ?? '',
         aplication: product.aplication ?? '',
