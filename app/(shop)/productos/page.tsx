@@ -190,9 +190,12 @@ function ProductsContent() {
           let filtered = fetchedProducts.filter((p) => p.isVisible);
 
           if (currentCategoryFilter) {
-            filtered = filtered.filter((p) =>
-              p.category?.includes(currentCategoryFilter)
-            );
+            filtered = filtered.filter((p) => {
+              const catNames = p.categories && p.categories.length > 0
+                ? p.categories.map((c) => c.name)
+                : p.category || [];
+              return catNames.includes(currentCategoryFilter);
+            });
           }
 
           // Paginación local

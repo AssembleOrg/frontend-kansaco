@@ -912,6 +912,10 @@ export async function createProduct(
   // Limpiar campos que no acepta el DTO del backend
   const cleanData: Omit<Product, 'id' | 'slug'> = { ...productData };
   delete (cleanData as Record<string, unknown>).categories;
+  // Ensure category is never null/empty — backend requires non-null
+  if (!cleanData.category || cleanData.category.length === 0) {
+    cleanData.category = ['General'];
+  }
   if (cleanData.price !== undefined && cleanData.price !== null) {
     const priceValue =
       typeof cleanData.price === 'string'
@@ -953,6 +957,10 @@ export async function updateProduct(
   delete (cleanData as Partial<Product>).id;
   delete (cleanData as Partial<Product>).slug;
   delete (cleanData as Record<string, unknown>).categories;
+  // Ensure category is never null/empty — backend requires non-null
+  if (cleanData.category !== undefined && (!cleanData.category || cleanData.category.length === 0)) {
+    cleanData.category = ['General'];
+  }
 
   // Asegurar que price sea un número válido
   if (cleanData.price !== undefined) {
@@ -1517,9 +1525,9 @@ export async function uploadImage(
       cache: 'no-store',
     });
 
-    const result = await handleResponse<ImageUploadResponse>(response);
+    const result = await handleResponse<{ status: string; data: ImageUploadResponse }>(response);
     apiLogger.response('POST', url, response.status);
-    return result;
+    return result.data;
   } catch (error) {
     apiLogger.error('POST', url, error);
     throw error;
@@ -1556,9 +1564,9 @@ export async function uploadMultipleImages(
       cache: 'no-store',
     });
 
-    const result = await handleResponse<ImageUploadResponse[]>(response);
+    const result = await handleResponse<{ status: string; data: ImageUploadResponse[] }>(response);
     apiLogger.response('POST', url, response.status);
-    return result;
+    return result.data;
   } catch (error) {
     apiLogger.error('POST', url, error);
     throw error;

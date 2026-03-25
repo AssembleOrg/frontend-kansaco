@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Product } from '@/types';
 import { NeonBorders } from './HeroBanner';
 import { getProducts, getProductsPaginated } from '@/lib/api';
+import { getProductCategoryNames } from '@/lib/productUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
 const FeaturedProducts = () => {
@@ -312,7 +313,7 @@ const FeaturedProducts = () => {
                         <div className="flex items-start justify-between">
                           <div className="flex-1">
                             <div className="mb-1 text-xs font-medium text-[#16a245]">
-                              {product.category[0]}
+                              {getProductCategoryNames(product)[0]}
                             </div>
                             <h3 className="line-clamp-2 text-lg font-bold text-white transition-colors duration-300 group-hover:text-[#16a245]">
                               {product.name}
