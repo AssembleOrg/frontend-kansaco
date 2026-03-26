@@ -4,10 +4,18 @@ import { Product } from '@/types/product';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Trash2, Edit, Search, Plus, Percent, ArrowUpDown, Star } from 'lucide-react';
+import { Trash2, Edit, Search, Plus, Percent, ArrowUpDown, Star, AlertTriangle } from 'lucide-react';
 import { formatPrice } from '@/lib/utils';
 import Image from 'next/image';
 import { useState, useMemo, useEffect, useRef } from 'react';
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '@/components/ui/dialog';
 import {
   ColumnDef,
   flexRender,
@@ -60,6 +68,7 @@ export default function ProductsTable({
   const [selectedProducts, setSelectedProducts] = useState<number[]>([]);
   const [sorting, setSorting] = useState<SortingState>([]);
   const [selectedCategory, setSelectedCategory] = useState<string>(propSelectedCategory);
+  const [deleteTarget, setDeleteTarget] = useState<{ id: number; name: string } | null>(null);
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
 
   // Sincronizar searchTerm con prop
@@ -103,9 +112,14 @@ export default function ProductsTable({
   // Usar productos directamente (ya vienen filtrados del servidor)
   const filteredProducts = products;
 
-  const handleDelete = (productId: number) => {
-    if (confirm('¿Estás seguro de que deseas eliminar este producto?')) {
-      onDelete(productId);
+  const handleDelete = (product: Product) => {
+    setDeleteTarget({ id: product.id, name: product.name });
+  };
+
+  const confirmDelete = () => {
+    if (deleteTarget) {
+      onDelete(deleteTarget.id);
+      setDeleteTarget(null);
     }
   };
 
@@ -261,7 +275,7 @@ export default function ProductsTable({
             <span className="hidden sm:inline">Editar</span>
           </Button>
           <Button
-            onClick={() => handleDelete(row.original.id)}
+            onClick={() => handleDelete(row.original)}
             variant="outline"
             size="sm"
             className="gap-1 border-red-200 text-red-600 hover:bg-red-50"
@@ -563,7 +577,7 @@ export default function ProductsTable({
                     Editar
                   </Button>
                   <Button
-                    onClick={() => handleDelete(product.id)}
+                    onClick={() => handleDelete(product)}
                     variant="outline"
                     size="sm"
                     className="gap-1 border-red-200 text-red-600 hover:bg-red-50"
@@ -612,6 +626,36 @@ export default function ProductsTable({
           </div>
         </div>
       )}
+      {/* Modal de confirmación de eliminación */}
+      <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <AlertTriangle className="h-6 w-6 text-red-600" />
+            </div>
+            <DialogTitle className="text-center">Eliminar producto</DialogTitle>
+            <DialogDescription className="text-center">
+              Estás a punto de eliminar <span className="font-semibold text-gray-700">{deleteTarget?.name}</span>.
+              Esta acción no se puede deshacer.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteTarget(null)}
+            >
+              Cancelar
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={confirmDelete}
+              className="bg-red-600 hover:bg-red-700"
+            >
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
