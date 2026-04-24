@@ -1,6 +1,7 @@
 'use client';
 
 import Link from 'next/link';
+import Image from 'next/image';
 import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, ChevronDown, ArrowDownRight, Volume2, VolumeX } from 'lucide-react';
@@ -209,7 +210,7 @@ const HeroBanner = () => {
           playsInline
           preload="none"
           className="h-full w-full object-contain"
-          poster="/landing/business-kansaco.png"
+          poster="/landing/business-kansaco.webp"
         >
           <source src="/Kansaco-original-video.mp4" type="video/mp4" />
           Tu navegador no soporta el tag de video.
@@ -460,12 +461,15 @@ const HeroBanner = () => {
         <div
           ref={contentRef}
           className="relative z-10 flex min-h-screen w-full flex-col items-center justify-center px-6 py-12 sm:px-8 lg:h-screen lg:items-start lg:px-12"
-          style={{
-            backgroundImage: "url('/landing/business-kansaco.png')",
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
         >
+          <Image
+            src="/landing/business-kansaco.webp"
+            alt=""
+            fill
+            priority
+            className="object-cover object-center"
+            sizes="(max-width: 1024px) 100vw, 50vw"
+          />
           {/* Premium Overlay with Gradient - Lighter */}
           <div className="absolute inset-0 bg-gradient-to-br from-black/70 via-black/60 to-black/50"></div>
 

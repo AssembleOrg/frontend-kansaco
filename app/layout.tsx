@@ -32,6 +32,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es">
+      <head>
+        <link rel="preconnect" href="https://backend-kansaco-production.up.railway.app" />
+      </head>
       <body className="antialiased">
         {children}
         <Toaster />

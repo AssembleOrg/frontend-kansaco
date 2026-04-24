@@ -196,7 +196,7 @@ const Navbar = () => {
           <Link href="/" className="group flex items-center">
             <div className="flex items-center justify-center transition-all duration-200 group-hover:scale-105">
               <Image
-                src="/landing/kansaco-logo.png"
+                src="/landing/kansaco-logo.webp"
                 alt="KANSACO Logo"
                 width={78}
                 height={78}

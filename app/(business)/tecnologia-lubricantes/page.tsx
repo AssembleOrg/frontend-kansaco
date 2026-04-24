@@ -277,7 +277,7 @@ function TecnologiaLubricantesContent() {
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-gray-800/50">
                     <Image
-                      src="/landing/carrera-kansaco.png"
+                      src="/landing/carrera-kansaco.webp"
                       alt="Motor de competición Kansaco"
                       width={600}
                       height={400}
@@ -335,7 +335,7 @@ function TecnologiaLubricantesContent() {
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-gray-800/50">
                     <Image
-                      src="/landing/piezas-motor-automovil-aceite-lubricante-reparacion.png"
+                      src="/landing/piezas-motor-automovil-aceite-lubricante-reparacion.webp"
                       alt="Piezas mecánicas protegidas"
                       width={600}
                       height={400}
@@ -527,7 +527,7 @@ function TecnologiaLubricantesContent() {
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-gray-800/50">
                     <Image
-                      src="/landing/Logo-Polymers.png"
+                      src="/landing/Logo-Polymers.webp"
                       alt="Polymer's Protection Film"
                       width={600}
                       height={400}
@@ -636,7 +636,7 @@ function TecnologiaLubricantesContent() {
                     description:
                       'La película micro delgada actúa desde que se enciende el motor, protegiéndolo en ese momento crítico del arranque, cuando las piezas están más vulnerables al desgaste.',
                     image:
-                      '/landing/cerca-gota-aceite-sobre-fondo-amarillo.jpg',
+                      '/landing/cerca-gota-aceite-sobre-fondo-amarillo.webp',
                     side: 'left',
                   },
                   {
@@ -645,7 +645,7 @@ function TecnologiaLubricantesContent() {
                     description:
                       'El Polymer&apos;s Protection Film se adhiere físicamente a las superficies metálicas, creando una barrera protectora que complementa la acción del lubricante tradicional.',
                     image:
-                      '/landing/piezas-motor-automovil-aceite-lubricante-reparacion.png',
+                      '/landing/piezas-motor-automovil-aceite-lubricante-reparacion.webp',
                     side: 'right',
                   },
                   {
@@ -795,7 +795,7 @@ function TecnologiaLubricantesContent() {
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-gray-800/50">
                     <Image
-                      src="/landing/grupo-frascos-laboratorio-llenos.jpg"
+                      src="/landing/grupo-frascos-laboratorio-llenos.webp"
                       alt="Sector I&D Kansaco"
                       width={600}
                       height={400}

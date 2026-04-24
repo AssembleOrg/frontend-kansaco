@@ -71,7 +71,7 @@ const Footer = () => {
             <Link href="/" className="group flex items-center space-x-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-lg shadow-lg transition-all duration-200 group-hover:scale-105">
                 <Image
-                  src="/landing/kansaco-logo.png"
+                  src="/landing/kansaco-logo.webp"
                   alt="KANSACO Logo"
                   width={32}
                   height={32}

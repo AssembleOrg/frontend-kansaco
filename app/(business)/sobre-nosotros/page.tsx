@@ -306,7 +306,7 @@ function SobreNosotrosContent() {
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-gray-800/50">
                     <Image
-                      src="/landing/mano-cientifico-guante.jpg"
+                      src="/landing/mano-cientifico-guante.webp"
                       alt="Equipo científico Kansaco"
                       width={600}
                       height={400}
@@ -368,7 +368,7 @@ function SobreNosotrosContent() {
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-gray-800/50">
                     <Image
-                      src="/landing/Logo-Polymers.png"
+                      src="/landing/Logo-Polymers.webp"
                       alt="Polymers Protection Film"
                       width={600}
                       height={400}
@@ -574,7 +574,7 @@ function SobreNosotrosContent() {
                   >
                     <div className="group relative overflow-hidden rounded-2xl border border-gray-800/50">
                       <Image
-                        src="/landing/business-kansaco.png"
+                        src="/landing/business-kansaco.webp"
                         alt="Planta industrial Kansaco"
                         width={500}
                         height={400}

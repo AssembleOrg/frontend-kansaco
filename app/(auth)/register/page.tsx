@@ -144,7 +144,7 @@ export default function RegisterPage() {
                  <div className="relative">
                    <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-lg p-6 border border-gray-300">
                      <Image
-                       src="/landing/kansaco-logo.png"
+                       src="/landing/kansaco-logo.webp"
                        alt="Kansaco"
                        width={100}
                        height={100}

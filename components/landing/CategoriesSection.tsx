@@ -4,6 +4,7 @@ import { motion, useScroll, useTransform } from 'framer-motion';
 import { useRef } from 'react';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import Link from 'next/link';
+import Image from 'next/image';
 
 interface Category {
   id: string;
@@ -20,7 +21,7 @@ const categories: Category[] = [
     id: 'vehiculos',
     title: 'Vehículos',
     description: 'Aceites para automóviles, camionetas y vehículos livianos',
-    imageUrl: '/landing/barril-mercedes.png',
+    imageUrl: '/landing/barril-mercedes.webp',
     gradient: 'from-[#16a245] to-[#0d7a32]',
     delay: 0.1,
     filterValue: 'Vehículos',
@@ -29,7 +30,7 @@ const categories: Category[] = [
     id: 'industrial',
     title: 'Industrial',
     description: 'Lubricantes para maquinaria y equipo industrial pesado',
-    imageUrl: '/landing/agro-kansaco.png',
+    imageUrl: '/landing/agro-kansaco.webp',
     gradient: 'from-[#0d7a32] to-[#16a245]',
     delay: 0.2,
     filterValue: 'Industrial',
@@ -38,7 +39,7 @@ const categories: Category[] = [
     id: 'aditivos',
     title: 'Derivados Y Aditivos',
     description: 'Aditivos, tratamientos y productos complementarios',
-    imageUrl: '/landing/3bidones-kansaco.png',
+    imageUrl: '/landing/3bidones-kansaco.webp',
     gradient: 'from-[#16a245] to-[#0d7a32]',
     delay: 0.3,
     filterValue: 'Derivados Y Aditivos',
@@ -47,7 +48,7 @@ const categories: Category[] = [
     id: 'motos',
     title: 'Motos',
     description: 'Aceites especializados para motocicletas y scooters',
-    imageUrl: '/landing/bike-green.png',
+    imageUrl: '/landing/bike-green.webp',
     gradient: 'from-[#0d7a32] to-[#16a245]',
     delay: 0.4,
     filterValue: 'Motos',
@@ -246,11 +247,13 @@ const CategoriesSection = () => {
                 href={`/productos?category=${encodeURIComponent(category.filterValue)}`}
               >
                 <div className="relative h-80 cursor-pointer overflow-hidden rounded-2xl border border-gray-700/50 bg-black/50 backdrop-blur-sm transition-all duration-500 group-hover:border-[#16a245]/50 group-hover:bg-black/70">
-                  <div
-                    className="absolute inset-0 bg-cover bg-center bg-no-repeat transition-transform duration-500 group-hover:scale-110"
-                    style={{
-                      backgroundImage: `url(${category.imageUrl})`,
-                    }}
+                  <Image
+                    src={category.imageUrl}
+                    alt={category.title}
+                    fill
+                    className="object-cover transition-transform duration-500 group-hover:scale-110"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    loading="lazy"
                   />
 
                   <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/60 to-black/30 transition-opacity duration-500 group-hover:from-black/95 group-hover:via-black/70 group-hover:to-black/40" />
