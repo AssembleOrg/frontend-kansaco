@@ -144,37 +144,14 @@ const HeroBanner = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
-  const [isDesktop, setIsDesktop] = useState(false);
-
-  useEffect(() => {
-    const mq = window.matchMedia('(min-width: 1024px)');
-    setIsDesktop(mq.matches);
-    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
-    mq.addEventListener('change', handler);
-    return () => mq.removeEventListener('change', handler);
-  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video || !isDesktop) return;
-
-    const handleCanPlayThrough = () => {
-      setIsVideoLoaded(true);
-    };
-
-    const handleError = () => {};
-
+    if (!video) return;
+    const handleCanPlayThrough = () => setIsVideoLoaded(true);
     video.addEventListener('canplaythrough', handleCanPlayThrough);
-    video.addEventListener('error', handleError);
-
-    if (video.readyState >= 3) {
-      setIsVideoLoaded(true);
-    }
-
-    return () => {
-      video.removeEventListener('canplaythrough', handleCanPlayThrough);
-      video.removeEventListener('error', handleError);
-    };
+    if (video.readyState >= 3) setIsVideoLoaded(true);
+    return () => video.removeEventListener('canplaythrough', handleCanPlayThrough);
   }, []);
 
   const togglePlay = () => {
@@ -224,19 +201,19 @@ const HeroBanner = () => {
         isVideoLoaded ? 'hidden lg:block lg:w-1/2' : 'hidden'
       }`}>
         {/* Video Element */}
-        {isDesktop && <video
+        <video
           ref={videoRef}
           autoPlay
           loop
           muted
           playsInline
-          preload="metadata"
+          preload="none"
           className="h-full w-full object-contain"
           poster="/landing/business-kansaco.png"
         >
           <source src="/Kansaco-original-video.mp4" type="video/mp4" />
           Tu navegador no soporta el tag de video.
-        </video>}
+        </video>
 
         {/* Video Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/50"></div>
