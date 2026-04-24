@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { useState, useRef, useEffect } from 'react';
-import { Play, Pause, ChevronDown, ArrowDownRight } from 'lucide-react';
+import { Play, Pause, ChevronDown, ArrowDownRight, Volume2, VolumeX } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { scrollToSection } from '@/lib/scrollUtils';
 
@@ -142,24 +142,31 @@ const HeroBanner = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
   const [isPlaying, setIsPlaying] = useState(true);
+  const [isMuted, setIsMuted] = useState(true);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(false);
+
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
 
   useEffect(() => {
     const video = videoRef.current;
-    if (!video) return;
+    if (!video || !isDesktop) return;
 
     const handleCanPlayThrough = () => {
       setIsVideoLoaded(true);
     };
 
-    const handleError = () => {
-      // Content stays centered, graceful degradation
-    };
+    const handleError = () => {};
 
     video.addEventListener('canplaythrough', handleCanPlayThrough);
     video.addEventListener('error', handleError);
 
-    // Check if already cached
     if (video.readyState >= 3) {
       setIsVideoLoaded(true);
     }
@@ -180,6 +187,13 @@ const HeroBanner = () => {
       video.play();
     }
     setIsPlaying(!isPlaying);
+  };
+
+  const toggleMute = () => {
+    const video = videoRef.current;
+    if (!video) return;
+    video.muted = !video.muted;
+    setIsMuted(video.muted);
   };
 
   // Función para scroll smooth a la siguiente sección
@@ -210,7 +224,7 @@ const HeroBanner = () => {
         isVideoLoaded ? 'hidden lg:block lg:w-1/2' : 'hidden'
       }`}>
         {/* Video Element */}
-        <video
+        {isDesktop && <video
           ref={videoRef}
           autoPlay
           loop
@@ -220,9 +234,9 @@ const HeroBanner = () => {
           className="h-full w-full object-contain"
           poster="/landing/business-kansaco.png"
         >
-          <source src="/landing/hero-presentacion.mp4" type="video/mp4" />
+          <source src="/Kansaco-original-video.mp4" type="video/mp4" />
           Tu navegador no soporta el tag de video.
-        </video>
+        </video>}
 
         {/* Video Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/50"></div>
@@ -245,6 +259,18 @@ const HeroBanner = () => {
                 <Pause className="h-5 w-5 text-[#16a245] drop-shadow-sm" />
               ) : (
                 <Play className="ml-0.5 h-5 w-5 text-[#16a245] drop-shadow-sm" />
+              )}
+            </motion.button>
+            <motion.button
+              onClick={toggleMute}
+              className="flex h-12 w-12 items-center justify-center rounded-full bg-white/20 backdrop-blur-sm transition-all duration-200 hover:bg-[#16a245]/80"
+              whileHover={{ scale: 1.1 }}
+              whileTap={{ scale: 0.9 }}
+            >
+              {isMuted ? (
+                <VolumeX className="h-5 w-5 text-[#16a245] drop-shadow-sm" />
+              ) : (
+                <Volume2 className="h-5 w-5 text-[#16a245] drop-shadow-sm" />
               )}
             </motion.button>
           </div>

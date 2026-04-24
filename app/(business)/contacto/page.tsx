@@ -181,6 +181,12 @@ export default function ContactoPage() {
                     >
                       → Sobre KANSACO
                     </Link>
+                    <Link
+                      href="/trabaja-con-nosotros"
+                      className="block text-gray-300 transition-colors hover:text-[#16a245]"
+                    >
+                      → Trabajá con Nosotros
+                    </Link>
                   </div>
                 </div>
               </motion.div>

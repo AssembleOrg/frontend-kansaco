@@ -34,6 +34,7 @@ const Footer = () => {
   const companyLinks = [
     { name: 'Sobre Nosotros', href: '/sobre-nosotros' },
     { name: 'Nuestra Tecnología', href: '/tecnologia-lubricantes' },
+    { name: 'Trabajá con Nosotros', href: '/trabaja-con-nosotros' },
   ];
 
   const supportLinks = [
