@@ -298,6 +298,7 @@ const FeaturedProducts = () => {
                             <div className="flex h-24 w-24 items-center justify-center rounded-full bg-gradient-to-br from-[#16a245] to-[#0d7a32] shadow-lg">
                               <Image
                                 src="/landing/kansaco-logo.webp"
+                quality={90}
                                 alt="KANSACO Logo"
                                 width={64}
                                 height={64}

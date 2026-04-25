@@ -217,9 +217,9 @@ const LaEmpresaSection = () => {
                   <Image
                     src="/landing/laempresa1.webp"
                     alt="KANSACO - Marca"
-                    fill
-                    className="rounded-md object-cover"
-                    sizes="(max-width: 640px) 180px, (max-width: 1200px) 30vw, 20vw"
+                    width={256}
+                    height={256}
+                    className="rounded-md object-cover w-full h-full"
                   />
                 </div>
                 {/* Corner accents */}
@@ -260,9 +260,9 @@ const LaEmpresaSection = () => {
                   <Image
                     src="/landing/laempresa2.webp"
                     alt="KANSACO - Productos"
-                    fill
-                    className="rounded-md object-cover"
-                    sizes="(max-width: 640px) 180px, (max-width: 1200px) 30vw, 20vw"
+                    width={256}
+                    height={256}
+                    className="rounded-md object-cover w-full h-full"
                   />
                 </div>
                 {/* Corner accents */}

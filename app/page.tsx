@@ -12,17 +12,11 @@ import TechnologySection from '@/components/landing/TechnologySection';
 import ArgentinaSection from '@/components/landing/ArgentinaSection';
 import FeaturedProducts from '@/components/landing/FeaturedProducts';
 import Footer from '@/components/landing/Footer';
-import ScrollAnimationSystem from '@/components/landing/ScrollAnimationSystem';
 import { FloatingScrollTop } from '@/components/landing/FloatingScrollTop';
 
 export default function HomePage() {
   return (
     <main className="min-h-screen">
-      {/* Unified Scroll Animation System - desktop only */}
-      <div className="hidden lg:block">
-        <ScrollAnimationSystem />
-      </div>
-
       {/* Landing Page Sections */}
       <Navbar />
       <HeroBanner />

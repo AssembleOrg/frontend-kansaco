@@ -197,6 +197,7 @@ const Navbar = () => {
             <div className="flex items-center justify-center transition-all duration-200 group-hover:scale-105">
               <Image
                 src="/landing/kansaco-logo.webp"
+                quality={90}
                 alt="KANSACO Logo"
                 width={78}
                 height={78}

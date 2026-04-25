@@ -107,6 +107,7 @@ function LoginContent() {
           <div className="text-center mb-12">
             <Image
               src="/landing/kansaco-logo.webp"
+                quality={90}
               alt="Kansaco Logo"
               width={200}
               height={200}
@@ -169,6 +170,7 @@ function LoginContent() {
           <div className="lg:hidden text-center mb-8">
             <Image
               src="/landing/kansaco-logo.webp"
+                quality={90}
               alt="Kansaco Logo"
               width={120}
               height={120}
