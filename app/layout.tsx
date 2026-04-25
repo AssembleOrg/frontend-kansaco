@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from 'next';
 import './globals.css';
 import { Toaster } from '@/components/ui/sonner';
 import { siteConfig } from '@/lib/site-config';
+import { WhatsAppButton } from '@/components/landing/WhatsAppButton';
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -35,6 +36,7 @@ export default function RootLayout({
 <body className="antialiased">
         {children}
         <Toaster />
+        <WhatsAppButton />
       </body>
     </html>
   );

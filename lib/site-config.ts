@@ -21,7 +21,7 @@ export const siteConfig = {
     salesEmail: 'ventas@kansaco.com',
     phones: ['4237-2636', '1365', '0813'],
     phoneDisplay: '4237-2636 / 1365 / 0813',
-    location: 'Buenos Aires, Argentina',
+    location: 'Magallanes 2051, Fcio. Varela, Bs As. Arg',
     businessHours: 'Lun - Vie: 8:00 - 18:00',
   },
 

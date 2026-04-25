@@ -66,7 +66,7 @@ const ArgentinaSection = () => {
             <div className="space-y-3">
               <div className="flex items-center justify-center gap-2 text-sm text-gray-400">
                 <MapPin className="h-4 w-4 text-blue-400" />
-                <span>Buenos Aires, Argentina</span>
+                <span>Magallanes 2051, Fcio. Varela, Bs As. Arg</span>
               </div>
               <p className="text-sm text-gray-500">
                 &ldquo;La calidad argentina que protege motores en todo el

@@ -36,22 +36,22 @@ const categories: Category[] = [
     filterValue: 'Industrial',
   },
   {
-    id: 'aditivos',
-    title: 'Derivados Y Aditivos',
-    description: 'Aditivos, tratamientos y productos complementarios',
-    imageUrl: '/landing/3bidones-kansaco.webp',
-    gradient: 'from-[#16a245] to-[#0d7a32]',
-    delay: 0.3,
-    filterValue: 'Derivados Y Aditivos',
-  },
-  {
     id: 'motos',
     title: 'Motos',
     description: 'Aceites especializados para motocicletas y scooters',
     imageUrl: '/landing/bike-green.webp',
+    gradient: 'from-[#16a245] to-[#0d7a32]',
+    delay: 0.3,
+    filterValue: 'Motos',
+  },
+  {
+    id: 'aditivos',
+    title: 'Derivados Y Aditivos',
+    description: 'Aditivos, tratamientos y productos complementarios',
+    imageUrl: '/landing/3bidones-kansaco.webp',
     gradient: 'from-[#0d7a32] to-[#16a245]',
     delay: 0.4,
-    filterValue: 'Motos',
+    filterValue: 'Derivados Y Aditivos',
   },
 ];
 

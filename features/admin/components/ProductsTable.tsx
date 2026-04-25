@@ -201,24 +201,24 @@ export default function ProductsTable({
       enableSorting: true,
       cell: ({ row }) => <span className="text-sm text-gray-600">{row.original.sku}</span>,
     },
-    {
-      accessorKey: 'stock',
-      header: 'Stock',
-      enableSorting: true,
-      cell: ({ row }) => (
-        <div className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs sm:text-sm">
-          <span
-            className={
-              row.original.stock < 10
-                ? 'font-medium text-red-600'
-                : 'text-gray-700'
-            }
-          >
-            {row.original.stock}
-          </span>
-        </div>
-      ),
-    },
+    // {
+    //   accessorKey: 'stock',
+    //   header: 'Stock',
+    //   enableSorting: true,
+    //   cell: ({ row }) => (
+    //     <div className="inline-flex items-center rounded-full bg-gray-100 px-2 py-1 text-xs sm:text-sm">
+    //       <span
+    //         className={
+    //           row.original.stock < 10
+    //             ? 'font-medium text-red-600'
+    //             : 'text-gray-700'
+    //         }
+    //       >
+    //         {row.original.stock}
+    //       </span>
+    //     </div>
+    //   ),
+    // },
     {
       accessorKey: 'price',
       header: 'Precio',
@@ -531,7 +531,7 @@ export default function ProductsTable({
                     <p className="text-gray-500">SKU</p>
                     <p className="font-medium text-gray-900">{product.sku}</p>
                   </div>
-                  <div>
+                  {/* <div>
                     <p className="text-gray-500">Stock</p>
                     <p
                       className={`font-medium ${
@@ -540,7 +540,7 @@ export default function ProductsTable({
                     >
                       {product.stock}
                     </p>
-                  </div>
+                  </div> */}
                   <div>
                     <p className="text-gray-500">Precio</p>
                     <p className="font-medium text-green-600">

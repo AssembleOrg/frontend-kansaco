@@ -209,7 +209,7 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
 
             <div className="space-y-4">
 
-              <div className="flex items-center space-x-2">
+              {/* <div className="flex items-center space-x-2">
                 <Badge
                   variant={product.stock > 0 ? "default" : "destructive"}
                   className="text-sm"
@@ -218,7 +218,7 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
                     ? `En stock (${product.stock} unidades)`
                     : 'Agotado'}
                 </Badge>
-              </div>
+              </div> */}
             </div>
 
             <Separator />

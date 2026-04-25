@@ -69,7 +69,7 @@ const productLines = [
     subtitle: 'Aceite semi-sintético',
     icon: Car,
     gradient: 'from-[#16a245] to-[#0d7a32]',
-    image: '/linea/linea-premium.webp',
+    image: '/linea/linea-premium.png',
     description:
       'Busca extender el período de reemplazo y la relubricación para mayor eficiencia y economía del motor. Un equilibrio entre la economía del aceite mineral y el rendimiento superior del sintético.',
     benefits: [
@@ -129,7 +129,7 @@ const productLines = [
     subtitle: 'Para maquinaria industrial',
     icon: Factory,
     gradient: 'from-[#16a245] to-[#0d7a32]',
-    image: '/linea/Lubricantes-Industriales.png.webp',
+    image: '/linea/lubricantes-industrial-rework.png',
     description: 'Una de las líneas más amplias del mercado. Productos para todos los sectores de la industria.',
     benefits: [
       'Sistemas Hidráulicos',

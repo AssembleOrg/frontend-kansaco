@@ -16,7 +16,6 @@ import {
   CardTitle,
 } from '@/components/ui/card';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-import { Checkbox } from '@/components/ui/checkbox';
 import {
   AlertCircle,
   Eye,
@@ -35,6 +34,7 @@ import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
+
 const validateEmail = (email: string): boolean => {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
 };
@@ -47,12 +47,11 @@ function LoginContent() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [rememberMe, setRememberMe] = useState(false);
   const [isValidEmail, setIsValidEmail] = useState(true);
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+
   const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newEmail = e.target.value;
     setEmail(newEmail);
@@ -75,13 +74,11 @@ function LoginContent() {
     setIsLoading(true);
     setError(null);
     try {
-      // Usar el método login del authStore que hace la llamada real a la API
       await login({ email, password });
 
       const redirectUrl = searchParams.get('redirect') || '/productos';
       router.push(redirectUrl);
     } catch (err: unknown) {
-      // Handle API errors
       const error = err as { response?: { data?: { message?: string } }; message?: string };
       const apiErrorMessage =
         error.response?.data?.message ||
@@ -95,19 +92,31 @@ function LoginContent() {
   };
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-gradient-to-b from-black via-gray-950 to-black">
       {/* Left Panel */}
-      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-[#16a245] to-[#0d7a32] p-12 items-center justify-center">
+      <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-gray-900 to-black p-12 items-center justify-center overflow-hidden">
+        {/* Decorative orbs */}
+        <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-[#16a245]/10 blur-3xl pointer-events-none" />
+        <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-[#16a245]/15 blur-2xl pointer-events-none" />
+        <div
+          className="absolute inset-0 opacity-[0.03] pointer-events-none"
+          style={{
+            backgroundImage:
+              'linear-gradient(rgba(22,162,69,0.15) 1px, transparent 1px), linear-gradient(90deg, rgba(22,162,69,0.15) 1px, transparent 1px)',
+            backgroundSize: '50px 50px',
+          }}
+        />
+
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
-          className="max-w-md text-white"
+          className="max-w-md text-white relative z-10"
         >
           <div className="text-center mb-12">
             <Image
-              src="/landing/kansaco-logo.webp"
-                quality={90}
+              src="/logo-kansaco.webp"
+              quality={90}
               alt="Kansaco Logo"
               width={200}
               height={200}
@@ -115,41 +124,41 @@ function LoginContent() {
               priority
             />
             <h1 className="text-3xl font-bold mb-2">Bienvenido a KANSACO</h1>
-            <p className="text-lg opacity-90">Tu plataforma de compras</p>
+            <p className="text-lg text-gray-300">Tu plataforma de compras</p>
           </div>
-          
+
           <div className="space-y-6">
             <div className="flex items-start space-x-4">
-              <div className="rounded-full bg-white/20 p-3 flex-shrink-0">
+              <div className="rounded-full bg-[#16a245]/15 border border-[#16a245]/30 p-3 flex-shrink-0">
                 <ShoppingCart className="h-6 w-6" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-1">Compra Fácil</h3>
-                <p className="opacity-80 text-sm">
+                <p className="text-sm text-gray-300">
                   Arma tu carrito y compra con un solo click.
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start space-x-4">
-              <div className="rounded-full bg-white/20 p-3 flex-shrink-0">
+              <div className="rounded-full bg-[#16a245]/15 border border-[#16a245]/30 p-3 flex-shrink-0">
                 <Users className="h-6 w-6" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-1">Productos Exclusivos</h3>
-                <p className="opacity-80 text-sm">
+                <p className="text-sm text-gray-300">
                   Accede a nuestra línea completa de productos con precios especiales.
                 </p>
               </div>
             </div>
-            
+
             <div className="flex items-start space-x-4">
-              <div className="rounded-full bg-white/20 p-3 flex-shrink-0">
+              <div className="rounded-full bg-[#16a245]/15 border border-[#16a245]/30 p-3 flex-shrink-0">
                 <Truck className="h-6 w-6" />
               </div>
               <div>
                 <h3 className="text-lg font-semibold mb-1">Entregas Rápidas</h3>
-                <p className="opacity-80 text-sm">
+                <p className="text-sm text-gray-300">
                   Distribución a todo el territorio nacional.
                 </p>
               </div>
@@ -169,8 +178,8 @@ function LoginContent() {
           {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
             <Image
-              src="/landing/kansaco-logo.webp"
-                quality={90}
+              src="/logo-kansaco.webp"
+              quality={90}
               alt="Kansaco Logo"
               width={120}
               height={120}
@@ -178,12 +187,12 @@ function LoginContent() {
             />
           </div>
 
-          <Card className="bg-white shadow-lg border-gray-200">
+          <Card className="bg-gray-900 shadow-2xl border border-gray-800">
             <CardHeader className="text-center pb-6">
-              <CardTitle className="text-2xl font-bold text-gray-800">
+              <CardTitle className="text-2xl font-bold text-white">
                 Iniciar Sesión
               </CardTitle>
-              <CardDescription className="text-gray-600">
+              <CardDescription className="text-gray-300">
                 Accede a tu cuenta para realizar tus compras
               </CardDescription>
             </CardHeader>
@@ -191,16 +200,16 @@ function LoginContent() {
             <CardContent>
               <form onSubmit={handleSubmit} className="space-y-4">
                 {error && (
-                  <Alert variant="destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    <AlertTitle>Error de autenticación</AlertTitle>
-                    <AlertDescription>{error}</AlertDescription>
+                  <Alert className="bg-red-950/60 border border-red-800/60">
+                    <AlertCircle className="h-4 w-4 text-red-400" />
+                    <AlertTitle className="text-red-300">Error de autenticación</AlertTitle>
+                    <AlertDescription className="text-gray-300">{error}</AlertDescription>
                   </Alert>
                 )}
 
                 {/* Email */}
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="text-gray-700 font-medium">
+                  <Label htmlFor="email" className="text-gray-300 font-medium">
                     Correo Electrónico
                   </Label>
                   <div className="relative">
@@ -213,16 +222,16 @@ function LoginContent() {
                       value={email}
                       onChange={handleEmailChange}
                       disabled={isLoading}
-                      className={`pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245] ${
-                        !isValidEmail && email ? 'border-red-300' : ''
+                      className={`pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30 ${
+                        !isValidEmail && email ? 'border-red-500' : ''
                       }`}
                     />
                     {!isValidEmail && email && (
-                      <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-500" />
+                      <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-400" />
                     )}
                   </div>
                   {!isValidEmail && email && (
-                    <p className="text-sm text-red-600">
+                    <p className="text-sm text-red-400">
                       Por favor ingresa un correo válido
                     </p>
                   )}
@@ -230,7 +239,7 @@ function LoginContent() {
 
                 {/* Password */}
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="text-gray-700 font-medium">
+                  <Label htmlFor="password" className="text-gray-300 font-medium">
                     Contraseña
                   </Label>
                   <div className="relative">
@@ -243,40 +252,18 @@ function LoginContent() {
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
                       disabled={isLoading}
-                      className="pl-10 pr-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                      className="pl-10 pr-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-200 transition-colors"
                       tabIndex={-1}
                       aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
-                </div>
-
-                {/* Remember Me & Forgot Password */}
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-2">
-                    <Checkbox
-                      id="remember"
-                      checked={rememberMe}
-                      onCheckedChange={(checked) => setRememberMe(checked as boolean)}
-                    />
-                    <Label htmlFor="remember" className="text-sm text-gray-600 cursor-pointer">
-                      Recordarme
-                    </Label>
-                  </div>
-                  <Link
-                    href="#"
-                    onClick={(e) => e.preventDefault()}
-                    className="text-sm text-gray-400 cursor-not-allowed"
-                    title="Funcionalidad no disponible"
-                  >
-                    ¿Olvidaste tu contraseña?
-                  </Link>
                 </div>
 
                 {/* Submit Button */}
@@ -300,12 +287,12 @@ function LoginContent() {
               </form>
             </CardContent>
 
-            <CardFooter className="flex-col items-stretch border-t border-gray-100 pt-8">
+            <CardFooter className="flex-col items-stretch border-t border-gray-800 pt-8">
               <div className="w-full">
                 {/* Nivel 1: Acción Primaria - Ver productos sin login */}
                 <Link
                   href="/productos"
-                  className="flex items-center justify-center gap-2 w-full py-4 px-6 bg-[#16a245]/5 border border-[#16a245]/10 rounded-lg text-[#16a245] font-semibold text-sm hover:bg-[#16a245]/10 hover:scale-[1.02] transition-all duration-200 group"
+                  className="flex items-center justify-center gap-2 w-full py-4 px-6 bg-[#16a245]/10 border border-[#16a245]/30 rounded-lg text-[#16a245] font-semibold text-sm hover:bg-[#16a245]/20 hover:border-[#16a245]/60 hover:scale-[1.02] transition-all duration-200 group"
                 >
                   <ShoppingBag className="h-4 w-4" />
                   <span>Ver productos sin iniciar sesión</span>
@@ -314,7 +301,7 @@ function LoginContent() {
 
                 {/* Nivel 2: Acción Secundaria - Registro */}
                 <div className="mt-6">
-                  <p className="text-sm text-gray-600 text-center">
+                  <p className="text-sm text-gray-300 text-center">
                     ¿No tienes una cuenta?{' '}
                     <Link
                       href="/register"
@@ -326,8 +313,8 @@ function LoginContent() {
                 </div>
 
                 {/* Nivel 3: Legal - Términos y Condiciones */}
-                <div className="mt-8 pt-6 border-t border-gray-100">
-                  <p className="text-xs text-gray-500 text-center leading-relaxed">
+                <div className="mt-8 pt-6 border-t border-gray-800">
+                  <p className="text-xs text-gray-300 text-center leading-relaxed">
                     Al iniciar sesión, aceptas nuestros{' '}
                     <Link
                       href="/terminos-y-condiciones"
@@ -349,10 +336,10 @@ function LoginContent() {
 export default function LoginPage() {
   return (
     <Suspense fallback={
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center">
+      <div className="min-h-screen bg-black flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#16a245] mx-auto mb-4"></div>
-          <p className="text-gray-600">Cargando...</p>
+          <p className="text-gray-300">Cargando...</p>
         </div>
       </div>
     }>

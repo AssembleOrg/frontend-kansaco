@@ -604,7 +604,7 @@ export default function ProductFormModal({
             </div>
 
             {/* Stock */}
-            <div>
+            {/* <div>
               <Label htmlFor="stock">Stock</Label>
               <Input
                 id="stock"
@@ -615,7 +615,7 @@ export default function ProductFormModal({
                 placeholder="0"
                 disabled={isLoading}
               />
-            </div>
+            </div> */}
           </div>
 
           {/* ========== IMÁGENES - Sección inline mejorada ========== */}

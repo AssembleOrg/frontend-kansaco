@@ -100,8 +100,10 @@ export const useCartStore = create<CartState>()(
           );
           
           if (userCartResponse?.data?.id) {
+            const syncedCart = userCartResponse.data;
+            syncedCart.items = syncedCart.items.filter((item) => item.quantity > 0);
             set({
-              cart: userCartResponse.data,
+              cart: syncedCart,
               isLoading: false,
               error: null,
             });
@@ -263,7 +265,9 @@ export const useCartStore = create<CartState>()(
             );
 
             if (response?.data?.id) {
-              set({ cart: response.data, isLoading: false, error: null });
+              const serverCart = response.data;
+              serverCart.items = serverCart.items.filter((item) => item.quantity > 0);
+              set({ cart: serverCart, isLoading: false, error: null });
               logger.debug('removeFromCart: Product removed from server successfully.');
               return;
             }

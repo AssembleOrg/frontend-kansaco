@@ -252,3 +252,40 @@ main {
   opacity: 0.5;
   cursor: not-allowed;
 }
+
+/* Phone Input — Dark Theme */
+.phone-input-dark .PhoneInputCountry {
+  border: 1px solid #374151;
+  background: #1f2937;
+  color: #d1d5db;
+}
+
+.phone-input-dark .PhoneInputCountrySelectArrow {
+  color: #9ca3af;
+  opacity: 0.8;
+}
+
+.phone-input-dark .PhoneInputInput {
+  background: #1f2937;
+  border: 1px solid #374151;
+  color: #ffffff;
+  font-size: 0.875rem;
+  padding: 0.5rem 0.75rem;
+  border-radius: 0.5rem;
+  outline: none;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.phone-input-dark .PhoneInputInput::placeholder {
+  color: #6b7280;
+}
+
+.phone-input-dark .PhoneInputInput:focus {
+  border-color: #16a245;
+  box-shadow: 0 0 0 1px rgba(22, 162, 69, 0.3);
+}
+
+.phone-input-dark .PhoneInputInput:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}

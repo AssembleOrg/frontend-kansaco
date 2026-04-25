@@ -203,7 +203,7 @@ function SobreNosotrosContent() {
                   label: 'Productos Desarrollados',
                   icon: Target,
                 },
-                { number: '5 millones', label: 'de Litros Anuales', icon: Factory },
+                { number: '8 millones', label: 'de Litros Anuales', icon: Factory },
                 {
                   number: '700.000',
                   label: 'Toneladas de Grasas',
@@ -555,7 +555,7 @@ function SobreNosotrosContent() {
                               Producción
                             </div>
                             <div className="text-xl font-bold text-white">
-                              5M litros
+                              8M litros
                             </div>
                             <div className="text-xs text-gray-400">al año</div>
                           </div>
@@ -806,7 +806,7 @@ function SobreNosotrosContent() {
                 >
                   <div className="relative overflow-hidden rounded-2xl border border-gray-800/50">
                     <Image
-                      src="/landing/hand-cleaning-engine.jpg.webp"
+                      src="/landing/laboratorio-portatil.webp"
                       alt="Laboratorio portátil Pórtala"
                       width={600}
                       height={400}

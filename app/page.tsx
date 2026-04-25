@@ -11,6 +11,7 @@ import LaEmpresaSection from '@/components/landing/LaEmpresaSection';
 import CategoriesSection from '@/components/landing/CategoriesSection';
 import TechnologySection from '@/components/landing/TechnologySection';
 import FeaturedProducts from '@/components/landing/FeaturedProducts';
+import LubriExpertoCTA from '@/components/landing/LubriExpertoCTA';
 import ArgentinaSection from '@/components/landing/ArgentinaSection';
 import Footer from '@/components/landing/Footer';
 import { FloatingScrollTop } from '@/components/landing/FloatingScrollTop';
@@ -44,6 +45,8 @@ export default function HomePage() {
       <Suspense fallback={<ArgentinaSkeleton />}>
         <ArgentinaSection />
       </Suspense>
+
+      <LubriExpertoCTA />
 
       <Suspense fallback={<FooterSkeleton />}>
         <Footer />

@@ -202,10 +202,10 @@ export default function ContactoPage() {
             >
               <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-8 backdrop-blur-sm">
                 <h3 className="mb-4 text-2xl font-bold text-white text-center">
-                  ¿Quieres trabajar con nosotros?
+                  ¿Querés ser parte de Kansaco?
                 </h3>
                 <p className="mb-6 text-center text-gray-300">
-                  Completa el formulario y te contactaremos
+                  Completá el formulario y te contactamos
                 </p>
 
                 <ContactFormMailto />

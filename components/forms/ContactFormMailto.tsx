@@ -4,13 +4,24 @@ import { useState, FormEvent } from 'react';
 import { Mail } from 'lucide-react';
 import { siteConfig } from '@/lib/site-config';
 
+type AfipSituacion =
+  | ''
+  | 'No inscripto'
+  | 'Monotributista'
+  | 'Responsable Inscripto'
+  | 'Persona Jurídica';
+
 export default function ContactFormMailto() {
-  const [formType, setFormType] = useState<'mayorista' | 'proveedor' | ''>('');
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
+  const [cuit, setCuit] = useState('');
+  const [domicilio, setDomicilio] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
+  const [telefono, setTelefono] = useState('');
+  const [zonaDistribucion, setZonaDistribucion] = useState('');
+  const [afip, setAfip] = useState<AfipSituacion>('');
   const [mensaje, setMensaje] = useState('');
 
-  // Detectar si es móvil
   const isMobile =
     typeof window !== 'undefined' &&
     /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
@@ -18,23 +29,24 @@ export default function ContactFormMailto() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
 
-    // Validación básica
-    if (!formType || !nombre || !email) {
-      alert('Por favor completa todos los campos obligatorios');
+    if (!nombre || !email || !afip) {
+      alert('Por favor completá los campos obligatorios: nombre, email y situación ante AFIP');
       return;
     }
 
-    // Construir el asunto y cuerpo del email
-    const tipoTexto = formType === 'mayorista' ? 'Mayorista' : 'Proveedor';
-    const asunto = `Solicitud de ${tipoTexto} - ${nombre}`;
+    const asunto = `Solicitud de Mayorista - ${nombre}`;
 
     const cuerpo = `
-Tipo: Quiero ser ${tipoTexto}
-
 Nombre: ${nombre}
 Email: ${email}
+CUIT: ${cuit || 'No especificado'}
+Domicilio: ${domicilio || 'No especificado'}
+Código Postal: ${codigoPostal || 'No especificado'}
+Teléfono: ${telefono || 'No especificado'}
+Zona de distribución: ${zonaDistribucion || 'No especificada'}
+Situación ante AFIP: ${afip}
 
-${mensaje ? `Mensaje:\n${mensaje}` : ''}
+${mensaje ? `Información adicional / Carta de presentación:\n${mensaje}` : ''}
 
 ---
 Este email fue enviado desde el formulario de contacto de Kansaco
@@ -43,101 +55,164 @@ Este email fue enviado desde el formulario de contacto de Kansaco
     const emailDestino = siteConfig.contact.email;
 
     if (isMobile) {
-      // En móvil: usar mailto (funciona mejor con apps nativas)
       const mailtoLink = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
       window.location.href = mailtoLink;
     } else {
-      // En desktop: usar Gmail URL (funciona mejor en navegador)
       const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emailDestino)}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-
       try {
         window.open(gmailUrl, '_blank', 'noopener,noreferrer');
       } catch {
-        // Solo si el popup es bloqueado completamente
         const mailtoLink = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
         window.location.href = mailtoLink;
       }
     }
   };
 
-  return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      {/* Dropdown de tipo */}
-      <div>
-        <label
-          htmlFor="formType"
-          className="mb-2 block text-sm font-medium text-gray-300"
-        >
-          Tipo de solicitud <span className="text-red-500">*</span>
-        </label>
-        <select
-          id="formType"
-          value={formType}
-          onChange={(e) =>
-            setFormType(e.target.value as 'mayorista' | 'proveedor' | '')
-          }
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-          required
-        >
-          <option value="">Selecciona una opción</option>
-          <option value="mayorista">Quiero ser Mayorista</option>
-          <option value="proveedor">Quiero ser Proveedor</option>
-        </select>
-      </div>
+  const inputClass =
+    'w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50';
+  const labelClass = 'mb-2 block text-sm font-medium text-gray-300';
 
-      {/* Campo Nombre */}
+  return (
+    <form onSubmit={handleSubmit} className="space-y-5">
+      {/* Nombre */}
       <div>
-        <label
-          htmlFor="nombre"
-          className="mb-2 block text-sm font-medium text-gray-300"
-        >
-          Nombre completo <span className="text-red-500">*</span>
+        <label htmlFor="nombre" className={labelClass}>
+          Tu nombre <span className="text-red-500">*</span>
         </label>
         <input
           type="text"
           id="nombre"
           value={nombre}
           onChange={(e) => setNombre(e.target.value)}
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-          placeholder="Tu nombre completo"
+          className={inputClass}
+          placeholder="Nombre completo o razón social"
           required
         />
       </div>
 
-      {/* Campo Email */}
+      {/* Email */}
       <div>
-        <label
-          htmlFor="email"
-          className="mb-2 block text-sm font-medium text-gray-300"
-        >
-          Email <span className="text-red-500">*</span>
+        <label htmlFor="email" className={labelClass}>
+          Tu correo electrónico <span className="text-red-500">*</span>
         </label>
         <input
           type="email"
           id="email"
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
+          className={inputClass}
           placeholder="tu@email.com"
           required
         />
       </div>
 
-      {/* Campo Mensaje */}
+      {/* CUIT */}
       <div>
-        <label
-          htmlFor="mensaje"
-          className="mb-2 block text-sm font-medium text-gray-300"
+        <label htmlFor="cuit" className={labelClass}>
+          Tu CUIT
+        </label>
+        <input
+          type="text"
+          id="cuit"
+          value={cuit}
+          onChange={(e) => setCuit(e.target.value)}
+          className={inputClass}
+          placeholder="XX-XXXXXXXX-X"
+        />
+      </div>
+
+      {/* Domicilio */}
+      <div>
+        <label htmlFor="domicilio" className={labelClass}>
+          Domicilio completo (Localidad y Provincia)
+        </label>
+        <input
+          type="text"
+          id="domicilio"
+          value={domicilio}
+          onChange={(e) => setDomicilio(e.target.value)}
+          className={inputClass}
+          placeholder="Calle 123, Ciudad, Provincia"
+        />
+      </div>
+
+      {/* Código Postal */}
+      <div>
+        <label htmlFor="codigoPostal" className={labelClass}>
+          Código Postal
+        </label>
+        <input
+          type="text"
+          id="codigoPostal"
+          value={codigoPostal}
+          onChange={(e) => setCodigoPostal(e.target.value)}
+          className={inputClass}
+          placeholder="XXXX"
+        />
+      </div>
+
+      {/* Teléfono */}
+      <div>
+        <label htmlFor="telefono" className={labelClass}>
+          Teléfono
+        </label>
+        <input
+          type="tel"
+          id="telefono"
+          value={telefono}
+          onChange={(e) => setTelefono(e.target.value)}
+          className={inputClass}
+          placeholder="+54 9 11 XXXX-XXXX"
+        />
+      </div>
+
+      {/* Zona de distribución */}
+      <div>
+        <label htmlFor="zonaDistribucion" className={labelClass}>
+          Zona de distribución
+        </label>
+        <input
+          type="text"
+          id="zonaDistribucion"
+          value={zonaDistribucion}
+          onChange={(e) => setZonaDistribucion(e.target.value)}
+          className={inputClass}
+          placeholder="Ej: GBA Norte, Córdoba Capital, etc."
+        />
+      </div>
+
+      {/* Situación ante AFIP */}
+      <div>
+        <label htmlFor="afip" className={labelClass}>
+          Situación ante AFIP <span className="text-red-500">*</span>
+        </label>
+        <select
+          id="afip"
+          value={afip}
+          onChange={(e) => setAfip(e.target.value as AfipSituacion)}
+          className={inputClass}
+          required
         >
-          Detallanos tus datos (opcional)
+          <option value="">Seleccioná una opción</option>
+          <option value="No inscripto">No inscripto</option>
+          <option value="Monotributista">Monotributista</option>
+          <option value="Responsable Inscripto">Responsable Inscripto</option>
+          <option value="Persona Jurídica">Persona Jurídica</option>
+        </select>
+      </div>
+
+      {/* Información adicional */}
+      <div>
+        <label htmlFor="mensaje" className={labelClass}>
+          Información adicional o carta de presentación
         </label>
         <textarea
           id="mensaje"
           value={mensaje}
           onChange={(e) => setMensaje(e.target.value)}
-          rows={4}
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-          placeholder="Contanos información sobre vos... Nos comunicaremos a la brevedad."
+          rows={5}
+          className={inputClass}
+          placeholder="Contanos sobre tu negocio, qué productos te interesan, tu experiencia en el rubro..."
         />
       </div>
 

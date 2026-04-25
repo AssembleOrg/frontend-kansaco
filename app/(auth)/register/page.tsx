@@ -47,13 +47,11 @@ export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
-  // UI
   const [isRegistering, setIsRegistering] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
   const [passwordError, setPasswordError] = useState<string | null>(null);
 
-  // Password validation
   const validatePassword = (): boolean => {
     setPasswordError(null);
     if (password.length < 8) {
@@ -89,8 +87,6 @@ export default function RegisterPage() {
 
     setIsRegistering(true);
 
-    // Parsear telefono a formato WhatsApp (sin +, solo numeros)
-    // Ej: "+5491136585581" -> "5491136585581"
     const telefonoWhatsapp = telefono.replace(/\D/g, '');
 
     try {
@@ -128,38 +124,41 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 py-12 px-4">
-      <div className="mx-auto max-w-md">
+    <div className="min-h-screen bg-gradient-to-b from-black via-gray-950 to-black py-12 px-4 relative overflow-hidden">
+      {/* Page-level ambient orbs */}
+      <div className="absolute top-20 left-[10%] w-72 h-72 rounded-full bg-[#16a245]/[0.08] blur-3xl pointer-events-none" />
+      <div className="absolute bottom-20 right-[10%] w-56 h-56 rounded-full bg-[#16a245]/10 blur-3xl pointer-events-none" />
+
+      <div className="mx-auto max-w-md relative z-10">
         {/* Main Form Card */}
-        <Card className="bg-white shadow-xl border-0 overflow-hidden">
-          {/* Header con diseño profesional */}
-          <div className="relative bg-gradient-to-r from-gray-50 to-gray-100 px-8 py-8">
-            {/* Decorative elements */}
-            <div className="absolute top-0 right-0 w-32 h-32 bg-[#16a245]/5 rounded-full -translate-y-16 translate-x-16"></div>
-            <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#0d7a32]/5 rounded-full translate-y-12 -translate-x-12"></div>
-            
+        <Card className="bg-gray-900 shadow-2xl border border-gray-800 overflow-hidden">
+          {/* Header */}
+          <div className="relative bg-gradient-to-r from-gray-900 to-gray-800 px-8 py-8 border-b border-gray-800">
+            {/* Decorative glow circles */}
+            <div className="absolute top-0 right-0 w-32 h-32 bg-[#16a245]/15 rounded-full -translate-y-16 translate-x-16 blur-2xl"></div>
+            <div className="absolute bottom-0 left-0 w-24 h-24 bg-[#16a245]/[0.12] rounded-full translate-y-12 -translate-x-12 blur-2xl"></div>
+
             <CardHeader className="text-center pb-0 relative z-10">
-                             {/* Logo en recuadro elegante */}
-               <div className="mb-6 inline-block">
-                 <div className="relative">
-                   <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl shadow-lg p-6 border border-gray-300">
-                     <Image
-                       src="/landing/kansaco-logo.webp"
-                quality={90}
-                       alt="Kansaco"
-                       width={100}
-                       height={100}
-                       className="mx-auto"
-                     />
-                   </div>
-                   {/* Accent dot */}
-                   <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#16a245] rounded-full flex items-center justify-center">
-                     <div className="w-2 h-2 bg-white rounded-full"></div>
-                   </div>
-                 </div>
-               </div>
-              
-              <CardTitle className="text-3xl font-bold text-gray-800 mb-2">
+              <div className="mb-6 inline-block">
+                <div className="relative">
+                  <div className="bg-gradient-to-br from-gray-800 to-gray-950 rounded-2xl shadow-lg p-6 border border-gray-700">
+                    <Image
+                      src="/logo-kansaco.webp"
+                      quality={90}
+                      alt="Kansaco"
+                      width={100}
+                      height={100}
+                      className="mx-auto"
+                    />
+                  </div>
+                  {/* Accent dot */}
+                  <div className="absolute -top-2 -right-2 w-6 h-6 bg-[#16a245] rounded-full flex items-center justify-center">
+                    <div className="w-2 h-2 bg-white rounded-full"></div>
+                  </div>
+                </div>
+              </div>
+
+              <CardTitle className="text-3xl font-bold text-white mb-2">
                 Crear Cuenta
               </CardTitle>
               <div className="flex items-center justify-center space-x-2 mb-4">
@@ -167,37 +166,37 @@ export default function RegisterPage() {
                 <span className="text-[#16a245] font-semibold text-sm tracking-wider">KANSACO</span>
                 <div className="h-px bg-gradient-to-r from-transparent via-[#16a245] to-transparent w-16"></div>
               </div>
-              <CardDescription className="text-gray-600 text-lg">
+              <CardDescription className="text-gray-300 text-lg">
                 Únete a nuestra comunidad de clientes
               </CardDescription>
             </CardHeader>
           </div>
-          
+
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {/* Success Message */}
               {successMessage && (
-                <Alert className="border-green-200 bg-green-50">
-                  <CheckCircle className="h-4 w-4 text-green-600" />
-                  <AlertTitle className="text-green-800">¡Éxito!</AlertTitle>
-                  <AlertDescription className="text-green-700">
+                <Alert className="border-[#16a245]/40 bg-[#16a245]/10">
+                  <CheckCircle className="h-4 w-4 text-[#16a245]" />
+                  <AlertTitle className="text-white">¡Éxito!</AlertTitle>
+                  <AlertDescription className="text-gray-300">
                     {successMessage}
                   </AlertDescription>
                 </Alert>
               )}
-              
+
               {/* Error Message */}
               {error && (
-                <Alert variant="destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertTitle>Error de Registro</AlertTitle>
-                  <AlertDescription>{error}</AlertDescription>
+                <Alert className="bg-red-950/60 border border-red-800/60">
+                  <AlertCircle className="h-4 w-4 text-red-400" />
+                  <AlertTitle className="text-red-300">Error de Registro</AlertTitle>
+                  <AlertDescription className="text-gray-300">{error}</AlertDescription>
                 </Alert>
               )}
 
               {/* Tipo de Cliente - Toggle */}
               <div className="space-y-2">
-                <Label className="text-gray-700 font-medium">
+                <Label className="text-gray-300 font-medium">
                   Tipo de Cliente
                 </Label>
                 <div className="grid grid-cols-2 gap-3">
@@ -208,13 +207,13 @@ export default function RegisterPage() {
                     className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 transition-all ${
                       rol === 'CLIENTE_MINORISTA'
                         ? 'border-[#16a245] bg-[#16a245]/10 text-[#16a245]'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
                     }`}
                   >
                     <Store className="h-5 w-5" />
                     <div className="text-left">
                       <div className="font-semibold">Minorista</div>
-                      <div className="text-xs">Compra individual</div>
+                      <div className="text-xs text-gray-400">Compra individual</div>
                     </div>
                   </button>
                   <button
@@ -224,13 +223,13 @@ export default function RegisterPage() {
                     className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 transition-all ${
                       rol === 'CLIENTE_MAYORISTA'
                         ? 'border-[#16a245] bg-[#16a245]/10 text-[#16a245]'
-                        : 'border-gray-200 bg-white text-gray-600 hover:border-gray-300'
+                        : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
                     }`}
                   >
                     <Building2 className="h-5 w-5" />
                     <div className="text-left">
                       <div className="font-semibold">Mayorista</div>
-                      <div className="text-xs">Compra al por mayor</div>
+                      <div className="text-xs text-gray-400">Compra al por mayor</div>
                     </div>
                   </button>
                 </div>
@@ -238,7 +237,7 @@ export default function RegisterPage() {
 
               {/* Nombre */}
               <div className="space-y-2">
-                <Label htmlFor="nombre" className="text-gray-700 font-medium">
+                <Label htmlFor="nombre" className="text-gray-300 font-medium">
                   Nombre
                 </Label>
                 <div className="relative">
@@ -251,14 +250,14 @@ export default function RegisterPage() {
                     value={nombre}
                     onChange={(e) => setNombre(e.target.value)}
                     disabled={isRegistering}
-                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                    className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
                   />
                 </div>
               </div>
 
               {/* Apellido */}
               <div className="space-y-2">
-                <Label htmlFor="apellido" className="text-gray-700 font-medium">
+                <Label htmlFor="apellido" className="text-gray-300 font-medium">
                   Apellido
                 </Label>
                 <div className="relative">
@@ -271,14 +270,14 @@ export default function RegisterPage() {
                     value={apellido}
                     onChange={(e) => setApellido(e.target.value)}
                     disabled={isRegistering}
-                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                    className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
                   />
                 </div>
               </div>
 
               {/* Teléfono */}
               <div className="space-y-2">
-                <Label htmlFor="telefono" className="text-gray-700 font-medium">
+                <Label htmlFor="telefono" className="text-gray-300 font-medium">
                   Teléfono
                 </Label>
                 <PhoneInput
@@ -288,16 +287,16 @@ export default function RegisterPage() {
                   value={telefono}
                   onChange={setTelefono}
                   disabled={isRegistering}
-                  className="phone-input-custom"
+                  className="phone-input-custom phone-input-dark"
                 />
                 {telefono && !isValidPhoneNumber(telefono) && (
-                  <p className="text-xs text-red-600">Numero de telefono invalido</p>
+                  <p className="text-xs text-red-400">Numero de telefono invalido</p>
                 )}
               </div>
 
               {/* Dirección */}
               <div className="space-y-2">
-                <Label htmlFor="direccion" className="text-gray-700 font-medium">
+                <Label htmlFor="direccion" className="text-gray-300 font-medium">
                   Dirección (Opcional)
                 </Label>
                 <div className="relative">
@@ -309,14 +308,14 @@ export default function RegisterPage() {
                     value={direccion}
                     onChange={(e) => setDireccion(e.target.value)}
                     disabled={isRegistering}
-                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                    className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
                   />
                 </div>
               </div>
 
               {/* Email */}
               <div className="space-y-2">
-                <Label htmlFor="email" className="text-gray-700 font-medium">
+                <Label htmlFor="email" className="text-gray-300 font-medium">
                   Correo Electrónico
                 </Label>
                 <div className="relative">
@@ -329,14 +328,14 @@ export default function RegisterPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     disabled={isRegistering}
-                    className="pl-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                    className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
                   />
                 </div>
               </div>
 
               {/* Password */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="text-gray-700 font-medium">
+                <Label htmlFor="password" className="text-gray-300 font-medium">
                   Contraseña
                 </Label>
                 <div className="relative">
@@ -349,12 +348,12 @@ export default function RegisterPage() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     disabled={isRegistering}
-                    className="pl-10 pr-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245]"
+                    className="pl-10 pr-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
                   />
                   <button
                     type="button"
                     onClick={() => setShowPassword(!showPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-200 transition-colors"
                     tabIndex={-1}
                   >
                     {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -364,7 +363,7 @@ export default function RegisterPage() {
 
               {/* Confirm Password */}
               <div className="space-y-2">
-                <Label htmlFor="confirmPassword" className="text-gray-700 font-medium">
+                <Label htmlFor="confirmPassword" className="text-gray-300 font-medium">
                   Confirmar Contraseña
                 </Label>
                 <div className="relative">
@@ -377,21 +376,21 @@ export default function RegisterPage() {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     disabled={isRegistering}
-                    className={`pl-10 pr-10 border-gray-200 focus:border-[#16a245] focus:ring-[#16a245] ${
-                      passwordError ? 'border-red-300' : ''
+                    className={`pl-10 pr-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30 ${
+                      passwordError ? 'border-red-500' : ''
                     }`}
                   />
                   <button
                     type="button"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-600"
+                    className="absolute right-3 top-3 text-gray-400 hover:text-gray-200 transition-colors"
                     tabIndex={-1}
                   >
                     {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                   </button>
                 </div>
                 {passwordError && (
-                  <p className="text-sm text-red-600">{passwordError}</p>
+                  <p className="text-sm text-red-400">{passwordError}</p>
                 )}
               </div>
 
@@ -412,13 +411,13 @@ export default function RegisterPage() {
               </Button>
             </form>
           </CardContent>
-          
-          <CardFooter className="flex-col items-stretch border-t border-gray-100 pt-8">
+
+          <CardFooter className="flex-col items-stretch border-t border-gray-800 pt-8">
             <div className="w-full">
               {/* Nivel 1: Acción Primaria - Ver productos sin registro */}
               <Link
                 href="/productos"
-                className="flex items-center justify-center gap-2 w-full py-4 px-6 bg-[#16a245]/5 border border-[#16a245]/10 rounded-lg text-[#16a245] font-semibold text-sm hover:bg-[#16a245]/10 hover:scale-[1.02] transition-all duration-200 group"
+                className="flex items-center justify-center gap-2 w-full py-4 px-6 bg-[#16a245]/10 border border-[#16a245]/30 rounded-lg text-[#16a245] font-semibold text-sm hover:bg-[#16a245]/20 hover:border-[#16a245]/60 hover:scale-[1.02] transition-all duration-200 group"
               >
                 <ShoppingBag className="h-4 w-4" />
                 <span>Ver productos sin registrarse</span>
@@ -427,7 +426,7 @@ export default function RegisterPage() {
 
               {/* Nivel 2: Acción Secundaria - Login */}
               <div className="mt-6">
-                <p className="text-sm text-gray-600 text-center">
+                <p className="text-sm text-gray-300 text-center">
                   ¿Ya tienes cuenta?{' '}
                   <Link
                     href="/login"
@@ -440,8 +439,6 @@ export default function RegisterPage() {
             </div>
           </CardFooter>
         </Card>
-
-
       </div>
     </div>
   );
