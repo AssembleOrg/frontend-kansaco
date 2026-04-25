@@ -219,6 +219,7 @@ const LaEmpresaSection = () => {
                     alt="KANSACO - Marca"
                     fill
                     className="rounded-md object-cover"
+                    sizes="(max-width: 768px) 45vw, (max-width: 1200px) 30vw, 20vw"
                   />
                 </div>
                 {/* Corner accents */}
@@ -261,6 +262,7 @@ const LaEmpresaSection = () => {
                     alt="KANSACO - Productos"
                     fill
                     className="rounded-md object-cover"
+                    sizes="(max-width: 768px) 45vw, (max-width: 1200px) 30vw, 20vw"
                   />
                 </div>
                 {/* Corner accents */}

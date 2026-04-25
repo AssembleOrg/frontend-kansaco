@@ -512,12 +512,7 @@ const HeroBanner = () => {
             </motion.div>
 
             {/* Main Heading */}
-            <motion.h1
-              className="mb-6 text-4xl font-black leading-tight sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl 2xl:text-7xl"
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.1 }}
-            >
+            <h1 className="mb-6 text-4xl font-black leading-tight sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl 2xl:text-7xl">
               <span className="bg-gradient-to-r from-[#f7faf8] via-white to-[#e6f5eb] bg-clip-text text-transparent">
                 KANSACO
               </span>
@@ -527,7 +522,7 @@ const HeroBanner = () => {
               </span>
               <br />
               <span className="font-semibold text-white">en Lubricantes</span>
-            </motion.h1>
+            </h1>
 
             {/* Subtitle */}
             <motion.p

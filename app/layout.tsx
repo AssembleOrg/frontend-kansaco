@@ -33,7 +33,7 @@ export default function RootLayout({
   return (
     <html lang="es">
       <head>
-        <link rel="preconnect" href="https://backend-kansaco-production.up.railway.app" />
+        <link rel="preconnect" href="https://backend-kansaco-production.up.railway.app" crossOrigin="anonymous" />
       </head>
       <body className="antialiased">
         {children}

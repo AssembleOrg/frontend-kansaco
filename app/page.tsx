@@ -18,8 +18,10 @@ import { FloatingScrollTop } from '@/components/landing/FloatingScrollTop';
 export default function HomePage() {
   return (
     <main className="min-h-screen">
-      {/* Unified Scroll Animation System */}
-      <ScrollAnimationSystem />
+      {/* Unified Scroll Animation System - desktop only */}
+      <div className="hidden lg:block">
+        <ScrollAnimationSystem />
+      </div>
 
       {/* Landing Page Sections */}
       <Navbar />

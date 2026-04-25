@@ -5,6 +5,16 @@ const nextConfig: NextConfig = {
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 64, 96, 128, 256],
+    remotePatterns: [
+      {
+        protocol: 'https',
+        hostname: 'kansaco-images.nyc3.cdn.digitaloceanspaces.com',
+      },
+      {
+        protocol: 'https',
+        hostname: 'kansaco-images.nyc3.digitaloceanspaces.com',
+      },
+    ],
   },
   trailingSlash: true,
 
