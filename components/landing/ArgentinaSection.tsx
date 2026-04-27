@@ -2,6 +2,7 @@
 
 import { MapPin, Award, Heart } from 'lucide-react';
 import { NeonBorders } from './HeroBanner';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
 const ArgentinaSection = () => {
   const argentineStats = [
@@ -53,9 +54,7 @@ const ArgentinaSection = () => {
                   <div className="mb-2 flex justify-center">
                     <stat.icon className="h-6 w-6 text-blue-400" />
                   </div>
-                  <div className="mb-1 text-2xl font-black text-white lg:text-3xl">
-                    {stat.number}
-                  </div>
+                  <AnimatedNumber value={stat.number} className="mb-1 text-2xl font-black text-white lg:text-3xl" />
                   <div className="text-xs text-gray-400 lg:text-sm">
                     {stat.label}
                   </div>

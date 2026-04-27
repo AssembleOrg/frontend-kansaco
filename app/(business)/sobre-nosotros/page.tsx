@@ -22,6 +22,7 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { NeonBorders } from '@/components/landing/HeroBanner';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
@@ -139,7 +140,7 @@ function SobreNosotrosContent() {
             >
               MÁS DE
               <span className="block text-[#16a245] drop-shadow-[0_0_30px_rgba(22,162,69,0.5)]">
-                300 PRODUCTOS
+                <AnimatedNumber value="300" className="" /> PRODUCTOS
               </span>
             </motion.h1>
 
@@ -195,20 +196,12 @@ function SobreNosotrosContent() {
         {/* Stats Section */}
         <section id="section-estadisticas" className="relative bg-gradient-to-b from-black to-gray-950 py-20">
           <div className="container mx-auto px-4">
-            <div className="grid grid-cols-2 gap-8 md:grid-cols-4">
+            <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-4">
               {[
                 { number: 'Medio siglo', label: 'de Experiencia', icon: Award },
-                {
-                  number: '300+',
-                  label: 'Productos Desarrollados',
-                  icon: Target,
-                },
+                { number: '300+', label: 'Productos Desarrollados', icon: Target },
                 { number: '8 millones', label: 'de Litros Anuales', icon: Factory },
-                {
-                  number: '700.000',
-                  label: 'Toneladas de Grasas',
-                  icon: TrendingUp,
-                },
+                { number: '700.000', label: 'Toneladas de Grasas', icon: TrendingUp },
               ].map((stat, index) => (
                 <motion.div
                   key={index}
@@ -216,16 +209,16 @@ function SobreNosotrosContent() {
                   whileInView={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.2 }}
                   viewport={{ once: true }}
-                  className="group text-center"
+                  className="group flex flex-col items-center gap-4 rounded-xl border border-gray-800/50 bg-gray-900/30 p-6 text-center transition-all duration-300 hover:border-[#16a245]/30 hover:bg-gray-900/50"
                 >
-                  <div className="relative mb-4 inline-flex h-16 w-16 items-center justify-center rounded-full border border-[#16a245]/30 bg-[#16a245]/10 transition-all duration-300 group-hover:bg-[#16a245]/20">
+                  <div className="relative flex h-16 w-16 shrink-0 items-center justify-center rounded-full border border-[#16a245]/30 bg-[#16a245]/10 transition-all duration-300 group-hover:bg-[#16a245]/20">
                     <stat.icon className="h-8 w-8 text-[#16a245]" />
                     <div className="absolute inset-0 animate-pulse rounded-full border border-[#16a245]/50"></div>
                   </div>
-                  <div className="mb-2 text-3xl font-black text-white md:text-4xl">
-                    {stat.number}
+                  <div>
+                    <AnimatedNumber value={stat.number} className="block text-3xl font-black text-white md:text-4xl" />
+                    <div className="mt-1 text-sm text-gray-400">{stat.label}</div>
                   </div>
-                  <div className="text-sm text-gray-400">{stat.label}</div>
                 </motion.div>
               ))}
             </div>

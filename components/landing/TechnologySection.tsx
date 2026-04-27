@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Atom, Zap, Shield, Cog, ArrowRight, Beaker } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { NeonBorders } from './HeroBanner';
+import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 
 const TechnologySection = () => {
   const [shouldLoadVideo, setShouldLoadVideo] = useState(false);
@@ -164,9 +165,7 @@ const TechnologySection = () => {
                       <feature.icon className="h-6 w-6" />
                     </div>
                     <div className="text-right">
-                      <div className="text-2xl font-black text-white">
-                        {feature.metric}
-                      </div>
+                      <AnimatedNumber value={feature.metric} className="text-2xl font-black text-white" />
                       <div className="text-xs text-gray-500">
                         {feature.metricLabel}
                       </div>
@@ -237,7 +236,7 @@ const TechnologySection = () => {
               <div className="text-sm font-medium text-gray-400">
                 Protección
               </div>
-              <div className="text-xl font-black text-white">100%</div>
+              <AnimatedNumber value="100%" className="text-xl font-black text-white" />
             </div>
           </div>
         </div>
