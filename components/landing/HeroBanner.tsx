@@ -212,7 +212,7 @@ const HeroBanner = () => {
           className="h-full w-full object-contain"
           poster="/landing/business-kansaco.webp"
         >
-          <source src="/Kansaco-original-video.mp4" type="video/mp4" />
+          <source src="/video-recortado-kansaco.mp4" type="video/mp4" />
           Tu navegador no soporta el tag de video.
         </video>
 
