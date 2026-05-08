@@ -2,7 +2,18 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { LayoutDashboard, Package, ShoppingCart, Image, Tag, BarChart3 } from 'lucide-react';
+import {
+  LayoutDashboard,
+  Package,
+  ShoppingCart,
+  Image,
+  Tag,
+  BarChart3,
+  Briefcase,
+  Users,
+  UserCog,
+  Settings,
+} from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface AdminSidebarProps {
@@ -43,6 +54,26 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
       label: 'Analytics',
       href: '/admin/analytics',
       icon: BarChart3,
+    },
+    {
+      label: 'Negocios',
+      href: '/admin/negocios',
+      icon: Briefcase,
+    },
+    {
+      label: 'Leads',
+      href: '/admin/leads',
+      icon: Users,
+    },
+    {
+      label: 'Vendedores',
+      href: '/admin/vendedores',
+      icon: UserCog,
+    },
+    {
+      label: 'Pipeline',
+      href: '/admin/configuracion/pipeline',
+      icon: Settings,
     },
   ];
 
