@@ -16,6 +16,8 @@ import {
 } from '@/lib/crmApi';
 import type { PipelineStage } from '@/types/crm';
 import { PipelineStageDialog } from '@/features/crm/components/PipelineStageDialog';
+import { PageHeader } from '@/features/crm/components/mobile/PageHeader';
+import { RowActions } from '@/features/crm/components/mobile/RowActions';
 
 export default function PipelineConfigPage() {
   const { token } = useAuth();
@@ -116,27 +118,26 @@ export default function PipelineConfigPage() {
     }
   }
 
+  function openCreate() {
+    setEditing(null);
+    setDialogOpen(true);
+  }
+
   return (
-    <div className="space-y-4">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">
-            Configuración del pipeline
-          </h1>
-          <p className="text-sm text-gray-500">
-            Etapas del kanban, su orden, color y probabilidad. En las etapas
-            terminales se gestionan los motivos.
-          </p>
-        </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="mr-1 h-4 w-4" /> Nueva etapa
-        </Button>
-      </header>
+    <div className="space-y-3 sm:space-y-4">
+      <PageHeader
+        title="Configuración del pipeline"
+        description="Etapas del kanban, su orden, color y probabilidad. En las etapas terminales se gestionan los motivos."
+        actions={
+          <Button
+            onClick={openCreate}
+            size="sm"
+            className="hidden sm:inline-flex"
+          >
+            <Plus className="mr-1 h-4 w-4" /> Nueva etapa
+          </Button>
+        }
+      />
 
       {isLoading ? (
         <div className="flex h-32 items-center justify-center">
@@ -147,50 +148,50 @@ export default function PipelineConfigPage() {
           {stages.map((stage, index) => (
             <li
               key={stage.id}
-              className="rounded-lg border border-gray-200 bg-white p-4"
+              className="rounded-xl border border-neutral-200/70 bg-white p-3 shadow-[0_1px_2px_rgba(0,0,0,0.04)] sm:p-4"
             >
-              <div className="flex items-start gap-3">
-                <div className="flex flex-col gap-1">
+              <div className="flex items-start gap-2 sm:gap-3">
+                <div className="flex flex-col">
                   <button
                     type="button"
-                    title="Subir"
+                    aria-label="Subir"
                     disabled={index === 0}
                     onClick={() => moveStage(index, -1)}
-                    className="rounded p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"
+                    className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30"
                   >
                     <ChevronUp className="h-4 w-4" />
                   </button>
                   <button
                     type="button"
-                    title="Bajar"
+                    aria-label="Bajar"
                     disabled={index === stages.length - 1}
                     onClick={() => moveStage(index, 1)}
-                    className="rounded p-1 text-gray-400 hover:text-gray-700 disabled:opacity-30"
+                    className="rounded-md p-1 text-neutral-400 transition-colors hover:bg-neutral-100 hover:text-neutral-700 disabled:opacity-30"
                   >
                     <ChevronDown className="h-4 w-4" />
                   </button>
                 </div>
 
                 <div
-                  className="mt-1 h-3 w-3 shrink-0 rounded-full"
+                  className="mt-2 h-2 w-2 shrink-0 rounded-full"
                   style={{ backgroundColor: stage.color }}
                   aria-hidden="true"
                 />
 
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
-                    <h3 className="font-semibold text-gray-900">
+                    <h3 className="text-[15px] font-semibold tracking-tight text-neutral-900">
                       {stage.nombre}
                     </h3>
-                    <span className="rounded bg-gray-100 px-2 py-0.5 text-xs text-gray-600">
+                    <span className="text-[12px] tabular-nums text-neutral-500">
                       {stage.probability}%
                     </span>
                     {stage.isTerminal && (
                       <span
-                        className={`rounded px-2 py-0.5 text-xs font-medium ${
+                        className={`rounded-full px-2 py-0.5 text-[11px] font-medium ${
                           stage.terminalKind === 'WON'
-                            ? 'bg-green-100 text-green-700'
-                            : 'bg-red-100 text-red-700'
+                            ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
+                            : 'bg-red-50 text-red-700 ring-1 ring-red-200'
                         }`}
                       >
                         {stage.terminalKind === 'WON' ? 'Ganada' : 'Perdida'}
@@ -199,13 +200,13 @@ export default function PipelineConfigPage() {
                   </div>
 
                   {stage.isTerminal && (
-                    <div className="mt-3 rounded-md bg-gray-50 p-3">
-                      <p className="mb-2 text-xs font-medium uppercase text-gray-600">
+                    <div className="mt-3 rounded-lg bg-neutral-50 p-3">
+                      <p className="mb-2 text-[11px] font-medium uppercase tracking-wide text-neutral-500">
                         Motivos
                       </p>
-                      <ul className="mb-3 space-y-1">
+                      <ul className="mb-3 space-y-1.5">
                         {stage.reasons.length === 0 ? (
-                          <li className="text-xs text-gray-400">
+                          <li className="text-[12px] text-neutral-400">
                             Sin motivos. Agregá al menos uno para poder cerrar
                             negocios en esta etapa.
                           </li>
@@ -213,7 +214,7 @@ export default function PipelineConfigPage() {
                           stage.reasons.map((reason) => (
                             <li
                               key={reason.id}
-                              className="flex items-center gap-2 text-sm"
+                              className="flex items-center gap-2 text-sm transition-opacity"
                             >
                               {editingReason?.id === reason.id ? (
                                 <>
@@ -225,42 +226,49 @@ export default function PipelineConfigPage() {
                                         motivo: e.target.value,
                                       })
                                     }
-                                    className="h-7 flex-1"
+                                    className="h-8 flex-1"
+                                    autoFocus
                                   />
                                   <button
                                     type="button"
+                                    aria-label="Guardar"
                                     onClick={handleSaveReasonEdit}
-                                    className="text-green-600 hover:text-green-800"
+                                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-green-600 hover:bg-green-50"
                                   >
                                     <Check className="h-4 w-4" />
                                   </button>
                                   <button
                                     type="button"
+                                    aria-label="Cancelar"
                                     onClick={() => setEditingReason(null)}
-                                    className="text-gray-400 hover:text-gray-600"
+                                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-200/60"
                                   >
                                     <X className="h-4 w-4" />
                                   </button>
                                 </>
                               ) : (
                                 <>
-                                  <span className="flex-1">{reason.motivo}</span>
+                                  <span className="flex-1 truncate text-neutral-700">
+                                    {reason.motivo}
+                                  </span>
                                   <button
                                     type="button"
+                                    aria-label="Editar motivo"
                                     onClick={() =>
                                       setEditingReason({
                                         id: reason.id,
                                         motivo: reason.motivo,
                                       })
                                     }
-                                    className="text-gray-400 hover:text-gray-700"
+                                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-neutral-400 hover:bg-neutral-200/60 hover:text-neutral-700"
                                   >
                                     <Pencil className="h-3.5 w-3.5" />
                                   </button>
                                   <button
                                     type="button"
+                                    aria-label="Eliminar motivo"
                                     onClick={() => handleDeleteReason(reason.id)}
-                                    className="text-red-400 hover:text-red-700"
+                                    className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-md text-red-400 hover:bg-red-50 hover:text-red-700"
                                   >
                                     <Trash2 className="h-3.5 w-3.5" />
                                   </button>
@@ -286,12 +294,13 @@ export default function PipelineConfigPage() {
                               void handleAddReason(stage.id);
                             }
                           }}
-                          className="h-8 flex-1"
+                          className="h-9 flex-1"
                         />
                         <Button
                           size="sm"
                           variant="outline"
                           onClick={() => handleAddReason(stage.id)}
+                          className="shrink-0"
                         >
                           Agregar
                         </Button>
@@ -300,32 +309,28 @@ export default function PipelineConfigPage() {
                   )}
                 </div>
 
-                <div className="flex items-center gap-1">
-                  <button
-                    type="button"
-                    title="Editar"
-                    onClick={() => {
-                      setEditing(stage);
-                      setDialogOpen(true);
-                    }}
-                    className="rounded p-1.5 text-gray-500 hover:bg-gray-100"
-                  >
-                    <Pencil className="h-4 w-4" />
-                  </button>
-                  <button
-                    type="button"
-                    title="Eliminar"
-                    onClick={() => handleDeleteStage(stage)}
-                    className="rounded p-1.5 text-red-500 hover:bg-red-50"
-                  >
-                    <Trash2 className="h-4 w-4" />
-                  </button>
-                </div>
+                <RowActions
+                  onEdit={() => {
+                    setEditing(stage);
+                    setDialogOpen(true);
+                  }}
+                  onDelete={() => handleDeleteStage(stage)}
+                />
               </div>
             </li>
           ))}
         </ul>
       )}
+
+      {/* FAB nueva etapa (mobile) */}
+      <button
+        type="button"
+        onClick={openCreate}
+        aria-label="Nueva etapa"
+        className="fab-bottom fixed right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg shadow-green-600/30 transition-transform active:scale-95 sm:hidden"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
       <PipelineStageDialog
         open={dialogOpen}

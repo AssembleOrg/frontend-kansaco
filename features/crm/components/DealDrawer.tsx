@@ -12,7 +12,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2, Mail, MessageCircle, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Mail, MessageCircle, Pencil, Trash2, ArrowRightLeft } from 'lucide-react';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import {
@@ -41,6 +41,7 @@ interface DealDrawerProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onMutate: () => void;
+  onRequestMoveStage?: () => void;
 }
 
 export function DealDrawer({
@@ -48,6 +49,7 @@ export function DealDrawer({
   open,
   onOpenChange,
   onMutate,
+  onRequestMoveStage,
 }: DealDrawerProps) {
   const { token } = useAuth();
   const [deal, setDeal] = useState<DealDetail | null>(null);
@@ -165,6 +167,42 @@ export function DealDrawer({
         side="right"
         className="flex w-full flex-col overflow-y-auto sm:max-w-xl"
       >
+        <SheetHeader>
+          <SheetTitle className="text-xl uppercase">
+            {deal?.lead.nombre ?? 'Cargando negocio…'}
+          </SheetTitle>
+          {deal ? (
+            <SheetDescription className="flex flex-wrap items-center gap-2 text-xs">
+              <span
+                className="rounded-full px-2 py-0.5 text-white"
+                style={{ backgroundColor: deal.stage.color }}
+              >
+                {deal.stage.nombre}
+              </span>
+              <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-700">
+                {leadTypeLabel(deal.lead.tipo)}
+              </span>
+              {deal.currentReason && (
+                <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800">
+                  {deal.currentReason.motivo}
+                </span>
+              )}
+            </SheetDescription>
+          ) : null}
+          {deal && onRequestMoveStage ? (
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={onRequestMoveStage}
+              className="mt-2 w-full justify-center lg:hidden"
+            >
+              <ArrowRightLeft className="mr-1.5 h-4 w-4" />
+              Mover a etapa
+            </Button>
+          ) : null}
+        </SheetHeader>
+
         {isLoading && !deal ? (
           <div className="flex flex-1 items-center justify-center">
             <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
@@ -175,28 +213,6 @@ export function DealDrawer({
           </div>
         ) : (
           <>
-            <SheetHeader>
-              <SheetTitle className="text-xl uppercase">
-                {deal.lead.nombre}
-              </SheetTitle>
-              <SheetDescription className="flex flex-wrap items-center gap-2 text-xs">
-                <span
-                  className="rounded-full px-2 py-0.5 text-white"
-                  style={{ backgroundColor: deal.stage.color }}
-                >
-                  {deal.stage.nombre}
-                </span>
-                <span className="rounded bg-gray-100 px-2 py-0.5 text-gray-700">
-                  {leadTypeLabel(deal.lead.tipo)}
-                </span>
-                {deal.currentReason && (
-                  <span className="rounded bg-amber-100 px-2 py-0.5 text-amber-800">
-                    {deal.currentReason.motivo}
-                  </span>
-                )}
-              </SheetDescription>
-            </SheetHeader>
-
             <div className="space-y-6 py-4">
               <section>
                 <div className="mb-2 flex items-center justify-between">
@@ -206,7 +222,7 @@ export function DealDrawer({
                   <button
                     type="button"
                     onClick={() => setLeadEditOpen(true)}
-                    className="flex items-center gap-1 text-xs text-blue-600 hover:underline"
+                    className="flex items-center gap-1 text-xs text-green-700 hover:underline"
                   >
                     <Pencil className="h-3 w-3" /> Editar lead
                   </button>
@@ -235,7 +251,7 @@ export function DealDrawer({
                   {mailto && (
                     <a
                       href={mailto}
-                      className="inline-flex items-center gap-1 rounded border border-blue-200 bg-blue-50 px-2 py-1 text-xs text-blue-700 hover:bg-blue-100"
+                      className="inline-flex items-center gap-1 rounded border border-neutral-200/70 bg-neutral-50 px-2 py-1 text-xs text-neutral-700 hover:bg-neutral-100"
                     >
                       <Mail className="h-3.5 w-3.5" /> Email
                     </a>
@@ -387,7 +403,7 @@ export function DealDrawer({
                           'rounded border-l-2 bg-white px-2 py-1 text-gray-600',
                           h.reasonMotivo
                             ? 'border-amber-400'
-                            : 'border-blue-400',
+                            : 'border-green-300',
                         )}
                       >
                         <span className="font-medium">

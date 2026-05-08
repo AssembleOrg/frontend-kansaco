@@ -2,13 +2,13 @@
 
 import { useEffect, useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import type { TerminalReason } from '@/types/crm';
 
@@ -36,14 +36,14 @@ export function DealStageReasonDialog({
   }, [open, reasons]);
 
   return (
-    <Dialog open={open} onOpenChange={(o) => !o && onCancel()}>
-      <DialogContent className="sm:max-w-md">
-        <DialogHeader>
-          <DialogTitle>Mover a {stageNombre}</DialogTitle>
-          <DialogDescription>
+    <ResponsiveDialog open={open} onOpenChange={(o) => !o && onCancel()}>
+      <ResponsiveDialogContent className="sm:max-w-md">
+        <ResponsiveDialogHeader>
+          <ResponsiveDialogTitle>Mover a {stageNombre}</ResponsiveDialogTitle>
+          <ResponsiveDialogDescription>
             Seleccioná un motivo para registrar el cambio de etapa.
-          </DialogDescription>
-        </DialogHeader>
+          </ResponsiveDialogDescription>
+        </ResponsiveDialogHeader>
 
         <div className="space-y-2 py-4">
           {reasons.length === 0 ? (
@@ -71,7 +71,7 @@ export function DealStageReasonDialog({
           )}
         </div>
 
-        <DialogFooter>
+        <ResponsiveDialogFooter>
           <Button variant="outline" onClick={onCancel}>
             Cancelar
           </Button>
@@ -81,8 +81,8 @@ export function DealStageReasonDialog({
           >
             Confirmar
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </ResponsiveDialogFooter>
+      </ResponsiveDialogContent>
+    </ResponsiveDialog>
   );
 }

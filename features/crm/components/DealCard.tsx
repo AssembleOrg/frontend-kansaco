@@ -10,6 +10,7 @@ import {
   formatCurrency,
   formatDate,
   formatRelativeTime,
+  leadTypeBadgeClass,
   leadTypeLabel,
 } from '@/features/crm/utils';
 import type { Deal } from '@/types/crm';
@@ -17,10 +18,12 @@ import { cn } from '@/lib/utils';
 
 interface DealCardProps {
   deal: Deal;
+  index?: number;
   onClick: (dealId: number) => void;
 }
 
-function DealCardInner({ deal, onClick }: DealCardProps) {
+function DealCardInner({ deal, index = 0, onClick }: DealCardProps) {
+  const isAlt = index % 2 === 1;
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `deal-${deal.id}`,
@@ -45,7 +48,8 @@ function DealCardInner({ deal, onClick }: DealCardProps) {
       {...listeners}
       onClick={() => onClick(deal.id)}
       className={cn(
-        'group cursor-pointer rounded-lg border border-gray-200 bg-white p-3 shadow-sm transition-shadow hover:shadow-md',
+        'group cursor-pointer rounded-lg border border-gray-200 p-3 shadow-sm transition-shadow hover:shadow-md',
+        isAlt ? 'bg-[#16a245]/[0.07]' : 'bg-white',
         isDragging && 'opacity-50 shadow-lg',
       )}
     >
@@ -55,10 +59,8 @@ function DealCardInner({ deal, onClick }: DealCardProps) {
         </h3>
         <span
           className={cn(
-            'shrink-0 rounded px-1.5 py-0.5 text-[10px] font-medium uppercase',
-            deal.lead.tipo === 'MAYORISTA'
-              ? 'bg-blue-100 text-blue-700'
-              : 'bg-purple-100 text-purple-700',
+            'shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium uppercase',
+            leadTypeBadgeClass(deal.lead.tipo),
           )}
         >
           {leadTypeLabel(deal.lead.tipo)}

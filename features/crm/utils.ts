@@ -1,12 +1,12 @@
 import type { Deal, LeadType } from '@/types/crm';
 
 export function formatCurrency(value: string | number | null | undefined): string {
-  if (value === null || value === undefined || value === '') return 'US$ 0';
+  if (value === null || value === undefined || value === '') return '$ 0';
   const num = typeof value === 'string' ? Number(value) : value;
-  if (Number.isNaN(num)) return 'US$ 0';
+  if (Number.isNaN(num)) return '$ 0';
   return num.toLocaleString('es-AR', {
     style: 'currency',
-    currency: 'USD',
+    currency: 'ARS',
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
   });
@@ -67,6 +67,12 @@ export function formatDateTime(iso: string | null | undefined): string {
 
 export function leadTypeLabel(tipo: LeadType): string {
   return tipo === 'MAYORISTA' ? 'Mayorista' : 'Revendedor';
+}
+
+export function leadTypeBadgeClass(tipo: LeadType): string {
+  return tipo === 'MAYORISTA'
+    ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+    : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200';
 }
 
 export function buildWhatsAppLink(telefono: string | null | undefined): string | null {

@@ -14,17 +14,19 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-} from '@/components/ui/dialog';
-// Using Dialog for delete confirmation instead of AlertDialog if not available
-import { Loader2, Plus, Edit, Trash2, RefreshCw, ArrowLeft } from 'lucide-react';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
+} from '@/components/ui/responsive-dialog';
+import { Loader2, Plus, RefreshCw, ArrowLeft } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { toast } from 'sonner';
+import { PageHeader } from '@/features/crm/components/mobile/PageHeader';
+import { RowActions } from '@/features/crm/components/mobile/RowActions';
+import { CategoryCardMobile } from '@/features/categories/components/mobile/CategoryCardMobile';
 
 export default function CategoriesPage() {
   const { token, user } = useAuth();
@@ -84,11 +86,9 @@ export default function CategoriesPage() {
     setIsSubmitting(true);
     try {
       if (selectedCategory) {
-        // Editar categoría
         await updateCategory(token, selectedCategory.id, { name: categoryName.trim() });
         toast.success('Categoría actualizada correctamente');
       } else {
-        // Crear categoría
         await createCategory(token, { name: categoryName.trim() });
         toast.success('Categoría creada correctamente');
       }
@@ -120,8 +120,7 @@ export default function CategoriesPage() {
     } catch (err) {
       console.error('Error deleting category:', err);
       const errorMessage = err instanceof Error ? err.message : 'Error al eliminar la categoría';
-      
-      // Verificar si es el error de categoría en uso
+
       if (errorMessage.includes('being used') || errorMessage.includes('en uso')) {
         toast.error('No se puede eliminar la categoría', {
           description: 'Esta categoría está siendo usada por uno o más productos.',
@@ -172,133 +171,159 @@ export default function CategoriesPage() {
   }
 
   return (
-    <div className="container mx-auto px-4 py-8 mt-20">
-      {/* Header */}
-      <div className="mb-8">
-        <Button
-          variant="ghost"
-          onClick={() => router.push('/admin/dashboard')}
-          className="mb-4"
-        >
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Volver al Dashboard
-        </Button>
-        <div className="flex items-center justify-between">
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900">Gestionar Categorías</h1>
-            <p className="mt-2 text-gray-600">
-              Crea, edita y elimina categorías de productos.
-            </p>
-          </div>
-          <div className="flex gap-2">
-            <Button onClick={loadCategories} variant="outline" size="sm">
-              <RefreshCw className="h-4 w-4 mr-2" />
-              Actualizar
-            </Button>
-            <Button onClick={handleOpenCreateModal} className="bg-green-600 hover:bg-green-700">
-              <Plus className="h-4 w-4 mr-2" />
-              Crear Categoría
-            </Button>
-          </div>
-        </div>
-      </div>
+    <div className="space-y-3 sm:space-y-4">
+      <Button
+        variant="ghost"
+        onClick={() => router.push('/admin/dashboard')}
+        className="-ml-2 h-8 px-2 text-neutral-500 hover:text-neutral-900"
+      >
+        <ArrowLeft className="mr-1.5 h-4 w-4" />
+        Dashboard
+      </Button>
 
-      {/* Categories Table */}
+      <PageHeader
+        title="Categorías"
+        description="Crea, edita y elimina categorías de productos."
+        actions={
+          <>
+            <Button
+              onClick={loadCategories}
+              variant="outline"
+              size="sm"
+              aria-label="Actualizar"
+              className="hidden sm:inline-flex"
+            >
+              <RefreshCw className="mr-1 h-4 w-4" /> Actualizar
+            </Button>
+            <Button
+              size="icon"
+              variant="outline"
+              onClick={loadCategories}
+              aria-label="Actualizar"
+              className="sm:hidden"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </Button>
+            <Button
+              onClick={handleOpenCreateModal}
+              size="sm"
+              className="hidden bg-green-600 hover:bg-green-700 sm:inline-flex"
+            >
+              <Plus className="mr-1 h-4 w-4" /> Crear categoría
+            </Button>
+          </>
+        }
+      />
+
       {categories.length === 0 ? (
-        <div className="rounded-lg border border-gray-200 bg-white p-12 text-center">
-          <h3 className="mb-2 text-xl font-semibold text-gray-900">
+        <div className="rounded-xl border border-neutral-200/70 bg-white p-12 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <h3 className="mb-2 text-lg font-semibold text-neutral-900">
             No hay categorías
           </h3>
-          <p className="mb-6 text-gray-600">
+          <p className="mb-6 text-sm text-neutral-500">
             Crea tu primera categoría para comenzar.
           </p>
           <Button onClick={handleOpenCreateModal} className="bg-green-600 hover:bg-green-700">
             <Plus className="h-4 w-4 mr-2" />
-            Crear Categoría
+            Crear categoría
           </Button>
         </div>
       ) : (
-        <div className="rounded-lg border border-gray-200 bg-white shadow-sm">
-          <div className="overflow-x-auto">
-            <table className="w-full">
-              <thead className="border-b border-gray-200 bg-gray-50">
-                <tr>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
-                    ID
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
-                    Nombre
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
-                    Creada
-                  </th>
-                  <th className="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider text-gray-700">
-                    Actualizada
-                  </th>
-                  <th className="px-6 py-3 text-right text-xs font-medium uppercase tracking-wider text-gray-700">
-                    Acciones
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 bg-white">
-                {categories.map((category) => (
-                  <tr key={category.id} className="hover:bg-gray-50">
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-900">
-                      {category.id}
-                    </td>
-                    <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {category.name}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                      {formatDateForDisplay(category.createdAt, 'datetime')}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-sm text-gray-600">
-                      {formatDateForDisplay(category.updatedAt, 'datetime')}
-                    </td>
-                    <td className="whitespace-nowrap px-6 py-4 text-right text-sm font-medium">
-                      <div className="flex justify-end gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleOpenEditModal(category)}
-                        >
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          onClick={() => handleDeleteClick(category)}
-                          className="border-red-200 text-red-600 hover:bg-red-50"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+        <>
+          {/* Mobile: lista de cards */}
+          <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:hidden">
+            {categories.map((category) => (
+              <CategoryCardMobile
+                key={category.id}
+                category={category}
+                onEdit={handleOpenEditModal}
+                onDelete={handleDeleteClick}
+              />
+            ))}
           </div>
-        </div>
+
+          {/* Desktop: tabla */}
+          <div className="hidden overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:block">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-neutral-200/70 bg-neutral-50/60">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                      ID
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                      Nombre
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                      Creada
+                    </th>
+                    <th className="px-6 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                      Actualizada
+                    </th>
+                    <th className="px-6 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                      Acciones
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200/60 bg-white">
+                  {categories.map((category) => (
+                    <tr key={category.id} className="transition-colors hover:bg-neutral-50/60">
+                      <td className="whitespace-nowrap px-6 py-3 text-sm tabular-nums text-neutral-500">
+                        {category.id}
+                      </td>
+                      <td className="px-6 py-3 text-sm font-medium text-neutral-900">
+                        {category.name}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-3 text-sm tabular-nums text-neutral-600">
+                        {formatDateForDisplay(category.createdAt, 'datetime')}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-3 text-sm tabular-nums text-neutral-600">
+                        {formatDateForDisplay(category.updatedAt, 'datetime')}
+                      </td>
+                      <td className="whitespace-nowrap px-6 py-3 text-right text-sm font-medium">
+                        <div className="flex justify-end gap-2">
+                          <RowActions
+                            onEdit={() => handleOpenEditModal(category)}
+                            onDelete={() => handleDeleteClick(category)}
+                          />
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* FAB nuevo (mobile) */}
+          <button
+            type="button"
+            onClick={handleOpenCreateModal}
+            aria-label="Crear categoría"
+            className="fab-bottom fixed right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg shadow-green-600/30 transition-transform active:scale-95 sm:hidden"
+          >
+            <Plus className="h-6 w-6" />
+          </button>
+        </>
       )}
 
       {/* Create/Edit Modal */}
-      <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>
-              {selectedCategory ? 'Editar Categoría' : 'Crear Nueva Categoría'}
-            </DialogTitle>
-            <DialogDescription>
+      <ResponsiveDialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <ResponsiveDialogContent className="sm:max-w-[425px]">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>
+              {selectedCategory ? 'Editar categoría' : 'Crear nueva categoría'}
+            </ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               {selectedCategory
                 ? 'Modifica el nombre de la categoría.'
                 : 'Ingresa el nombre de la nueva categoría.'}
-            </DialogDescription>
-          </DialogHeader>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4 py-4">
               <div className="grid gap-2">
-                <Label htmlFor="name">Nombre de la Categoría *</Label>
+                <Label htmlFor="name">Nombre de la categoría *</Label>
                 <Input
                   id="name"
                   value={categoryName}
@@ -308,12 +333,12 @@ export default function CategoriesPage() {
                   maxLength={120}
                   required
                 />
-                <p className="text-xs text-gray-500">
+                <p className="text-xs text-neutral-500">
                   Máximo 120 caracteres
                 </p>
               </div>
             </div>
-            <DialogFooter>
+            <ResponsiveDialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -338,17 +363,17 @@ export default function CategoriesPage() {
                   'Crear'
                 )}
               </Button>
-            </DialogFooter>
+            </ResponsiveDialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
 
       {/* Delete Confirmation Dialog */}
-      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>¿Eliminar categoría?</DialogTitle>
-            <DialogDescription>
+      <ResponsiveDialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <ResponsiveDialogContent className="sm:max-w-[425px]">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>¿Eliminar categoría?</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               Estás a punto de eliminar la categoría &quot;{categoryToDelete?.name}&quot;.
               {categoryToDelete && (
                 <>
@@ -357,9 +382,9 @@ export default function CategoriesPage() {
                   <strong>Nota:</strong> No podrás eliminar esta categoría si está siendo usada por uno o más productos.
                 </>
               )}
-            </DialogDescription>
-          </DialogHeader>
-          <DialogFooter>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+          <ResponsiveDialogFooter>
             <Button
               variant="outline"
               onClick={() => setIsDeleteDialogOpen(false)}
@@ -372,9 +397,9 @@ export default function CategoriesPage() {
             >
               Eliminar
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ResponsiveDialogFooter>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </div>
   );
 }

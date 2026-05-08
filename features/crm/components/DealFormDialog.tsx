@@ -2,13 +2,13 @@
 
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+} from '@/components/ui/responsive-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -114,14 +114,14 @@ export function DealFormDialog({
 
   return (
     <>
-      <Dialog open={open} onOpenChange={onOpenChange}>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Nuevo negocio</DialogTitle>
-            <DialogDescription>
+      <ResponsiveDialog open={open} onOpenChange={onOpenChange}>
+        <ResponsiveDialogContent className="sm:max-w-lg">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Nuevo negocio</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
               Asociá el negocio a un lead existente o creá uno nuevo.
-            </DialogDescription>
-          </DialogHeader>
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
 
           <div className="space-y-3">
             <div>
@@ -166,7 +166,7 @@ export function DealFormDialog({
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <div>
                 <Label htmlFor="dealVendor">Vendedor</Label>
                 <select
@@ -223,7 +223,7 @@ export function DealFormDialog({
             </div>
           </div>
 
-          <DialogFooter>
+          <ResponsiveDialogFooter>
             <Button
               variant="outline"
               onClick={() => onOpenChange(false)}
@@ -234,9 +234,9 @@ export function DealFormDialog({
             <Button onClick={handleSubmit} disabled={isSaving || !leadId}>
               {isSaving ? 'Creando…' : 'Crear negocio'}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </ResponsiveDialogFooter>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
 
       <LeadFormDialog
         open={leadDialogOpen}

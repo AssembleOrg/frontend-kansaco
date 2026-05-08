@@ -24,10 +24,11 @@ const ESTADO_LABEL: Record<QuoteEstado, string> = {
 };
 
 const ESTADO_CLASS: Record<QuoteEstado, string> = {
-  BORRADOR: 'bg-gray-100 text-gray-700',
-  ENVIADO: 'bg-blue-100 text-blue-700',
-  ACEPTADO: 'bg-green-100 text-green-700',
-  RECHAZADO: 'bg-red-100 text-red-700',
+  BORRADOR: 'bg-neutral-100 text-neutral-700 ring-1 ring-neutral-200',
+  ENVIADO: 'bg-blue-50 text-blue-700 ring-1 ring-blue-200',
+  ACEPTADO:
+    'bg-[#fdf6e3] text-[#8a6d1c] ring-1 ring-[#d4af37]/40 shadow-[inset_0_0_0_1px_rgba(212,175,55,0.15)]',
+  RECHAZADO: 'bg-red-50 text-red-700 ring-1 ring-red-200',
 };
 
 interface QuoteListProps {

@@ -36,12 +36,13 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+  ResponsiveDialogDescription,
+} from '@/components/ui/responsive-dialog';
+import { useIsMobile } from '@/hooks/useMediaQuery';
 import Link from 'next/link';
 import {
   format,
@@ -310,19 +311,21 @@ export default function AnalyticsPage() {
   ];
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-4 sm:space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex items-center gap-2 sm:gap-3">
           <Link href="/admin/dashboard">
-            <Button variant="outline" size="sm">
-              <ChevronLeft className="h-4 w-4 mr-1" />
-              Dashboard
+            <Button variant="outline" size="sm" className="-ml-1 h-8 px-2 sm:ml-0 sm:px-3">
+              <ChevronLeft className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Dashboard</span>
             </Button>
           </Link>
-          <h1 className="text-2xl font-bold text-gray-900">Analytics</h1>
+          <h1 className="text-[20px] font-semibold tracking-tight text-neutral-900 sm:text-2xl">
+            Analytics
+          </h1>
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex flex-wrap items-center gap-2 sm:gap-3">
           <PeriodSelector
             period={period}
             customDateRange={customDateRange}
@@ -335,28 +338,30 @@ export default function AnalyticsPage() {
             className="bg-green-600 hover:bg-green-700 text-white shadow-lg shadow-green-600/25 transition-all hover:shadow-green-600/40"
             size="sm"
           >
-            <RefreshCw className={`h-4 w-4 mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
-            {isRefreshing ? 'Actualizando...' : 'Actualizar datos'}
+            <RefreshCw className={`h-4 w-4 sm:mr-2 ${isRefreshing ? 'animate-spin' : ''}`} />
+            <span className="hidden sm:inline">{isRefreshing ? 'Actualizando...' : 'Actualizar datos'}</span>
           </Button>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
-        {tabs.map((tab) => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key)}
-            className={`flex items-center gap-2 px-4 py-2.5 text-sm font-medium border-b-2 transition-colors ${
-              activeTab === tab.key
-                ? 'border-green-600 text-green-700'
-                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-            }`}
-          >
-            {tab.icon}
-            {tab.label}
-          </button>
-        ))}
+      {/* Tabs (scrolleables horizontal en mobile) */}
+      <div className="-mx-4 overflow-x-auto border-b border-neutral-200/70 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden sm:mx-0 sm:px-0">
+        <div className="flex min-w-max gap-1">
+          {tabs.map((tab) => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`flex shrink-0 items-center gap-2 px-3 py-2.5 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === tab.key
+                  ? 'border-green-600 text-green-700'
+                  : 'border-transparent text-neutral-500 hover:text-neutral-700 hover:border-neutral-300'
+              }`}
+            >
+              {tab.icon}
+              {tab.label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {/* Tab Content */}
@@ -424,24 +429,24 @@ export default function AnalyticsPage() {
       )}
 
       {/* Modal for custom date range */}
-      <Dialog open={showCustomModal} onOpenChange={setShowCustomModal}>
-        <DialogContent className="max-w-[820px] p-0 overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>Período personalizado</DialogTitle>
-            <DialogDescription>Seleccioná el rango de fechas para filtrar los datos.</DialogDescription>
-          </DialogHeader>
+      <ResponsiveDialog open={showCustomModal} onOpenChange={setShowCustomModal}>
+        <ResponsiveDialogContent className="max-w-[820px] overflow-hidden p-0 sm:p-0">
+          <ResponsiveDialogHeader className="sr-only">
+            <ResponsiveDialogTitle>Período personalizado</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>Seleccioná el rango de fechas para filtrar los datos.</ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
 
           {/* Date display header */}
-          <div className="px-6 pt-5 pb-3 border-b border-gray-100">
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
-              <Calendar className="h-4 w-4 text-green-600 shrink-0" />
-              <span className="text-sm font-medium text-gray-700">
+          <div className="border-b border-neutral-200/70 px-4 pt-4 pb-3 sm:px-6 sm:pt-5">
+            <div className="flex items-center gap-3 rounded-lg border border-neutral-200/70 bg-neutral-50 px-3 py-2.5 sm:px-4">
+              <Calendar className="h-4 w-4 shrink-0 text-green-600" />
+              <span className="text-sm font-medium tabular-nums text-neutral-700">
                 {customDateRange.from
                   ? format(customDateRange.from, 'yyyy-MM-dd')
                   : 'Fecha inicio'}
               </span>
-              <span className="text-gray-400">~</span>
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-neutral-400">~</span>
+              <span className="text-sm font-medium tabular-nums text-neutral-700">
                 {customDateRange.to
                   ? format(customDateRange.to, 'yyyy-MM-dd')
                   : 'Fecha fin'}
@@ -450,23 +455,22 @@ export default function AnalyticsPage() {
                 <button
                   type="button"
                   onClick={() => setCustomDateRange({ from: undefined, to: undefined })}
-                  className="ml-auto text-gray-400 hover:text-gray-600 transition-colors"
+                  className="ml-auto text-neutral-400 transition-colors hover:text-neutral-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
             {customDateRange.from && customDateRange.to && customDateRange.from > customDateRange.to && (
-              <p className="text-xs text-red-500 mt-2 flex items-center gap-1">
+              <p className="mt-2 flex items-center gap-1 text-xs text-red-500">
                 La fecha de inicio no puede ser posterior a la fecha de fin.
               </p>
             )}
           </div>
 
-          {/* Body: presets sidebar + calendars */}
-          <div className="flex">
-            {/* Presets sidebar */}
-            <div className="w-40 shrink-0 border-r border-gray-100 py-3 px-2 space-y-0.5">
+          {/* Presets: bar horizontal scrolleable en mobile, sidebar en desktop */}
+          <div className="flex flex-col md:flex-row">
+            <div className="-mx-0 flex shrink-0 gap-1 overflow-x-auto border-b border-neutral-200/70 px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:w-40 md:flex-col md:gap-0.5 md:overflow-visible md:border-b-0 md:border-r md:px-2 md:py-3">
               {[
                 { label: 'Hoy', key: 'today' },
                 { label: 'Ayer', key: 'yesterday' },
@@ -501,7 +505,7 @@ export default function AnalyticsPage() {
                     }
                     setCustomDateRange({ from, to });
                   }}
-                  className="w-full text-left px-3 py-2 text-sm rounded-md transition-colors text-gray-600 hover:bg-green-50 hover:text-green-700"
+                  className="shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-neutral-600 transition-colors hover:bg-green-50 hover:text-green-700 md:w-full md:py-2 md:text-left"
                 >
                   {preset.label}
                 </button>
@@ -509,7 +513,7 @@ export default function AnalyticsPage() {
             </div>
 
             {/* Calendars */}
-            <div className="flex-1 py-4 px-4">
+            <div className="flex-1 px-3 py-3 sm:px-4 sm:py-4">
               <CustomRangeCalendar
                 selected={customDateRange}
                 onSelect={setCustomDateRange}
@@ -518,7 +522,7 @@ export default function AnalyticsPage() {
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-100 px-6 py-3 flex items-center justify-end gap-3 bg-gray-50">
+          <div className="flex items-center justify-end gap-2 border-t border-neutral-200/70 bg-neutral-50 px-4 py-3 sm:gap-3 sm:px-6">
             <Button
               variant="outline"
               size="sm"
@@ -541,8 +545,8 @@ export default function AnalyticsPage() {
               Aplicar
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </div>
   );
 }
@@ -561,6 +565,7 @@ function OverviewTab({
   topViewed: TopViewedProduct[];
   isLoading: boolean;
 }) {
+  const isMobile = useIsMobile();
   if (isLoading && !stats) {
     return (
       <div className="flex justify-center py-20">
@@ -603,47 +608,39 @@ function OverviewTab({
   return (
     <div className="space-y-6">
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
-          icon={<Users className="h-6 w-6 text-blue-600" />}
-          title="Usuarios Registrados"
+          icon={<Users className="h-5 w-5 text-blue-600" />}
+          title="Usuarios"
           value={stats?.totalUsers ?? 0}
-          bgColor="bg-gradient-to-br from-blue-50 to-blue-100"
-          borderColor="border-blue-200"
         />
         <StatCard
-          icon={<LogIn className="h-6 w-6 text-green-600" />}
-          title="Logins Hoy"
+          icon={<LogIn className="h-5 w-5 text-green-600" />}
+          title="Logins hoy"
           value={stats?.logins?.today ?? 0}
-          subtitle={`Semana: ${stats?.logins?.week ?? 0} | Mes: ${stats?.logins?.month ?? 0}`}
-          bgColor="bg-gradient-to-br from-green-50 to-green-100"
-          borderColor="border-green-200"
+          subtitle={`Sem: ${stats?.logins?.week ?? 0} · Mes: ${stats?.logins?.month ?? 0}`}
         />
         <StatCard
-          icon={<Search className="h-6 w-6 text-purple-600" />}
-          title="Busquedas Hoy"
+          icon={<Search className="h-5 w-5 text-purple-600" />}
+          title="Búsquedas hoy"
           value={stats?.searches?.today ?? 0}
-          subtitle={`Semana: ${stats?.searches?.week ?? 0} | Mes: ${stats?.searches?.month ?? 0}`}
-          bgColor="bg-gradient-to-br from-purple-50 to-purple-100"
-          borderColor="border-purple-200"
+          subtitle={`Sem: ${stats?.searches?.week ?? 0} · Mes: ${stats?.searches?.month ?? 0}`}
         />
         <StatCard
-          icon={<Activity className="h-6 w-6 text-orange-600" />}
-          title="Total Eventos"
+          icon={<Activity className="h-5 w-5 text-orange-600" />}
+          title="Eventos"
           value={stats?.totalEvents ?? 0}
-          bgColor="bg-gradient-to-br from-orange-50 to-orange-100"
-          borderColor="border-orange-200"
         />
       </div>
 
       {/* Activity Chart: Logins + Searches */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6">
         <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
           <Activity className="h-5 w-5 text-green-600" />
           Actividad del Sistema
         </h3>
         <p className="text-xs text-gray-400 mb-4">Logins y busquedas por periodo</p>
-        <div className="h-72">
+        <div className="h-56 sm:h-72">
           <ResponsiveContainer width="100%" height="100%">
             <BarChart data={loginChartData} barGap={8}>
               <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -668,7 +665,7 @@ function OverviewTab({
       {/* Products Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Products Chart */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6">
           <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <TrendingUp className="h-5 w-5 text-green-600" />
             Productos Mas Vendidos
@@ -677,7 +674,7 @@ function OverviewTab({
           {topProductsChartData.length === 0 ? (
             <EmptyState text="Todavia no hay datos de ventas" />
           ) : (
-            <div className="h-72">
+            <div className="h-56 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={topProductsChartData} layout="vertical" margin={{ left: 10 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -686,7 +683,7 @@ function OverviewTab({
                     type="category"
                     dataKey="name"
                     tick={{ fontSize: 11, fill: '#6b7280' }}
-                    width={150}
+                    width={isMobile ? 90 : 150}
                   />
                   <Tooltip
                     contentStyle={{
@@ -704,7 +701,7 @@ function OverviewTab({
         </div>
 
         {/* Bottom Products List */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6">
           <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <TrendingDown className="h-5 w-5 text-red-500" />
             Productos Menos Vendidos
@@ -738,7 +735,7 @@ function OverviewTab({
       {/* Searches Charts Row */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Top Searches Pie */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6">
           <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <Search className="h-5 w-5 text-purple-600" />
             Busquedas Mas Frecuentes
@@ -747,19 +744,22 @@ function OverviewTab({
           {searchesPieData.length === 0 ? (
             <EmptyState text="Todavia no hay busquedas" />
           ) : (
-            <div className="h-72">
+            <div className="h-64 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={searchesPieData}
                     cx="50%"
                     cy="50%"
-                    outerRadius={90}
-                    innerRadius={45}
+                    outerRadius={isMobile ? 70 : 90}
+                    innerRadius={isMobile ? 35 : 45}
                     paddingAngle={3}
                     dataKey="value"
-                    label={({ name, percent }) =>
-                      `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
+                    label={
+                      isMobile
+                        ? ({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`
+                        : ({ name, percent }) =>
+                            `${name} (${((percent ?? 0) * 100).toFixed(0)}%)`
                     }
                     labelLine={{ strokeWidth: 1 }}
                   >
@@ -783,7 +783,7 @@ function OverviewTab({
         </div>
 
         {/* Anonymous Searches Pie */}
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6">
           <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
             <Search className="h-5 w-5 text-gray-500" />
             Que buscan los visitantes
@@ -792,19 +792,22 @@ function OverviewTab({
           {anonymousPieData.length === 0 ? (
             <EmptyState text="Todavia no hay busquedas de visitantes" />
           ) : (
-            <div className="h-72">
+            <div className="h-64 sm:h-72">
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
                     data={anonymousPieData}
                     cx="50%"
                     cy="50%"
-                    outerRadius={90}
-                    innerRadius={45}
+                    outerRadius={isMobile ? 70 : 90}
+                    innerRadius={isMobile ? 35 : 45}
                     paddingAngle={3}
                     dataKey="value"
-                    label={({ name, percent }) =>
-                      `"${name}" (${((percent ?? 0) * 100).toFixed(0)}%)`
+                    label={
+                      isMobile
+                        ? ({ percent }) => `${((percent ?? 0) * 100).toFixed(0)}%`
+                        : ({ name, percent }) =>
+                            `"${name}" (${((percent ?? 0) * 100).toFixed(0)}%)`
                     }
                     labelLine={{ strokeWidth: 1 }}
                   >
@@ -829,7 +832,7 @@ function OverviewTab({
       </div>
 
       {/* Most Viewed Products Chart */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6">
         <h3 className="text-base font-semibold text-gray-900 mb-1 flex items-center gap-2">
           <Eye className="h-5 w-5 text-blue-600" />
           Productos que mas interesan
@@ -838,7 +841,7 @@ function OverviewTab({
         {topViewedChartData.length === 0 ? (
           <EmptyState text="Todavia no hay visitas a productos" />
         ) : (
-          <div className="h-80">
+          <div className="h-64 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart data={topViewedChartData} margin={{ bottom: 60 }}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
@@ -873,25 +876,27 @@ function OverviewTab({
 }
 
 function StatCard({
-  icon, title, value, subtitle, bgColor, borderColor,
+  icon, title, value, subtitle,
 }: {
   icon: React.ReactNode;
   title: string;
   value: number;
   subtitle?: string;
-  bgColor: string;
+  bgColor?: string;
   borderColor?: string;
 }) {
   return (
-    <div className={`rounded-xl border ${borderColor || 'border-gray-200'} ${bgColor} p-5 shadow-sm transition-transform hover:scale-[1.02]`}>
-      <div className="flex items-center gap-3 mb-2">
-        <div className="rounded-lg bg-white/70 p-2 shadow-sm">
+    <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] sm:p-5">
+      <div className="mb-2 flex items-center gap-2.5">
+        <div className="rounded-lg bg-neutral-50 p-2 ring-1 ring-neutral-200/70">
           {icon}
         </div>
-        <span className="text-xs font-medium text-gray-600 uppercase tracking-wide">{title}</span>
+        <span className="text-[11px] font-medium uppercase tracking-wide text-neutral-500">{title}</span>
       </div>
-      <p className="text-3xl font-bold text-gray-900">{value.toLocaleString('es-AR')}</p>
-      {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
+      <p className="text-2xl font-semibold tabular-nums tracking-tight text-neutral-900 sm:text-3xl">
+        {value.toLocaleString('es-AR')}
+      </p>
+      {subtitle && <p className="mt-1 text-[11px] tabular-nums text-neutral-500">{subtitle}</p>}
     </div>
   );
 }
@@ -1138,7 +1143,7 @@ function PeriodSelector({
       </button>
 
       {open && (
-        <div className="absolute right-0 top-full z-50 mt-1.5 w-52 rounded-xl border border-gray-200 bg-white py-1.5 shadow-xl animate-in fade-in-0 zoom-in-95 duration-150">
+        <div className="absolute left-0 top-full z-50 mt-1.5 w-52 rounded-xl border border-gray-200 bg-white py-1.5 shadow-xl animate-in fade-in-0 zoom-in-95 duration-150 sm:left-auto sm:right-0">
           {PERIOD_OPTIONS.map((opt) => (
             <button
               key={opt.value}
@@ -1197,12 +1202,12 @@ function EventsTab({
   return (
     <div className="space-y-4">
       {/* Filters */}
-      <div className="rounded-lg border border-gray-200 bg-white p-4">
-        <div className="flex items-center gap-2 mb-3">
-          <Filter className="h-4 w-4 text-gray-500" />
-          <span className="text-sm font-medium text-gray-700">Filtros</span>
+      <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+        <div className="mb-3 flex items-center gap-2">
+          <Filter className="h-4 w-4 text-neutral-500" />
+          <span className="text-sm font-medium text-neutral-700">Filtros</span>
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-3">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
           <Input
             placeholder="ID de usuario"
             value={filters.userId}
@@ -1243,45 +1248,120 @@ function EventsTab({
         </div>
       </div>
 
-      {/* Events Table */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      {/* Events — mobile cards */}
+      <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:hidden">
+        {isLoading && events.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-neutral-500">Cargando...</p>
+        ) : events.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-neutral-500">No se encontraron eventos</p>
+        ) : (
+          events.map((event) => {
+            const detalle =
+              event.eventType === 'search' && event.payload?.query
+                ? `"${event.payload.query}" (${event.payload.resultsCount ?? '?'} resultados)`
+                : event.eventType === 'product_view' && event.payload?.productName
+                  ? event.payload.productName
+                  : event.payload?.rol
+                    ? `Rol: ${event.payload.rol}`
+                    : null;
+            const usuario = event.payload?.email || event.userId || 'Visitante';
+            return (
+              <div
+                key={event.id}
+                className="flex flex-col gap-1 border-b border-neutral-200/60 px-4 py-3 last:border-b-0"
+              >
+                <div className="flex items-center justify-between gap-2">
+                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+                    event.eventType === 'login'
+                      ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
+                      : event.eventType === 'product_view'
+                        ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+                        : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200'
+                  }`}>
+                    {event.eventType === 'login' ? <LogIn className="h-3 w-3" /> : event.eventType === 'product_view' ? <Eye className="h-3 w-3" /> : <Search className="h-3 w-3" />}
+                    {event.eventType === 'product_view' ? 'vista' : event.eventType}
+                  </span>
+                  <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
+                    {formatDate(event.createdAt)}
+                  </span>
+                </div>
+                <p className="truncate text-[13px] text-neutral-700">{usuario}</p>
+                {detalle ? (
+                  <p className="truncate text-[12px] text-neutral-500">{detalle}</p>
+                ) : null}
+              </div>
+            );
+          })
+        )}
+
+        {/* Pagination mobile */}
+        <div className="flex flex-col items-stretch justify-between gap-2 border-t border-neutral-200/70 px-4 py-3 sm:flex-row sm:items-center">
+          <span className="text-sm tabular-nums text-neutral-600">
+            {pagination.total} eventos
+          </span>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!pagination.hasPrev}
+              onClick={() => onPageChange(pagination.page - 1)}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm tabular-nums text-neutral-600">
+              {pagination.page} / {pagination.totalPages || 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!pagination.hasNext}
+              onClick={() => onPageChange(pagination.page + 1)}
+            >
+              Siguiente
+            </Button>
+          </div>
+        </div>
+      </div>
+
+      {/* Events Table — desktop */}
+      <div className="hidden overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:block">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="border-b border-gray-200 bg-gray-50">
+            <thead className="border-b border-neutral-200/70 bg-neutral-50/60">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Fecha</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Tipo</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Usuario</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Detalle</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Fecha</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Tipo</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Usuario</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Detalle</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-neutral-200/60">
               {isLoading && events.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">Cargando...</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-500">Cargando...</td></tr>
               ) : events.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">No se encontraron eventos</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-500">No se encontraron eventos</td></tr>
               ) : (
                 events.map((event) => (
-                  <tr key={event.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm text-gray-600 whitespace-nowrap">
+                  <tr key={event.id} className="transition-colors hover:bg-neutral-50/60">
+                    <td className="whitespace-nowrap px-4 py-3 text-sm tabular-nums text-neutral-600">
                       {formatDate(event.createdAt)}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-medium ${
+                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
                         event.eventType === 'login'
-                          ? 'bg-green-100 text-green-800'
+                          ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
                           : event.eventType === 'product_view'
-                            ? 'bg-blue-100 text-blue-800'
-                            : 'bg-purple-100 text-purple-800'
+                            ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+                            : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200'
                       }`}>
                         {event.eventType === 'login' ? <LogIn className="h-3 w-3" /> : event.eventType === 'product_view' ? <Eye className="h-3 w-3" /> : <Search className="h-3 w-3" />}
                         {event.eventType === 'product_view' ? 'vista' : event.eventType}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
-                      {event.payload?.email || event.userId || <span className="text-gray-400 italic">Visitante</span>}
+                    <td className="px-4 py-3 text-sm text-neutral-600">
+                      {event.payload?.email || event.userId || <span className="italic text-neutral-400">Visitante</span>}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">
+                    <td className="px-4 py-3 text-sm text-neutral-600">
                       {event.eventType === 'search' && event.payload?.query
                         ? `"${event.payload.query}" (${event.payload.resultsCount ?? '?'} resultados)`
                         : event.eventType === 'product_view' && event.payload?.productName
@@ -1297,10 +1377,10 @@ function EventsTab({
           </table>
         </div>
 
-        {/* Pagination */}
-        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
-          <span className="text-sm text-gray-600">
-            {pagination.total} eventos totales
+        {/* Pagination desktop */}
+        <div className="flex items-center justify-between border-t border-neutral-200/70 px-4 py-3">
+          <span className="text-sm tabular-nums text-neutral-600">
+            {pagination.total} eventos
           </span>
           <div className="flex items-center gap-2">
             <Button
@@ -1311,8 +1391,8 @@ function EventsTab({
             >
               Anterior
             </Button>
-            <span className="text-sm text-gray-600">
-              Pagina {pagination.page} de {pagination.totalPages || 1}
+            <span className="text-sm tabular-nums text-neutral-600">
+              {pagination.page} / {pagination.totalPages || 1}
             </span>
             <Button
               variant="outline"
@@ -1366,61 +1446,140 @@ function UsersTab({
       </div>
 
       {/* User Detail Modal */}
-      {selectedUser && (
-        <div className="rounded-lg border border-blue-200 bg-blue-50 p-4">
-          <div className="flex items-center justify-between mb-3">
-            <h3 className="text-sm font-semibold text-blue-900">
-              Actividad de {selectedUser.user.nombre} {selectedUser.user.apellido}
-            </h3>
-            <Button variant="outline" size="sm" onClick={onCloseDetail}>Cerrar</Button>
-          </div>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="bg-white rounded-lg p-3 border border-blue-100">
-              <p className="text-xs text-gray-500">Ultimo Login</p>
-              <p className="text-sm font-medium text-gray-900">
-                {selectedUser.activity.lastLogin ? formatDate(selectedUser.activity.lastLogin) : 'Nunca'}
-              </p>
+      <ResponsiveDialog
+        open={selectedUser !== null}
+        onOpenChange={(open) => { if (!open) onCloseDetail(); }}
+      >
+        <ResponsiveDialogContent className="sm:max-w-md">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>
+              {selectedUser
+                ? `Actividad de ${selectedUser.user.nombre} ${selectedUser.user.apellido}`
+                : 'Actividad'}
+            </ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
+          {selectedUser && (
+            <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-3">
+              <div className="rounded-lg border border-neutral-200/70 bg-neutral-50/60 p-3">
+                <p className="text-[11px] uppercase tracking-wide text-neutral-500">Último login</p>
+                <p className="mt-1 text-sm font-medium tabular-nums text-neutral-900">
+                  {selectedUser.activity.lastLogin ? formatDate(selectedUser.activity.lastLogin) : 'Nunca'}
+                </p>
+              </div>
+              <div className="rounded-lg border border-neutral-200/70 bg-neutral-50/60 p-3">
+                <p className="text-[11px] uppercase tracking-wide text-neutral-500">Total logins</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums text-neutral-900">
+                  {selectedUser.activity.loginCount}
+                </p>
+              </div>
+              <div className="rounded-lg border border-neutral-200/70 bg-neutral-50/60 p-3">
+                <p className="text-[11px] uppercase tracking-wide text-neutral-500">Total búsquedas</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums text-neutral-900">
+                  {selectedUser.activity.searchCount}
+                </p>
+              </div>
             </div>
-            <div className="bg-white rounded-lg p-3 border border-blue-100">
-              <p className="text-xs text-gray-500">Total Logins</p>
-              <p className="text-sm font-medium text-gray-900">{selectedUser.activity.loginCount}</p>
+          )}
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
+
+      {/* Users — mobile cards */}
+      <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:hidden">
+        {isLoading && users.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-neutral-500">Cargando...</p>
+        ) : users.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-neutral-500">No se encontraron usuarios</p>
+        ) : (
+          users.map((user) => (
+            <div
+              key={user.id}
+              className="flex items-center gap-3 border-b border-neutral-200/60 px-4 py-3 last:border-b-0"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="flex items-center gap-2">
+                  <p className="truncate text-[14px] font-medium tracking-tight text-neutral-900">
+                    {user.nombre} {user.apellido}
+                  </p>
+                  <span className={`inline-flex shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${rolBadgeColor(user.rol)}`}>
+                    {rolLabel(user.rol)}
+                  </span>
+                </div>
+                {user.email ? (
+                  <p className="mt-0.5 truncate text-[12px] text-neutral-500">
+                    {user.email}
+                  </p>
+                ) : null}
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => onViewUser(user)}
+                className="shrink-0 gap-1 text-xs"
+              >
+                <Eye className="h-3 w-3" />
+                Ver
+              </Button>
             </div>
-            <div className="bg-white rounded-lg p-3 border border-blue-100">
-              <p className="text-xs text-gray-500">Total Busquedas</p>
-              <p className="text-sm font-medium text-gray-900">{selectedUser.activity.searchCount}</p>
-            </div>
+          ))
+        )}
+
+        {/* Pagination mobile */}
+        <div className="flex flex-col items-stretch justify-between gap-2 border-t border-neutral-200/70 px-4 py-3 sm:flex-row sm:items-center">
+          <span className="text-sm tabular-nums text-neutral-600">
+            {pagination.total} usuarios
+          </span>
+          <div className="flex items-center justify-end gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!pagination.hasPrev}
+              onClick={() => onPageChange(pagination.page - 1)}
+            >
+              Anterior
+            </Button>
+            <span className="text-sm tabular-nums text-neutral-600">
+              {pagination.page} / {pagination.totalPages || 1}
+            </span>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!pagination.hasNext}
+              onClick={() => onPageChange(pagination.page + 1)}
+            >
+              Siguiente
+            </Button>
           </div>
         </div>
-      )}
+      </div>
 
-      {/* Users Table */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      {/* Users Table — desktop */}
+      <div className="hidden overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:block">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="border-b border-gray-200 bg-gray-50">
+            <thead className="border-b border-neutral-200/70 bg-neutral-50/60">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Nombre</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Email</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Telefono</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Rol</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Acciones</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Nombre</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Email</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Teléfono</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Rol</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Acciones</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-neutral-200/60">
               {isLoading && users.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">Cargando...</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-500">Cargando...</td></tr>
               ) : users.length === 0 ? (
-                <tr><td colSpan={5} className="px-4 py-8 text-center text-gray-500">No se encontraron usuarios</td></tr>
+                <tr><td colSpan={5} className="px-4 py-8 text-center text-neutral-500">No se encontraron usuarios</td></tr>
               ) : (
                 users.map((user) => (
-                  <tr key={user.id} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                  <tr key={user.id} className="transition-colors hover:bg-neutral-50/60">
+                    <td className="px-4 py-3 text-sm font-medium text-neutral-900">
                       {user.nombre} {user.apellido}
                     </td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{user.email}</td>
-                    <td className="px-4 py-3 text-sm text-gray-600">{user.telefono}</td>
+                    <td className="px-4 py-3 text-sm text-neutral-600">{user.email}</td>
+                    <td className="px-4 py-3 text-sm text-neutral-600">{user.telefono}</td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${rolBadgeColor(user.rol)}`}>
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-[11px] font-medium ${rolBadgeColor(user.rol)}`}>
                         {rolLabel(user.rol)}
                       </span>
                     </td>
@@ -1443,11 +1602,11 @@ function UsersTab({
         </div>
 
         {/* Pagination */}
-        <div className="flex items-center justify-between border-t border-gray-200 px-4 py-3">
-          <span className="text-sm text-gray-600">
-            {pagination.total} usuarios totales
+        <div className="flex flex-col items-stretch justify-between gap-2 border-t border-neutral-200/70 px-4 py-3 sm:flex-row sm:items-center">
+          <span className="text-sm tabular-nums text-neutral-600">
+            {pagination.total} usuarios
           </span>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center justify-end gap-2">
             <Button
               variant="outline"
               size="sm"
@@ -1456,8 +1615,8 @@ function UsersTab({
             >
               Anterior
             </Button>
-            <span className="text-sm text-gray-600">
-              Pagina {pagination.page} de {pagination.totalPages || 1}
+            <span className="text-sm tabular-nums text-neutral-600">
+              {pagination.page} / {pagination.totalPages || 1}
             </span>
             <Button
               variant="outline"
@@ -1509,10 +1668,10 @@ function ProductsTab({
         </Button>
       </div>
 
-      {/* Ranking Chart */}
+      {/* Ranking Chart — solo desktop (mobile usa cards de abajo) */}
       {ranking.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
-          <div className="h-80">
+        <div className="hidden rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6 lg:block">
+          <div className="h-64 sm:h-80">
             <ResponsiveContainer width="100%" height="100%">
               <BarChart
                 data={ranking.slice(0, 15).map((p) => ({
@@ -1558,36 +1717,73 @@ function ProductsTab({
         </div>
       )}
 
-      {/* Ranking Table */}
-      <div className="rounded-lg border border-gray-200 bg-white overflow-hidden">
+      {/* Ranking — cards mobile */}
+      <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:hidden">
+        {isLoading && ranking.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-neutral-500">Cargando...</p>
+        ) : ranking.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-neutral-500">Sin datos de ventas aun</p>
+        ) : (
+          ranking.map((item, i) => (
+            <div
+              key={item.productId}
+              className="flex items-center gap-3 border-b border-neutral-200/60 px-4 py-3 last:border-b-0"
+            >
+              <span className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-neutral-100 text-[12px] font-semibold tabular-nums text-neutral-500 ring-1 ring-neutral-200/70">
+                {i + 1}
+              </span>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[14px] font-medium tracking-tight text-neutral-900">
+                  {item.productName}
+                </p>
+                <p className="mt-0.5 text-[12px] tabular-nums text-neutral-500">
+                  {item.orderCount} {item.orderCount === 1 ? 'orden' : 'órdenes'}
+                </p>
+              </div>
+              <span
+                className={`inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[12px] font-semibold tabular-nums ring-1 ${
+                  order === 'top'
+                    ? 'bg-green-50 text-green-700 ring-green-200'
+                    : 'bg-red-50 text-red-700 ring-red-200'
+                }`}
+              >
+                {item.totalSold}
+              </span>
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Ranking Table — desktop */}
+      <div className="hidden overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:block">
         <div className="overflow-x-auto">
           <table className="w-full">
-            <thead className="border-b border-gray-200 bg-gray-50">
+            <thead className="border-b border-neutral-200/70 bg-neutral-50/60">
               <tr>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700 w-12">#</th>
-                <th className="px-4 py-3 text-left text-xs font-semibold uppercase text-gray-700">Producto</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-700">Unidades Vendidas</th>
-                <th className="px-4 py-3 text-right text-xs font-semibold uppercase text-gray-700">Ordenes</th>
+                <th className="w-12 px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">#</th>
+                <th className="px-4 py-3 text-left text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Producto</th>
+                <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Unidades vendidas</th>
+                <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Órdenes</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-gray-200">
+            <tbody className="divide-y divide-neutral-200/60">
               {isLoading && ranking.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">Cargando...</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-500">Cargando...</td></tr>
               ) : ranking.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-gray-500">Sin datos de ventas aun</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-500">Sin datos de ventas aun</td></tr>
               ) : (
                 ranking.map((item, i) => (
-                  <tr key={item.productId} className="hover:bg-gray-50">
-                    <td className="px-4 py-3 text-sm font-bold text-gray-400">{i + 1}</td>
-                    <td className="px-4 py-3 text-sm font-medium text-gray-900">{item.productName}</td>
-                    <td className="px-4 py-3 text-sm text-right">
-                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium ${
-                        order === 'top' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                  <tr key={item.productId} className="transition-colors hover:bg-neutral-50/60">
+                    <td className="px-4 py-3 text-sm font-semibold tabular-nums text-neutral-400">{i + 1}</td>
+                    <td className="px-4 py-3 text-sm font-medium text-neutral-900">{item.productName}</td>
+                    <td className="px-4 py-3 text-right text-sm">
+                      <span className={`inline-flex rounded-full px-2 py-0.5 text-xs font-medium tabular-nums ring-1 ${
+                        order === 'top' ? 'bg-green-50 text-green-700 ring-green-200' : 'bg-red-50 text-red-700 ring-red-200'
                       }`}>
                         {item.totalSold}
                       </span>
                     </td>
-                    <td className="px-4 py-3 text-sm text-right text-gray-600">{item.orderCount}</td>
+                    <td className="px-4 py-3 text-right text-sm tabular-nums text-neutral-600">{item.orderCount}</td>
                   </tr>
                 ))
               )}
@@ -1690,57 +1886,57 @@ function CompareDateRangeButton({
         <ChevronDown className="h-3.5 w-3.5 text-gray-400 shrink-0 ml-auto" />
       </button>
 
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-[820px] p-0 overflow-hidden">
-          <DialogHeader className="sr-only">
-            <DialogTitle>{placeholder}</DialogTitle>
-            <DialogDescription>Seleccioná el rango de fechas.</DialogDescription>
-          </DialogHeader>
+      <ResponsiveDialog open={open} onOpenChange={setOpen}>
+        <ResponsiveDialogContent className="max-w-[820px] overflow-hidden p-0 sm:p-0">
+          <ResponsiveDialogHeader className="sr-only">
+            <ResponsiveDialogTitle>{placeholder}</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>Seleccioná el rango de fechas.</ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
 
           {/* Date display header */}
-          <div className="px-6 pt-5 pb-3 border-b border-gray-100">
-            <div className="flex items-center gap-3 rounded-lg border border-gray-200 bg-gray-50 px-4 py-2.5">
+          <div className="border-b border-neutral-200/70 px-4 pt-4 pb-3 sm:px-6 sm:pt-5">
+            <div className="flex items-center gap-3 rounded-lg border border-neutral-200/70 bg-neutral-50 px-3 py-2.5 sm:px-4">
               <Calendar className={`h-4 w-4 ${accentClasses.icon} shrink-0`} />
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-sm font-medium tabular-nums text-neutral-700">
                 {tempRange.from ? format(tempRange.from, 'yyyy-MM-dd') : 'Fecha inicio'}
               </span>
-              <span className="text-gray-400">~</span>
-              <span className="text-sm font-medium text-gray-700">
+              <span className="text-neutral-400">~</span>
+              <span className="text-sm font-medium tabular-nums text-neutral-700">
                 {tempRange.to ? format(tempRange.to, 'yyyy-MM-dd') : 'Fecha fin'}
               </span>
               {tempRange.from && (
                 <button
                   type="button"
                   onClick={() => setTempRange({ from: undefined, to: undefined })}
-                  className="ml-auto text-gray-400 hover:text-gray-600 transition-colors"
+                  className="ml-auto text-neutral-400 transition-colors hover:text-neutral-600"
                 >
                   <X className="h-4 w-4" />
                 </button>
               )}
             </div>
             {tempRange.from && tempRange.to && tempRange.from > tempRange.to && (
-              <p className="text-xs text-red-500 mt-2">
+              <p className="mt-2 text-xs text-red-500">
                 La fecha de inicio no puede ser posterior a la fecha de fin.
               </p>
             )}
           </div>
 
-          {/* Body: presets sidebar + calendars */}
-          <div className="flex">
-            <div className="w-40 shrink-0 border-r border-gray-100 py-3 px-2 space-y-0.5">
+          {/* Presets: bar horizontal en mobile, sidebar en desktop */}
+          <div className="flex flex-col md:flex-row">
+            <div className="flex shrink-0 gap-1 overflow-x-auto border-b border-neutral-200/70 px-2 py-2 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden md:w-40 md:flex-col md:gap-0.5 md:overflow-visible md:border-b-0 md:border-r md:px-2 md:py-3">
               {SIDEBAR_PRESETS.map((preset) => (
                 <button
                   key={preset.key}
                   type="button"
                   onClick={() => applyPreset(preset.key)}
-                  className="w-full text-left px-3 py-2 text-sm rounded-md transition-colors text-gray-600 hover:bg-green-50 hover:text-green-700"
+                  className="shrink-0 whitespace-nowrap rounded-md px-3 py-1.5 text-sm text-neutral-600 transition-colors hover:bg-green-50 hover:text-green-700 md:w-full md:py-2 md:text-left"
                 >
                   {preset.label}
                 </button>
               ))}
             </div>
 
-            <div className="flex-1 py-4 px-4">
+            <div className="flex-1 px-3 py-3 sm:px-4 sm:py-4">
               <CustomRangeCalendar
                 selected={tempRange}
                 onSelect={setTempRange}
@@ -1749,7 +1945,7 @@ function CompareDateRangeButton({
           </div>
 
           {/* Footer */}
-          <div className="border-t border-gray-100 px-6 py-3 flex items-center justify-end gap-3 bg-gray-50">
+          <div className="flex items-center justify-end gap-2 border-t border-neutral-200/70 bg-neutral-50 px-4 py-3 sm:gap-3 sm:px-6">
             <Button
               variant="outline"
               size="sm"
@@ -1767,8 +1963,8 @@ function CompareDateRangeButton({
               Aplicar
             </Button>
           </div>
-        </DialogContent>
-      </Dialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </>
   );
 }
@@ -1795,7 +1991,7 @@ function CompareTab({
   return (
     <div className="space-y-6">
       {/* Period Selectors */}
-      <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+      <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6">
         <h3 className="text-base font-semibold text-gray-900 mb-4 flex items-center gap-2">
           <BarChart3 className="h-5 w-5 text-blue-600" />
           Comparar periodos de productos
@@ -1851,7 +2047,7 @@ function CompareTab({
 
       {/* Comparison Chart */}
       {result && chartData.length > 0 && (
-        <div className="rounded-xl border border-gray-200 bg-white p-6 shadow-sm">
+        <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] sm:p-6">
           <h3 className="text-base font-semibold text-gray-900 mb-1">Unidades vendidas por periodo</h3>
           <p className="text-xs text-gray-400 mb-4">
             Periodo A: {result.periodA.from} a {result.periodA.to} vs Periodo B: {result.periodB.from} a {result.periodB.to}

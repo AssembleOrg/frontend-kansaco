@@ -47,8 +47,13 @@ export function KanbanColumn({ column, onDealClick }: KanbanColumnProps) {
             Sin negocios
           </p>
         ) : (
-          column.deals.map((deal) => (
-            <DealCard key={deal.id} deal={deal} onClick={onDealClick} />
+          column.deals.map((deal, index) => (
+            <DealCard
+              key={deal.id}
+              deal={deal}
+              index={index}
+              onClick={onDealClick}
+            />
           ))
         )}
       </div>

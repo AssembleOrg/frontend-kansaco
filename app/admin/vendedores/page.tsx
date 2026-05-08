@@ -1,17 +1,17 @@
 'use client';
 
 import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import { Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/components/ui/dialog';
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogFooter,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from '@/components/ui/responsive-dialog';
 import { Checkbox } from '@/components/ui/checkbox';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/hooks/useAuth';
@@ -23,6 +23,8 @@ import {
 } from '@/lib/crmApi';
 import type { Vendor } from '@/types/crm';
 import { formatDate } from '@/features/crm/utils';
+import { PageHeader } from '@/features/crm/components/mobile/PageHeader';
+import { RowActions } from '@/features/crm/components/mobile/RowActions';
 
 export default function VendedoresPage() {
   const { token } = useAuth();
@@ -104,20 +106,65 @@ export default function VendedoresPage() {
   }
 
   return (
-    <div className="space-y-4">
-      <header className="flex items-end justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Vendedores</h1>
-          <p className="text-sm text-gray-500">
-            Personas asignables a un negocio. No tienen login propio en esta versión.
-          </p>
-        </div>
-        <Button onClick={openCreate}>
-          <Plus className="mr-1 h-4 w-4" /> Nuevo vendedor
-        </Button>
-      </header>
+    <div className="space-y-3 sm:space-y-4">
+      <PageHeader
+        title="Vendedores"
+        description="Personas asignables a un negocio. No tienen login propio en esta versión."
+        actions={
+          <Button
+            onClick={openCreate}
+            size="sm"
+            className="hidden sm:inline-flex"
+          >
+            <Plus className="mr-1 h-4 w-4" /> Nuevo vendedor
+          </Button>
+        }
+      />
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      {/* Mobile: lista compacta */}
+      <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:hidden">
+        {isLoading ? (
+          <div className="flex h-32 items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+          </div>
+        ) : vendors.length === 0 ? (
+          <p className="p-8 text-center text-sm text-neutral-400">
+            No hay vendedores cargados
+          </p>
+        ) : (
+          vendors.map((v) => (
+            <div
+              key={v.id}
+              className="flex items-center gap-3 border-b border-neutral-200/60 bg-white px-4 py-3 last:border-b-0"
+            >
+              <span
+                aria-hidden
+                className={
+                  'h-2 w-2 shrink-0 rounded-full ' +
+                  (v.activo ? 'bg-green-500' : 'bg-neutral-300')
+                }
+              />
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-[15px] font-medium tracking-tight text-neutral-900">
+                  {v.nombre}
+                </p>
+                <p className="text-[12px] text-neutral-500">
+                  {v.activo ? 'Activo' : 'Inactivo'}
+                  <span className="mx-1 text-neutral-300">·</span>
+                  {formatDate(v.createdAt)}
+                </p>
+              </div>
+              <RowActions
+                onEdit={() => openEdit(v)}
+                onDelete={() => handleDelete(v)}
+              />
+            </div>
+          ))
+        )}
+      </div>
+
+      {/* Desktop: tabla */}
+      <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white lg:block">
         {isLoading ? (
           <div className="flex h-32 items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -158,22 +205,10 @@ export default function VendedoresPage() {
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        title="Editar"
-                        onClick={() => openEdit(v)}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Eliminar"
-                        onClick={() => handleDelete(v)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <RowActions
+                        onEdit={() => openEdit(v)}
+                        onDelete={() => handleDelete(v)}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -183,13 +218,23 @@ export default function VendedoresPage() {
         )}
       </div>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>
+      {/* FAB nuevo vendedor (mobile) */}
+      <button
+        type="button"
+        onClick={openCreate}
+        aria-label="Nuevo vendedor"
+        className="fab-bottom fixed right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg shadow-green-600/30 transition-transform active:scale-95 sm:hidden"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
+
+      <ResponsiveDialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <ResponsiveDialogContent className="sm:max-w-md">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>
               {editing ? 'Editar vendedor' : 'Nuevo vendedor'}
-            </DialogTitle>
-          </DialogHeader>
+            </ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
           <form onSubmit={handleSubmit} className="space-y-3">
             <div>
               <Label htmlFor="nombre">Nombre *</Label>
@@ -210,7 +255,7 @@ export default function VendedoresPage() {
                 Activo
               </Label>
             </div>
-            <DialogFooter>
+            <ResponsiveDialogFooter>
               <Button
                 type="button"
                 variant="outline"
@@ -222,10 +267,10 @@ export default function VendedoresPage() {
               <Button type="submit" disabled={isSaving}>
                 {isSaving ? 'Guardando…' : editing ? 'Guardar' : 'Crear'}
               </Button>
-            </DialogFooter>
+            </ResponsiveDialogFooter>
           </form>
-        </DialogContent>
-      </Dialog>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </div>
   );
 }

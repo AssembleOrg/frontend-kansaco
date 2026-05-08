@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import {
   Sheet,
   SheetContent,
+  SheetHeader,
+  SheetTitle,
 } from '@/components/ui/sheet';
 import AdminSidebar from '@/features/admin/components/AdminSidebar';
 import AdminHeader from '@/features/admin/components/AdminHeader';
@@ -64,13 +66,19 @@ export default function AdminLayout({
   }
 
   return (
-    <div className="flex min-h-screen bg-gray-50 max-w-full overflow-x-hidden">
+    <div
+      className="flex min-h-screen bg-gray-50 max-w-full overflow-x-hidden"
+      style={{ fontFamily: 'var(--font-inter), ui-sans-serif, system-ui, -apple-system, sans-serif' }}
+    >
       {/* Sidebar Desktop */}
       <AdminSidebar />
 
       {/* Sidebar Mobile */}
       <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
         <SheetContent side="left" className="w-64 p-0 flex flex-col">
+          <SheetHeader className="sr-only">
+            <SheetTitle>Menú de navegación</SheetTitle>
+          </SheetHeader>
           <AdminSidebar
             onNavigate={() => setMobileMenuOpen(false)}
             isMobile={true}

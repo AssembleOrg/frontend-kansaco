@@ -1,7 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useState } from 'react';
-import { Loader2, Plus, Pencil, Trash2 } from 'lucide-react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
+import { Loader2, Plus } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -10,7 +10,12 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { deleteLead, getLeads } from '@/lib/crmApi';
 import type { Lead, LeadType } from '@/types/crm';
 import { LeadFormDialog } from '@/features/crm/components/LeadFormDialog';
-import { formatDate, leadTypeLabel } from '@/features/crm/utils';
+import { formatDate, leadTypeBadgeClass, leadTypeLabel } from '@/features/crm/utils';
+import { cn } from '@/lib/utils';
+import { PageHeader } from '@/features/crm/components/mobile/PageHeader';
+import { FilterSheet } from '@/features/crm/components/mobile/FilterSheet';
+import { LeadCardMobile } from '@/features/crm/components/mobile/LeadCardMobile';
+import { RowActions } from '@/features/crm/components/mobile/RowActions';
 
 export default function LeadsPage() {
   const { token } = useAuth();
@@ -53,57 +58,101 @@ export default function LeadsPage() {
     }
   }
 
+  function openEdit(lead: Lead) {
+    setEditing(lead);
+    setDialogOpen(true);
+  }
+
+  function openCreate() {
+    setEditing(null);
+    setDialogOpen(true);
+  }
+
+  const activeFiltersCount = useMemo(
+    () => (search ? 1 : 0) + (tipo ? 1 : 0),
+    [search, tipo]
+  );
+
   return (
-    <div className="space-y-4">
-      <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+    <div className="space-y-3 sm:space-y-4">
+      <PageHeader
+        title="Leads"
+        description="Contactos y prospectos del CRM"
+        actions={
+          <Button
+            onClick={openCreate}
+            size="sm"
+            className="hidden sm:inline-flex"
+          >
+            <Plus className="mr-1 h-4 w-4" /> Nuevo lead
+          </Button>
+        }
+      />
+
+      <FilterSheet
+        activeCount={activeFiltersCount}
+        onClear={
+          activeFiltersCount > 0
+            ? () => {
+                setSearch('');
+                setTipo('');
+              }
+            : undefined
+        }
+        desktopWrapperClassName="lg:!grid-cols-3"
+      >
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Leads</h1>
-          <p className="text-sm text-gray-500">
-            Contactos y prospectos del CRM
+          <Label htmlFor="search" className="text-xs">
+            Buscar
+          </Label>
+          <Input
+            id="search"
+            placeholder="Nombre o email"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+        </div>
+        <div>
+          <Label htmlFor="tipo" className="text-xs">
+            Tipo
+          </Label>
+          <select
+            id="tipo"
+            value={tipo}
+            onChange={(e) => setTipo(e.target.value as LeadType | '')}
+            className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base sm:text-sm"
+          >
+            <option value="">Todos</option>
+            <option value="MAYORISTA">Mayorista</option>
+            <option value="REVENDEDOR">Revendedor</option>
+          </select>
+        </div>
+      </FilterSheet>
+
+      {/* Mobile: lista de cards */}
+      <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:hidden">
+        {isLoading ? (
+          <div className="flex h-32 items-center justify-center">
+            <Loader2 className="h-6 w-6 animate-spin text-neutral-400" />
+          </div>
+        ) : leads.length === 0 ? (
+          <p className="p-8 text-center text-sm text-neutral-400">
+            No hay leads cargados
           </p>
-        </div>
-        <Button
-          onClick={() => {
-            setEditing(null);
-            setDialogOpen(true);
-          }}
-        >
-          <Plus className="mr-1 h-4 w-4" /> Nuevo lead
-        </Button>
-      </header>
-
-      <section className="rounded-lg border border-gray-200 bg-white p-3">
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
-          <div>
-            <Label htmlFor="search" className="text-xs">
-              Buscar
-            </Label>
-            <Input
-              id="search"
-              placeholder="Nombre o email"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
+        ) : (
+          leads.map((lead) => (
+            <LeadCardMobile
+              key={lead.id}
+              lead={lead}
+              onEdit={openEdit}
+              onDelete={handleDelete}
             />
-          </div>
-          <div>
-            <Label htmlFor="tipo" className="text-xs">
-              Tipo
-            </Label>
-            <select
-              id="tipo"
-              value={tipo}
-              onChange={(e) => setTipo(e.target.value as LeadType | '')}
-              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
-            >
-              <option value="">Todos</option>
-              <option value="MAYORISTA">Mayorista</option>
-              <option value="REVENDEDOR">Revendedor</option>
-            </select>
-          </div>
-        </div>
-      </section>
+          ))
+        )}
+      </div>
 
-      <div className="overflow-hidden rounded-lg border border-gray-200 bg-white">
+      {/* Desktop: tabla */}
+      <div className="hidden overflow-hidden rounded-lg border border-gray-200 bg-white lg:block">
         {isLoading ? (
           <div className="flex h-32 items-center justify-center">
             <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
@@ -131,7 +180,16 @@ export default function LeadsPage() {
                   <td className="px-4 py-2 font-medium text-gray-900">
                     {lead.nombre}
                   </td>
-                  <td className="px-4 py-2">{leadTypeLabel(lead.tipo)}</td>
+                  <td className="px-4 py-2">
+                    <span
+                      className={cn(
+                        'inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-medium uppercase tracking-wide',
+                        leadTypeBadgeClass(lead.tipo)
+                      )}
+                    >
+                      {leadTypeLabel(lead.tipo)}
+                    </span>
+                  </td>
                   <td className="px-4 py-2 text-gray-600">
                     {lead.email ?? '—'}
                   </td>
@@ -147,25 +205,10 @@ export default function LeadsPage() {
                   </td>
                   <td className="px-4 py-2">
                     <div className="flex items-center justify-end gap-2">
-                      <button
-                        type="button"
-                        title="Editar"
-                        onClick={() => {
-                          setEditing(lead);
-                          setDialogOpen(true);
-                        }}
-                        className="text-gray-500 hover:text-gray-700"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        title="Eliminar"
-                        onClick={() => handleDelete(lead)}
-                        className="text-red-500 hover:text-red-700"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </button>
+                      <RowActions
+                        onEdit={() => openEdit(lead)}
+                        onDelete={() => handleDelete(lead)}
+                      />
                     </div>
                   </td>
                 </tr>
@@ -174,6 +217,16 @@ export default function LeadsPage() {
           </table>
         )}
       </div>
+
+      {/* FAB nuevo lead (mobile) */}
+      <button
+        type="button"
+        onClick={openCreate}
+        aria-label="Nuevo lead"
+        className="fab-bottom fixed right-4 z-30 inline-flex h-14 w-14 items-center justify-center rounded-full bg-green-600 text-white shadow-lg shadow-green-600/30 transition-transform active:scale-95 sm:hidden"
+      >
+        <Plus className="h-6 w-6" />
+      </button>
 
       <LeadFormDialog
         open={dialogOpen}

@@ -127,6 +127,56 @@ main {
   }
 }
 
+/* ============================================= */
+/* Mobile-native defenses (cosmetic, safe)       */
+/* ============================================= */
+
+*, *::before, *::after {
+  -webkit-tap-highlight-color: transparent;
+}
+
+button, a[role="button"], [data-slot="button"] {
+  touch-action: manipulation;
+}
+
+/* Opt-in: aplicar solo a scroll containers internos (Sheet bottom, listas).
+   NO globalizar en body — convierte body en scroll container y rompe el wheel
+   del mouse en desktop con el overflow-x: hidden ya presente en html/body. */
+.overscroll-contain-y {
+  overscroll-behavior-y: contain;
+}
+
+/* Safe-area utilities (notch + home indicator) */
+.safe-top {
+  padding-top: max(16px, env(safe-area-inset-top));
+}
+.safe-bottom {
+  padding-bottom: max(16px, env(safe-area-inset-bottom));
+}
+.safe-x {
+  padding-left: max(16px, env(safe-area-inset-left));
+  padding-right: max(16px, env(safe-area-inset-right));
+}
+.fab-bottom {
+  bottom: max(16px, env(safe-area-inset-bottom));
+}
+
+/* Tabular numerals for monetary values */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Honor user reduced-motion preferences for our own transitions */
+@media (prefers-reduced-motion: reduce) {
+  .crm-motion,
+  .crm-motion * {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 @layer base {
   :root {
     --background: 0 0% 100%;
