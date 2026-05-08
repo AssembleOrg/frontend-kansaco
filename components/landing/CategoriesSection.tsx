@@ -45,12 +45,21 @@ const categories: Category[] = [
     filterValue: 'Motos',
   },
   {
+    id: 'grasas',
+    title: 'Grasas',
+    description: 'Lubricación sólida de alta duración',
+    imageUrl: '/grasa.webp',
+    gradient: 'from-[#16a245] to-[#0d7a32]',
+    delay: 0.4,
+    filterValue: 'Grasas',
+  },
+  {
     id: 'aditivos',
     title: 'Derivados Y Aditivos',
     description: 'Aditivos, tratamientos y productos complementarios',
     imageUrl: '/landing/3bidones-kansaco.webp',
     gradient: 'from-[#0d7a32] to-[#16a245]',
-    delay: 0.4,
+    delay: 0.5,
     filterValue: 'Derivados Y Aditivos',
   },
 ];
@@ -225,7 +234,7 @@ const CategoriesSection = () => {
         </motion.div>
 
         <motion.div
-          className="grid grid-cols-1 gap-8 md:grid-cols-2 lg:grid-cols-4"
+          className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5 lg:gap-6"
           style={{ y: cardsY }}
         >
           {categories.map((category) => (
@@ -301,13 +310,13 @@ const CategoriesSection = () => {
                     />
                   </motion.div>
 
-                  <div className="relative z-10 flex h-full flex-col justify-end p-6">
+                  <div className="relative z-10 flex h-full flex-col justify-end p-5 lg:p-4">
                     <div className="space-y-4 text-left">
-                      <h3 className="text-2xl font-bold text-white drop-shadow-lg transition-colors duration-300 group-hover:text-[#16a245]">
+                      <h3 className="text-2xl font-bold text-white drop-shadow-lg transition-colors duration-300 group-hover:text-[#16a245] lg:text-xl">
                         {category.title}
                       </h3>
 
-                      <p className="text-sm leading-relaxed text-gray-200 drop-shadow-md transition-colors duration-300 group-hover:text-gray-100">
+                      <p className="text-sm leading-relaxed text-gray-200 drop-shadow-md transition-colors duration-300 group-hover:text-gray-100 lg:text-[13px]">
                         {category.description}
                       </p>
 
