@@ -168,9 +168,10 @@ export const useAuthStore = create<AuthState>()(
             const errorMessage =
               error instanceof Error
                 ? error.message
-                : 'Unknown login error';
+                : 'Ocurrió un error al iniciar sesión.';
             set({ error: errorMessage, isLoading: false });
             logger.error('AuthStore: Login error:', errorMessage);
+            // Re-throw original (preserves LoginError code/status for the UI)
             throw error;
           } finally {
             releaseLock();

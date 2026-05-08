@@ -33,6 +33,10 @@ function OrderSuccessContent() {
   const hasShownNotification = useRef(false);
 
   useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
+
+  useEffect(() => {
     const fetchOrder = async () => {
       const orderId = searchParams.get('orderId');
 

@@ -27,7 +27,8 @@ export const AddToCartButton = ({
   
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);
-  const { addToCart, openCart, error: cartError } = useCartStore();
+  const addToCart = useCartStore((s) => s.addToCart);
+  const openCart = useCartStore((s) => s.openCart);
 
   const isAuthenticated = !!(token && user?.id);
 

@@ -3,18 +3,33 @@
 
 import React, { useState, useEffect, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
+import Image from 'next/image';
+import Link from 'next/link';
+import {
+  Loader2,
+  Building2,
+  Store,
+  ShoppingBag,
+  ChevronDown,
+  CheckCircle2,
+} from 'lucide-react';
+import { toast } from 'sonner';
+
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useCart } from '@/features/cart/hooks/useCart';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import Image from 'next/image';
-import { Loader2, Building2, Store } from 'lucide-react';
-import Link from 'next/link';
 import { sendOrderEmail } from '@/lib/api';
 import { SendOrderEmailData, BusinessInfo } from '@/types/order';
-import { toast } from 'sonner';
+
+const SITUACIONES_AFIP = [
+  'No Inscripto',
+  'Monotributista',
+  'Responsable Inscripto',
+  'Persona Jurídica',
+];
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -28,7 +43,6 @@ export default function CheckoutPage() {
     getProductPrice,
   } = useCart();
 
-  // Datos básicos (ambos tipos de cliente)
   const [fullName, setFullName] = useState(
     user ? `${user.nombre} ${user.apellido}`.trim() : ''
   );
@@ -37,76 +51,47 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
 
-  // Datos adicionales para mayoristas
   const [cuit, setCuit] = useState('');
   const [razonSocial, setRazonSocial] = useState('');
   const [situacionAfip, setSituacionAfip] = useState('');
   const [codigoPostal, setCodigoPostal] = useState('');
 
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [orderConfirmed, setOrderConfirmed] = useState(false);
 
   const isMayorista = user?.rol === 'CLIENTE_MAYORISTA';
 
-  const situacionesAfip = [
-    'No Inscripto',
-    'Monotributista',
-    'Responsable Inscripto',
-    'Persona Jurídica'
-  ];
+  // Reset scroll on mount so the fixed navbar (hide-on-scroll) reappears.
+  useEffect(() => {
+    window.scrollTo({ top: 0, behavior: 'instant' });
+  }, []);
 
-  // Validar formato CUIT: XX-XXXXXXXX-X
-  const validateCUIT = (cuitValue: string): boolean => {
-    const cuitRegex = /^\d{2}-\d{8}-\d{1}$/;
-    return cuitRegex.test(cuitValue);
-  };
+  const validateCUIT = (v: string): boolean => /^\d{2}-\d{8}-\d{1}$/.test(v);
+  const validatePhone = (v: string): boolean => v.replace(/\D/g, '').length >= 8;
 
-  // Formatear CUIT mientras se escribe
   const handleCuitChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    let value = e.target.value.replace(/\D/g, ''); // Solo números
-    if (value.length > 11) value = value.substring(0, 11);
-
-    // Aplicar formato XX-XXXXXXXX-X
-    if (value.length <= 2) {
-      setCuit(value);
-    } else if (value.length <= 10) {
-      setCuit(`${value.substring(0, 2)}-${value.substring(2)}`);
-    } else {
-      setCuit(`${value.substring(0, 2)}-${value.substring(2, 10)}-${value.substring(10)}`);
-    }
-  };
-
-  // Validar teléfono (solo números, mínimo 8 dígitos)
-  const validatePhone = (phoneValue: string): boolean => {
-    const phoneDigits = phoneValue.replace(/\D/g, '');
-    return phoneDigits.length >= 8;
+    let v = e.target.value.replace(/\D/g, '');
+    if (v.length > 11) v = v.substring(0, 11);
+    if (v.length <= 2) setCuit(v);
+    else if (v.length <= 10) setCuit(`${v.substring(0, 2)}-${v.substring(2)}`);
+    else
+      setCuit(
+        `${v.substring(0, 2)}-${v.substring(2, 10)}-${v.substring(10)}`
+      );
   };
 
   useEffect(() => {
-    if (!isAuthReady || cartLoading) {
-      return;
-    }
-
-    // No redirigir si acabamos de confirmar un pedido
-    if (orderConfirmed) {
-      return;
-    }
+    if (!isAuthReady || cartLoading || orderConfirmed) return;
 
     if (!token) {
-      router.replace(`/login?redirect=/checkout`);
+      router.replace('/login?redirect=/checkout');
       return;
     }
-
     if (!cart || cart.items.length === 0) {
       router.replace('/productos');
       return;
     }
-
-    // if (!hasReachedMinimumPurchase) {
-    //   router.replace('/productos?openCart=true');
-    //   return;
-    // }
-
     if (user) {
       if (!fullName) setFullName(`${user.nombre} ${user.apellido}`.trim());
       if (!email) setEmail(user.email || '');
@@ -124,85 +109,52 @@ export default function CheckoutPage() {
     orderConfirmed,
   ]);
 
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-    setIsSubmitting(true);
+  const validateForm = (): boolean => {
+    const e: Record<string, string> = {};
+    if (!fullName.trim()) e.fullName = 'Requerido';
+    if (!email.trim()) e.email = 'Requerido';
+    if (!phone.trim()) e.phone = 'Requerido';
+    else if (!validatePhone(phone)) e.phone = 'Mínimo 8 dígitos';
+    if (!address.trim()) e.address = 'Requerido';
+
+    if (isMayorista) {
+      if (!cuit) e.cuit = 'Requerido';
+      else if (!validateCUIT(cuit)) e.cuit = 'Formato XX-XXXXXXXX-X';
+      if (!situacionAfip) e.situacionAfip = 'Requerido';
+    }
+    setErrors(e);
+    return Object.keys(e).length === 0;
+  };
+
+  const handleSubmit = async (ev: FormEvent) => {
+    ev.preventDefault();
 
     if (!token || !user?.id) {
       toast.error('Error de autenticación', {
         description: 'Debes iniciar sesión para completar tu pedido.',
-        duration: 5000,
       });
-      setIsSubmitting(false);
       return;
     }
-    if (!cart || cart.items.length === 0) {
+
+    const validItems = (cart?.items || []).filter((i) => i.quantity > 0);
+    if (validItems.length === 0) {
       toast.error('Carrito vacío', {
         description: 'Tu carrito está vacío. Añade productos para hacer un pedido.',
-        duration: 5000,
       });
-      setIsSubmitting(false);
-      return;
-    }
-    // if (!hasReachedMinimumPurchase) {
-    //   toast.error('Mínimo de compra', {
-    //     description: 'No has alcanzado el mínimo de compra.',
-    //     duration: 5000,
-    //   });
-    //   setIsSubmitting(false);
-    //   return;
-    // }
-    if (!fullName || !email || !phone || !address) {
-      toast.error('Campos incompletos', {
-        description: 'Por favor, completa todos los campos obligatorios.',
-        duration: 5000,
-      });
-      setIsSubmitting(false);
       return;
     }
 
-    // Validar teléfono
-    if (!validatePhone(phone)) {
-      toast.error('Teléfono inválido', {
-        description: 'El teléfono debe tener al menos 8 dígitos.',
-        duration: 5000,
-      });
-      setIsSubmitting(false);
+    if (!validateForm()) {
+      toast.error('Revisá los campos requeridos');
       return;
     }
 
-    // Validaciones adicionales para mayoristas
-    if (isMayorista) {
-      if (!cuit || !situacionAfip) {
-        toast.error('Datos fiscales incompletos', {
-          description: 'Por favor, completa los datos fiscales requeridos (CUIT y Situación AFIP).',
-          duration: 5000,
-        });
-        setIsSubmitting(false);
-        return;
-      }
-
-      if (!validateCUIT(cuit)) {
-        toast.error('CUIT inválido', {
-          description: 'El formato del CUIT no es válido. Debe ser XX-XXXXXXXX-X',
-          duration: 5000,
-        });
-        setIsSubmitting(false);
-        return;
-      }
-    }
-
+    setIsSubmitting(true);
     try {
-      // Preparar datos para el email
       const orderEmailData: SendOrderEmailData = {
         customerType: isMayorista ? 'CLIENTE_MAYORISTA' : 'CLIENTE_MINORISTA',
-        contactInfo: {
-          fullName,
-          email,
-          phone,
-          address,
-        },
-        items: cart.items.map((item) => ({
+        contactInfo: { fullName, email, phone, address },
+        items: validItems.map((item) => ({
           productId: item.product.id,
           productName: item.product.name,
           quantity: item.quantity,
@@ -213,7 +165,6 @@ export default function CheckoutPage() {
         notes: notes || undefined,
       };
 
-      // Agregar datos de negocio si es mayorista
       if (isMayorista) {
         const businessInfo: BusinessInfo = {
           cuit,
@@ -224,27 +175,22 @@ export default function CheckoutPage() {
         orderEmailData.businessInfo = businessInfo;
       }
 
-      // Enviar email y crear orden en BD
       const response = await sendOrderEmail(token, orderEmailData);
 
-      // Guardar el PDF base64 en sessionStorage para que esté disponible en order-success
       if (response.pdfBase64) {
         sessionStorage.setItem(`order-pdf-${response.orderId}`, response.pdfBase64);
         if (response.presupuestoNumber) {
-          sessionStorage.setItem(`order-presupuesto-${response.orderId}`, response.presupuestoNumber);
+          sessionStorage.setItem(
+            `order-presupuesto-${response.orderId}`,
+            response.presupuestoNumber
+          );
         }
       }
 
-      // NO mostrar toast aquí - se muestra en order-success page
-      // El toast se mostrará en la página de confirmación para mejor UX
-
-      // Marcar que el pedido fue confirmado antes de limpiar el carrito
       setOrderConfirmed(true);
-      
-      // Vaciar carrito
+      window.scrollTo({ top: 0, behavior: 'instant' });
       await clearCart();
-      
-      // Limpiar el formulario
+
       setFullName('');
       setEmail('');
       setPhone('');
@@ -254,18 +200,16 @@ export default function CheckoutPage() {
       setRazonSocial('');
       setSituacionAfip('');
       setCodigoPostal('');
-      
-      // Redirigir a order-success con el orderId
+
       router.replace(`/order-success?orderId=${response.orderId}`);
-    } catch (error) {
-      console.error('Error al procesar el pedido:', error);
-      const errorMessage = error instanceof Error
-        ? error.message
-        : 'Hubo un error al procesar tu pedido. Inténtalo de nuevo.';
-      
-      // Mostrar notificación de error (ya no usamos setErrorMessage)
+    } catch (err) {
+      console.error('Error al procesar el pedido:', err);
+      const msg =
+        err instanceof Error
+          ? err.message
+          : 'Hubo un error al procesar tu pedido. Inténtalo de nuevo.';
       toast.error('Error al procesar el pedido', {
-        description: errorMessage,
+        description: msg,
         duration: 6000,
       });
     } finally {
@@ -273,296 +217,393 @@ export default function CheckoutPage() {
     }
   };
 
-  const isReadyToRenderForm =
-    isAuthReady &&
-    !cartLoading &&
-    !!token &&
-    cart &&
-    cart.items.length > 0;
+  const isReady =
+    isAuthReady && !cartLoading && !!token && cart && cart.items.length > 0;
 
-  if (!isReadyToRenderForm) {
+  if (!isReady) {
     return (
-      <div className="flex min-h-[50vh] items-center justify-center">
-        <Loader2 className="mr-2 h-6 w-6 animate-spin" />
-        <p>Cargando tu carrito o verificando tu sesión...</p>
+      <div className="flex min-h-[60vh] items-center justify-center px-4">
+        <Loader2 className="mr-2 h-6 w-6 animate-spin text-green-600" />
+        <p className="text-neutral-600">Cargando tu carrito...</p>
       </div>
     );
   }
 
+  const validItems = cart!.items.filter((i) => i.quantity > 0);
+  const totalUnits = validItems.reduce((acc, i) => acc + i.quantity, 0);
+
   return (
-    <div className="container mx-auto px-4 py-24">
-      <h1 className="mb-6 text-3xl font-bold text-gray-800">
-        Finalizar Compra
-      </h1>
-
-      {/* Indicador de tipo de cliente */}
-      <div className={`mb-6 p-4 rounded-lg flex items-center gap-3 ${
-        isMayorista
-          ? 'bg-amber-50 border border-amber-200'
-          : 'bg-green-50 border border-green-200'
-      }`}>
-        {isMayorista ? (
-          <>
-            <Building2 className="h-5 w-5 text-amber-600" />
-            <span className="font-medium text-amber-800">
-              Estás comprando como Cliente Mayorista
-            </span>
-          </>
-        ) : (
-          <>
-            <Store className="h-5 w-5 text-green-600" />
-            <span className="font-medium text-green-800">
-              Estás comprando como Cliente Minorista
-            </span>
-          </>
-        )}
-      </div>
-
-      {/* Advertencia si no se alcanza el mínimo de compra */}
-   
-      <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
-        {/* Resumen del Pedido */}
-        <div className="md:col-span-2">
-          <div className="mb-8 rounded-lg bg-white p-6 shadow-md">
-            <h2 className="mb-4 border-b pb-3 text-2xl font-semibold">
-              Tu Pedido
-            </h2>
-            <ul className="divide-y divide-gray-200">
-              {cart.items.map((item) => (
-                <li key={item.id} className="flex items-center py-4">
-                  <div className="relative h-16 w-16 flex-shrink-0">
-                    <Image
-                      src={item.product.imageUrl || '/sauberatras.jpg'}
-                      alt={item.product.name}
-                      fill
-                      className="object-contain"
-                    />
-                  </div>
-                  <div className="ml-4 flex-grow">
-                    <h3 className="text-lg font-medium text-gray-800">
-                      <Link
-                        href={`/productos/${item.product.slug}`}
-                        className="hover:text-green-600"
-                      >
-                        {item.product.name}
-                      </Link>
-                    </h3>
-                    <p className="text-sm text-gray-500">
-                      Cantidad: {item.quantity}
-                    </p>
-                    {item.presentation && (
-                      <p className="text-sm text-gray-600 font-medium mt-1">
-                        Presentación: {item.presentation}
-                      </p>
-                    )}
-                  </div>
-                </li>
-              ))}
-            </ul>
-            <div className="mt-6 border-t pt-4 text-right">
-              <p className="text-sm text-gray-500">
-                {cart.items.reduce((acc, item) => acc + item.quantity, 0)} productos en tu pedido
-              </p>
-            </div>
+    <div className="min-h-screen bg-neutral-50 pb-32 md:pb-12">
+      <div className="container mx-auto px-4 pt-16 md:pt-20">
+        <header className="mb-6 md:mb-8">
+          <h1 className="text-2xl font-bold text-neutral-900 md:text-3xl">
+            Finalizar pedido
+          </h1>
+          <div className="mt-2 inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium md:text-sm">
+            {isMayorista ? (
+              <>
+                <Building2 className="h-3.5 w-3.5 text-amber-600" />
+                <span className="text-amber-800">Cliente Mayorista</span>
+              </>
+            ) : (
+              <>
+                <Store className="h-3.5 w-3.5 text-green-600" />
+                <span className="text-green-800">Cliente Minorista</span>
+              </>
+            )}
           </div>
+        </header>
 
-          {/* Formulario de Contacto y Envío */}
-          <div className="rounded-lg bg-white p-6 shadow-md">
-            <h2 className="mb-4 border-b pb-3 text-2xl font-semibold">
-              Datos de Contacto y Envío
-            </h2>
-            <form onSubmit={handleSubmit} className="space-y-6">
-              {/* Campos básicos */}
+        {/* Mobile: collapsible order summary */}
+        <details
+          className="group mb-4 rounded-xl border border-neutral-200 bg-white md:hidden"
+          open={validItems.length <= 3}
+        >
+          <summary className="flex cursor-pointer list-none items-center justify-between px-4 py-3">
+            <div className="flex items-center gap-2">
+              <ShoppingBag className="h-4 w-4 text-green-700" />
+              <span className="text-sm font-semibold text-neutral-900">
+                Tu pedido
+              </span>
+              <span className="rounded-full bg-green-100 px-2 py-0.5 text-[11px] font-semibold text-green-800">
+                {validItems.length} {validItems.length === 1 ? 'producto' : 'productos'}
+              </span>
+            </div>
+            <ChevronDown className="h-4 w-4 text-neutral-500 transition-transform group-open:rotate-180" />
+          </summary>
+          <div className="border-t border-neutral-100 px-4 py-3">
+            <OrderItemsList items={validItems} />
+            <p className="mt-3 text-xs text-neutral-500">
+              {totalUnits} {totalUnits === 1 ? 'unidad' : 'unidades'} en total
+            </p>
+          </div>
+        </details>
+
+        <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+          {/* Form column */}
+          <form
+            id="checkout-form"
+            onSubmit={handleSubmit}
+            className="space-y-5 md:col-span-2"
+            noValidate
+          >
+            <section className="rounded-xl border border-neutral-200 bg-white p-5 md:p-6">
+              <h2 className="mb-4 text-lg font-semibold text-neutral-900">
+                Datos de contacto
+              </h2>
               <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="fullName" className="mb-2 block">
-                    Nombre Completo <span className="text-red-500">*</span>
-                  </Label>
+                <Field
+                  id="fullName"
+                  label="Nombre completo"
+                  required
+                  error={errors.fullName}
+                >
                   <Input
                     id="fullName"
                     type="text"
                     value={fullName}
                     onChange={(e) => setFullName(e.target.value)}
                     placeholder="Tu nombre completo"
-                    required
+                    autoComplete="name"
                   />
-                </div>
-                <div>
-                  <Label htmlFor="email" className="mb-2 block">
-                    Email <span className="text-red-500">*</span>
-                  </Label>
+                </Field>
+                <Field id="email" label="Email" required error={errors.email}>
                   <Input
                     id="email"
                     type="email"
+                    inputMode="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="tu.email@ejemplo.com"
-                    required
+                    autoComplete="email"
                   />
-                </div>
-              </div>
-
-              <div className="grid gap-4 md:grid-cols-2">
-                <div>
-                  <Label htmlFor="phone" className="mb-2 block">
-                    Teléfono <span className="text-red-500">*</span>
-                  </Label>
+                </Field>
+                <Field id="phone" label="Teléfono" required error={errors.phone}>
                   <Input
                     id="phone"
                     type="tel"
+                    inputMode="tel"
                     value={phone}
                     onChange={(e) => setPhone(e.target.value)}
                     placeholder="Ej: 1123456789"
-                    required
+                    autoComplete="tel"
                   />
-                </div>
+                </Field>
                 {isMayorista && (
-                  <div>
-                    <Label htmlFor="codigoPostal" className="mb-2 block">
-                      Código Postal
-                    </Label>
+                  <Field id="codigoPostal" label="Código Postal">
                     <Input
                       id="codigoPostal"
                       type="text"
+                      inputMode="numeric"
                       value={codigoPostal}
                       onChange={(e) => setCodigoPostal(e.target.value)}
                       placeholder="CP"
+                      autoComplete="postal-code"
                     />
-                  </div>
+                  </Field>
                 )}
               </div>
+            </section>
 
-              <div>
-                <Label htmlFor="address" className="mb-2 block">
-                  Dirección de Envío <span className="text-red-500">*</span>
-                </Label>
+            <section className="rounded-xl border border-neutral-200 bg-white p-5 md:p-6">
+              <h2 className="mb-4 text-lg font-semibold text-neutral-900">
+                Dirección de envío
+              </h2>
+              <Field id="address" label="Dirección" required error={errors.address}>
                 <Textarea
                   id="address"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
                   placeholder="Calle, número, piso, departamento, localidad, provincia"
                   rows={3}
-                  required
+                  autoComplete="street-address"
                 />
-              </div>
+              </Field>
+            </section>
 
-              {/* Campos adicionales para mayoristas */}
-              {isMayorista && (
-                <div className="border-t pt-6 mt-6">
-                  <h3 className="text-lg font-semibold mb-4 flex items-center gap-2">
-                    <Building2 className="h-5 w-5 text-amber-600" />
-                    Datos Fiscales
-                  </h3>
-
-                  <div className="grid gap-4 md:grid-cols-2">
-                    <div>
-                      <Label htmlFor="cuit" className="mb-2 block">
-                        CUIT <span className="text-red-500">*</span>
-                      </Label>
-                      <Input
-                        id="cuit"
-                        type="text"
-                        value={cuit}
-                        onChange={handleCuitChange}
-                        placeholder="XX-XXXXXXXX-X"
-                        maxLength={13}
-                        required
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="razonSocial" className="mb-2 block">
-                        Razón Social
-                      </Label>
-                      <Input
-                        id="razonSocial"
-                        type="text"
-                        value={razonSocial}
-                        onChange={(e) => setRazonSocial(e.target.value)}
-                        placeholder="Nombre de la empresa"
-                      />
-                    </div>
-                  </div>
-
-                  <div className="mt-4">
-                    <Label htmlFor="situacionAfip" className="mb-2 block">
-                      Situación ante AFIP <span className="text-red-500">*</span>
-                    </Label>
+            {isMayorista && (
+              <section className="rounded-xl border border-amber-200 bg-amber-50/40 p-5 md:p-6">
+                <h2 className="mb-1 flex items-center gap-2 text-lg font-semibold text-neutral-900">
+                  <Building2 className="h-5 w-5 text-amber-600" />
+                  Datos fiscales
+                </h2>
+                <p className="mb-4 text-xs text-neutral-600">
+                  Necesarios para emitir tu factura.
+                </p>
+                <div className="grid gap-4 md:grid-cols-2">
+                  <Field id="cuit" label="CUIT" required error={errors.cuit}>
+                    <Input
+                      id="cuit"
+                      type="text"
+                      value={cuit}
+                      onChange={handleCuitChange}
+                      placeholder="XX-XXXXXXXX-X"
+                      maxLength={13}
+                    />
+                  </Field>
+                  <Field id="razonSocial" label="Razón Social">
+                    <Input
+                      id="razonSocial"
+                      type="text"
+                      value={razonSocial}
+                      onChange={(e) => setRazonSocial(e.target.value)}
+                      placeholder="Nombre de la empresa"
+                    />
+                  </Field>
+                </div>
+                <div className="mt-4">
+                  <Field
+                    id="situacionAfip"
+                    label="Situación ante AFIP"
+                    required
+                    error={errors.situacionAfip}
+                  >
                     <select
                       id="situacionAfip"
                       value={situacionAfip}
                       onChange={(e) => setSituacionAfip(e.target.value)}
-                      required
-                      className="w-full rounded-md border border-gray-300 bg-white px-4 py-2 text-gray-900 focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
+                      className="flex h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20"
                     >
-                      <option value="">Selecciona tu situación</option>
-                      {situacionesAfip.map((situacion) => (
-                        <option key={situacion} value={situacion}>
-                          {situacion}
+                      <option value="">Seleccioná tu situación</option>
+                      {SITUACIONES_AFIP.map((s) => (
+                        <option key={s} value={s}>
+                          {s}
                         </option>
                       ))}
                     </select>
-                  </div>
+                  </Field>
                 </div>
-              )}
+              </section>
+            )}
 
-              <div>
-                <Label htmlFor="notes" className="mb-2 block">
-                  Notas del Pedido (Opcional)
-                </Label>
-                <Textarea
-                  id="notes"
-                  value={notes}
-                  onChange={(e) => setNotes(e.target.value)}
-                  placeholder="Ej: Horario de entrega preferido, referencias de la casa, etc."
-                  rows={3}
-                />
-              </div>
+            <section className="rounded-xl border border-neutral-200 bg-white p-5 md:p-6">
+              <h2 className="mb-4 text-lg font-semibold text-neutral-900">
+                Notas del pedido <span className="text-sm font-normal text-neutral-500">(opcional)</span>
+              </h2>
+              <Textarea
+                id="notes"
+                value={notes}
+                onChange={(e) => setNotes(e.target.value)}
+                placeholder="Horario de entrega preferido, referencias del domicilio, etc."
+                rows={3}
+              />
+            </section>
 
+            {/* Desktop submit (mobile uses bottom bar) */}
+            <div className="hidden md:block">
               <Button
                 type="submit"
-                className="w-full bg-green-600 hover:bg-green-700"
+                className="h-12 w-full bg-green-600 text-base font-semibold hover:bg-green-700"
                 disabled={isSubmitting}
               >
                 {isSubmitting ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Enviando pedido...
+                    Procesando tu pedido...
                   </>
                 ) : (
-                  'Confirmar Pedido'
+                  'Confirmar pedido'
                 )}
               </Button>
-            </form>
-          </div>
-        </div>
+            </div>
+          </form>
 
-        {/* Columna Lateral */}
-        <div className="md:col-span-1">
-          <div className="rounded-lg bg-white p-6 shadow-md">
-            <h2 className="mb-4 border-b pb-3 text-2xl font-semibold">
-              Información Importante
-            </h2>
-            <p className="mb-4 text-gray-700">
-              Después de confirmar tu pedido, recibirás un email de confirmación
-              y un miembro de nuestro equipo se comunicará contigo para
-              finalizar los detalles de pago y coordinar el envío.
-            </p>
-            <p className="text-gray-700">
-              Asegúrate de que tus datos de contacto sean correctos.
-            </p>
-
-            {isMayorista && (
-              <div className="mt-4 p-3 bg-amber-50 rounded-lg border border-amber-200">
-                <p className="text-sm text-amber-800">
-                  <strong>Nota para mayoristas:</strong> Los precios mayoristas
-                  serán confirmados por nuestro equipo comercial según volumen
-                  y condiciones de pago.
-                </p>
+          {/* Sticky summary (desktop) */}
+          <aside className="hidden md:col-span-1 md:block">
+            <div className="sticky top-24 space-y-4">
+              <div className="rounded-xl border border-neutral-200 bg-white p-5">
+                <h2 className="mb-3 flex items-center gap-2 text-base font-semibold text-neutral-900">
+                  <ShoppingBag className="h-4 w-4 text-green-700" />
+                  Tu pedido
+                </h2>
+                <OrderItemsList items={validItems} />
+                <div className="mt-4 border-t border-neutral-100 pt-3 text-sm">
+                  <div className="flex justify-between text-neutral-600">
+                    <span>Productos</span>
+                    <span className="font-medium tabular-nums text-neutral-900">
+                      {validItems.length}
+                    </span>
+                  </div>
+                  <div className="mt-1 flex justify-between text-neutral-600">
+                    <span>Unidades</span>
+                    <span className="font-medium tabular-nums text-neutral-900">
+                      {totalUnits}
+                    </span>
+                  </div>
+                </div>
               </div>
-            )}
-          </div>
+
+              <div className="rounded-xl border border-neutral-200 bg-white p-5">
+                <h3 className="mb-3 text-sm font-semibold text-neutral-900">
+                  Cómo sigue
+                </h3>
+                <ol className="space-y-2.5 text-sm text-neutral-600">
+                  <Step n={1} text="Confirmás tu pedido y recibís un email con los datos." />
+                  <Step n={2} text="Nuestro equipo se contacta para coordinar pago y envío." />
+                  <Step n={3} text="Coordinás la entrega o retiro en la sucursal." />
+                </ol>
+                {isMayorista && (
+                  <p className="mt-4 rounded-md bg-amber-50 p-3 text-xs text-amber-800">
+                    <strong>Mayoristas:</strong> los precios se confirman según
+                    volumen y condiciones de pago.
+                  </p>
+                )}
+              </div>
+            </div>
+          </aside>
         </div>
       </div>
+
+      {/* Mobile sticky bottom bar */}
+      <div className="safe-bottom fixed inset-x-0 bottom-0 z-30 border-t border-neutral-200 bg-white p-3 shadow-lg md:hidden">
+        <Button
+          type="submit"
+          form="checkout-form"
+          className="h-12 w-full bg-green-600 text-base font-semibold hover:bg-green-700"
+          disabled={isSubmitting}
+        >
+          {isSubmitting ? (
+            <>
+              <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+              Procesando...
+            </>
+          ) : (
+            <>
+              Confirmar pedido
+              <span className="ml-2 rounded-full bg-white/20 px-2 py-0.5 text-xs">
+                {totalUnits} {totalUnits === 1 ? 'ud.' : 'uds.'}
+              </span>
+            </>
+          )}
+        </Button>
+      </div>
     </div>
+  );
+}
+
+function Field({
+  id,
+  label,
+  required,
+  error,
+  children,
+}: {
+  id: string;
+  label: string;
+  required?: boolean;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id} className="mb-1.5 block text-sm">
+        {label}
+        {required && <span className="ml-0.5 text-red-500">*</span>}
+      </Label>
+      {children}
+      {error && (
+        <p className="mt-1 text-xs text-red-600" role="alert">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
+function Step({ n, text }: { n: number; text: string }) {
+  return (
+    <li className="flex gap-2.5">
+      <span className="mt-0.5 flex h-5 w-5 flex-shrink-0 items-center justify-center rounded-full bg-green-100 text-[11px] font-bold text-green-700">
+        {n}
+      </span>
+      <span>{text}</span>
+    </li>
+  );
+}
+
+type SummaryItem = {
+  product: { id: number; name: string; slug: string; imageUrl?: string | null };
+  quantity: number;
+  presentation?: string | null;
+};
+
+function OrderItemsList({ items }: { items: SummaryItem[] }) {
+  return (
+    <ul className="divide-y divide-neutral-100">
+      {items.map((item) => (
+        <li
+          key={`${item.product.id}-${item.presentation ?? ''}`}
+          className="flex items-center gap-3 py-2.5 first:pt-0 last:pb-0"
+        >
+          <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-neutral-100 bg-neutral-50">
+            <Image
+              src={item.product.imageUrl || '/sauberatras.jpg'}
+              alt={item.product.name}
+              fill
+              sizes="48px"
+              className="object-contain p-1"
+            />
+          </div>
+          <div className="min-w-0 flex-1">
+            <Link
+              href={`/productos/${item.product.slug}`}
+              className="line-clamp-1 text-sm font-medium text-neutral-800 hover:text-green-700"
+            >
+              {item.product.name}
+            </Link>
+            <div className="mt-0.5 flex items-center gap-1.5 text-xs text-neutral-500">
+              <span className="tabular-nums">×{item.quantity}</span>
+              {item.presentation && (
+                <>
+                  <span>·</span>
+                  <span className="truncate">{item.presentation}</span>
+                </>
+              )}
+            </div>
+          </div>
+          <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600" />
+        </li>
+      ))}
+    </ul>
   );
 }

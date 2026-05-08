@@ -11,7 +11,7 @@ interface CartProviderProps {
 }
 
 export const CartProvider = ({ children }: CartProviderProps) => {
-  const { syncWithServer } = useCartStore();
+  const syncWithServer = useCartStore((s) => s.syncWithServer);
   const isAuthReady = useAuthStore((state) => state.isAuthReady);
   const token = useAuthStore((state) => state.token);
   const user = useAuthStore((state) => state.user);

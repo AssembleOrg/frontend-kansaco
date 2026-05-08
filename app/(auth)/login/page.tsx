@@ -1,9 +1,9 @@
-// /app/(auth)/login/page.tsx
 'use client';
 
-import { useState, FormEvent, Suspense } from 'react';
+import { useState, useMemo, useCallback, Suspense, type FormEvent, type ChangeEvent } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { LoginError } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -29,73 +29,158 @@ import {
   ChevronRight,
   ShoppingBag,
   ArrowRight,
+  WifiOff,
+  ServerCrash,
 } from 'lucide-react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import Image from 'next/image';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
-const validateEmail = (email: string): boolean => {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+type FieldErrors = {
+  email?: string;
+  password?: string;
+};
+
+type SubmitError = {
+  title: string;
+  message: string;
+  code: LoginError['code'] | 'UNKNOWN';
+};
+
+const isSafeRedirect = (value: string | null): value is string => {
+  if (!value) return false;
+  // Only allow internal paths; reject protocol/protocol-relative/back-paths.
+  return value.startsWith('/') && !value.startsWith('//') && !value.includes('..');
+};
+
+const mapLoginError = (err: unknown): SubmitError => {
+  if (err instanceof LoginError) {
+    switch (err.code) {
+      case 'INVALID_CREDENTIALS':
+        return {
+          title: 'Credenciales incorrectas',
+          message: err.message,
+          code: err.code,
+        };
+      case 'VALIDATION':
+        return {
+          title: 'Datos inválidos',
+          message: err.message,
+          code: err.code,
+        };
+      case 'NETWORK':
+        return {
+          title: 'Sin conexión',
+          message: err.message,
+          code: err.code,
+        };
+      case 'SERVER':
+        return {
+          title: 'Servidor no disponible',
+          message: err.message,
+          code: err.code,
+        };
+      default:
+        return {
+          title: 'No se pudo iniciar sesión',
+          message: err.message,
+          code: 'UNKNOWN',
+        };
+    }
+  }
+  return {
+    title: 'No se pudo iniciar sesión',
+    message:
+      err instanceof Error
+        ? err.message
+        : 'Ocurrió un error inesperado. Intentá nuevamente.',
+    code: 'UNKNOWN',
+  };
 };
 
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { login } = useAuthStore();
+  const login = useAuthStore((s) => s.login);
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
-  const [isValidEmail, setIsValidEmail] = useState(true);
+  const [touched, setTouched] = useState<{ email: boolean; password: boolean }>({
+    email: false,
+    password: false,
+  });
 
   const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [submitError, setSubmitError] = useState<SubmitError | null>(null);
 
-  const handleEmailChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newEmail = e.target.value;
-    setEmail(newEmail);
-    setIsValidEmail(validateEmail(newEmail) || newEmail === '');
-  };
-
-  const handleSubmit = async (e: FormEvent) => {
-    e.preventDefault();
-
-    if (!validateEmail(email)) {
-      setIsValidEmail(false);
-      setError('Por favor, ingresa un correo electrónico válido.');
-      return;
+  const fieldErrors = useMemo<FieldErrors>(() => {
+    const errors: FieldErrors = {};
+    if (touched.email) {
+      if (!email.trim()) errors.email = 'Ingresá tu correo electrónico.';
+      else if (!EMAIL_REGEX.test(email.trim()))
+        errors.email = 'El formato del correo no es válido.';
     }
-    if (!password) {
-      setError('Por favor, ingresa tu contraseña.');
+    if (touched.password) {
+      if (!password) errors.password = 'Ingresá tu contraseña.';
+      else if (password.length < 8)
+        errors.password = 'La contraseña debe tener al menos 8 caracteres.';
+    }
+    return errors;
+  }, [email, password, touched]);
+
+  const isFormValid =
+    EMAIL_REGEX.test(email.trim()) && password.length >= 8;
+
+  const handleEmailChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setEmail(e.target.value);
+    if (submitError) setSubmitError(null);
+  }, [submitError]);
+
+  const handlePasswordChange = useCallback((e: ChangeEvent<HTMLInputElement>) => {
+    setPassword(e.target.value);
+    if (submitError) setSubmitError(null);
+  }, [submitError]);
+
+  const handleSubmit = useCallback(async (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    e.stopPropagation();
+
+    setTouched({ email: true, password: true });
+
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!EMAIL_REGEX.test(normalizedEmail) || password.length < 8) {
       return;
     }
 
     setIsLoading(true);
-    setError(null);
-    try {
-      await login({ email, password });
+    setSubmitError(null);
 
-      const redirectUrl = searchParams.get('redirect') || '/productos';
+    try {
+      await login({ email: normalizedEmail, password });
+
+      const requested = searchParams.get('redirect');
+      const redirectUrl = isSafeRedirect(requested) ? requested : '/productos';
       router.push(redirectUrl);
-    } catch (err: unknown) {
-      const error = err as { response?: { data?: { message?: string } }; message?: string };
-      const apiErrorMessage =
-        error.response?.data?.message ||
-        error.message ||
-        'Error al iniciar sesión. Verifica tus credenciales.';
-      setError(apiErrorMessage);
-      console.error('LoginPage: Error en handleSubmit:', err);
+    } catch (err) {
+      setSubmitError(mapLoginError(err));
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [email, password, login, router, searchParams]);
+
+  const ErrorIcon =
+    submitError?.code === 'NETWORK'
+      ? WifiOff
+      : submitError?.code === 'SERVER'
+        ? ServerCrash
+        : AlertCircle;
 
   return (
     <div className="flex min-h-screen bg-gradient-to-b from-black via-gray-950 to-black">
-      {/* Left Panel */}
       <div className="hidden lg:flex lg:w-1/2 relative bg-gradient-to-br from-gray-900 to-black p-12 items-center justify-center overflow-hidden">
-        {/* Decorative orbs */}
         <div className="absolute top-1/4 left-1/4 w-64 h-64 rounded-full bg-[#16a245]/10 blur-3xl pointer-events-none" />
         <div className="absolute bottom-1/4 right-1/4 w-48 h-48 rounded-full bg-[#16a245]/15 blur-2xl pointer-events-none" />
         <div
@@ -167,7 +252,6 @@ function LoginContent() {
         </motion.div>
       </div>
 
-      {/* Right Panel */}
       <div className="flex w-full lg:w-1/2 items-center justify-center px-6 py-12">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -175,7 +259,6 @@ function LoginContent() {
           transition={{ duration: 0.5 }}
           className="w-full max-w-md"
         >
-          {/* Mobile Logo */}
           <div className="lg:hidden text-center mb-8">
             <Image
               src="/logo-kansaco.webp"
@@ -198,16 +281,27 @@ function LoginContent() {
             </CardHeader>
 
             <CardContent>
-              <form onSubmit={handleSubmit} className="space-y-4">
-                {error && (
-                  <Alert className="bg-red-950/60 border border-red-800/60">
-                    <AlertCircle className="h-4 w-4 text-red-400" />
-                    <AlertTitle className="text-red-300">Error de autenticación</AlertTitle>
-                    <AlertDescription className="text-gray-300">{error}</AlertDescription>
-                  </Alert>
+              <form onSubmit={handleSubmit} noValidate className="space-y-4">
+                {submitError && (
+                  <motion.div
+                    initial={{ opacity: 0, y: -8 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.2 }}
+                    role="alert"
+                    aria-live="assertive"
+                  >
+                    <Alert className="bg-red-950/60 border border-red-800/60 text-red-300">
+                      <ErrorIcon className="h-4 w-4 text-red-400" aria-hidden="true" />
+                      <AlertTitle className="text-red-300 font-semibold">
+                        {submitError.title}
+                      </AlertTitle>
+                      <AlertDescription className="text-gray-300">
+                        {submitError.message}
+                      </AlertDescription>
+                    </Alert>
+                  </motion.div>
                 )}
 
-                {/* Email */}
                 <div className="space-y-2">
                   <Label htmlFor="email" className="text-gray-300 font-medium">
                     Correo Electrónico
@@ -217,27 +311,33 @@ function LoginContent() {
                     <Input
                       id="email"
                       type="email"
+                      inputMode="email"
+                      autoComplete="email"
+                      autoCapitalize="none"
+                      autoCorrect="off"
+                      spellCheck={false}
                       placeholder="tu@empresa.com"
-                      required
                       value={email}
                       onChange={handleEmailChange}
+                      onBlur={() => setTouched((t) => ({ ...t, email: true }))}
                       disabled={isLoading}
+                      aria-invalid={!!fieldErrors.email}
+                      aria-describedby={fieldErrors.email ? 'email-error' : undefined}
                       className={`pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30 ${
-                        !isValidEmail && email ? 'border-red-500' : ''
+                        fieldErrors.email ? 'border-red-500' : ''
                       }`}
                     />
-                    {!isValidEmail && email && (
+                    {fieldErrors.email && (
                       <AlertCircle className="absolute right-3 top-3 h-4 w-4 text-red-400" />
                     )}
                   </div>
-                  {!isValidEmail && email && (
-                    <p className="text-sm text-red-400">
-                      Por favor ingresa un correo válido
+                  {fieldErrors.email && (
+                    <p id="email-error" className="text-sm text-red-400">
+                      {fieldErrors.email}
                     </p>
                   )}
                 </div>
 
-                {/* Password */}
                 <div className="space-y-2">
                   <Label htmlFor="password" className="text-gray-300 font-medium">
                     Contraseña
@@ -247,16 +347,21 @@ function LoginContent() {
                     <Input
                       id="password"
                       type={showPassword ? 'text' : 'password'}
-                      required
+                      autoComplete="current-password"
                       placeholder="Ingresa tu contraseña"
                       value={password}
-                      onChange={(e) => setPassword(e.target.value)}
+                      onChange={handlePasswordChange}
+                      onBlur={() => setTouched((t) => ({ ...t, password: true }))}
                       disabled={isLoading}
-                      className="pl-10 pr-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
+                      aria-invalid={!!fieldErrors.password}
+                      aria-describedby={fieldErrors.password ? 'password-error' : undefined}
+                      className={`pl-10 pr-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30 ${
+                        fieldErrors.password ? 'border-red-500' : ''
+                      }`}
                     />
                     <button
                       type="button"
-                      onClick={() => setShowPassword(!showPassword)}
+                      onClick={() => setShowPassword((v) => !v)}
                       className="absolute right-3 top-3 text-gray-400 hover:text-gray-200 transition-colors"
                       tabIndex={-1}
                       aria-label={showPassword ? 'Ocultar contraseña' : 'Mostrar contraseña'}
@@ -264,13 +369,18 @@ function LoginContent() {
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
                   </div>
+                  {fieldErrors.password && (
+                    <p id="password-error" className="text-sm text-red-400">
+                      {fieldErrors.password}
+                    </p>
+                  )}
                 </div>
 
-                {/* Submit Button */}
                 <Button
                   type="submit"
                   className="w-full bg-[#16a245] hover:bg-[#0d7a32] text-white"
-                  disabled={isLoading || (!isValidEmail && !!email)}
+                  disabled={isLoading || !isFormValid}
+                  aria-busy={isLoading}
                 >
                   {isLoading ? (
                     <span className="flex items-center justify-center">
@@ -289,7 +399,6 @@ function LoginContent() {
 
             <CardFooter className="flex-col items-stretch border-t border-gray-800 pt-8">
               <div className="w-full">
-                {/* Nivel 1: Acción Primaria - Ver productos sin login */}
                 <Link
                   href="/productos"
                   className="flex items-center justify-center gap-2 w-full py-4 px-6 bg-[#16a245]/10 border border-[#16a245]/30 rounded-lg text-[#16a245] font-semibold text-sm hover:bg-[#16a245]/20 hover:border-[#16a245]/60 hover:scale-[1.02] transition-all duration-200 group"
@@ -299,7 +408,6 @@ function LoginContent() {
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
 
-                {/* Nivel 2: Acción Secundaria - Registro */}
                 <div className="mt-6">
                   <p className="text-sm text-gray-300 text-center">
                     ¿No tienes una cuenta?{' '}
@@ -312,7 +420,6 @@ function LoginContent() {
                   </p>
                 </div>
 
-                {/* Nivel 3: Legal - Términos y Condiciones */}
                 <div className="mt-8 pt-6 border-t border-gray-800">
                   <p className="text-xs text-gray-300 text-center leading-relaxed">
                     Al iniciar sesión, aceptas nuestros{' '}

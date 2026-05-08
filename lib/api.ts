@@ -532,42 +532,166 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   }
 }
 
+// Translate known English backend (NestJS class-validator) messages to Spanish.
+// Last-line-of-defense: client-side validation should prevent most of these.
+function translateBackendMessage(msg: string): string {
+  const m = msg.toLowerCase();
+  if (
+    m.includes('password should be at least') ||
+    m.includes('password must be longer') ||
+    m.includes('password must be at least')
+  )
+    return 'La contraseña debe tener al menos 8 caracteres.';
+  if (
+    m.includes('password is too weak') ||
+    m.includes('password must contain') ||
+    m.includes('password too weak')
+  )
+    return 'La contraseña no cumple con los requisitos de seguridad.';
+  if (
+    m.includes('email must be') ||
+    m.includes('email should be') ||
+    m.includes('invalid email')
+  )
+    return 'El correo electrónico no es válido.';
+  if (m.includes('user not found') || m.includes('no user'))
+    return 'No existe una cuenta con ese correo electrónico.';
+  if (m.includes('invalid credentials') || m.includes('incorrect password'))
+    return 'El correo o la contraseña son incorrectos.';
+  if (m.includes('email') && m.includes('required'))
+    return 'El correo electrónico es obligatorio.';
+  if (m.includes('password') && m.includes('required'))
+    return 'La contraseña es obligatoria.';
+  return msg;
+}
+
+export class LoginError extends Error {
+  status: number;
+  code: 'INVALID_CREDENTIALS' | 'VALIDATION' | 'SERVER' | 'NETWORK' | 'UNKNOWN';
+
+  constructor(
+    message: string,
+    code: LoginError['code'],
+    status = 0
+  ) {
+    super(message);
+    this.name = 'LoginError';
+    this.code = code;
+    this.status = status;
+  }
+}
+
 export async function loginUser(
   payload: LoginPayload
 ): Promise<LoginApiResponse> {
-  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  if (!API_BASE_URL) {
+    throw new LoginError(
+      'No se pudo conectar con el servidor. Intentá nuevamente en unos minutos.',
+      'NETWORK'
+    );
+  }
   const url = `${API_BASE_URL}/user/login`;
 
+  let response: Response;
   try {
-    const response = await fetch(url, {
+    response = await fetch(url, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         Accept: 'application/json',
       },
       body: JSON.stringify(payload),
-      credentials: 'include', // Include cookies in request
+      credentials: 'include',
     });
+  } catch {
+    throw new LoginError(
+      'No pudimos conectar con el servidor. Verificá tu conexión a internet.',
+      'NETWORK'
+    );
+  }
 
-    const apiResponse = await handleResponse<LoginApiResponse>(response);
-
-    // Validate response structure
-    if (
-      !apiResponse.data ||
-      !apiResponse.data.token ||
-      !apiResponse.data.user
-    ) {
-      logger.error('Login: Invalid response structure', apiResponse);
-      throw new Error('Invalid response from server');
+  if (!response.ok) {
+    let backendMessage = '';
+    try {
+      const errorData = (await response.json()) as BackendErrorResponse;
+      if (typeof errorData === 'string') {
+        backendMessage = errorData;
+      } else if (errorData?.message) {
+        backendMessage = Array.isArray(errorData.message)
+          ? errorData.message
+              .map((item) =>
+                typeof item === 'string'
+                  ? item
+                  : item?.constraints
+                    ? Object.values(item.constraints).join('. ')
+                    : ''
+              )
+              .filter(Boolean)
+              .join('; ')
+          : errorData.message;
+      } else if (errorData?.error) {
+        backendMessage = errorData.error;
+      }
+    } catch {
+      // ignore
     }
 
-    return apiResponse;
-  } catch (error) {
-    let errorMessage = 'An unknown error occurred.';
-    if (error instanceof Error) errorMessage = error.message;
-    else if (typeof error === 'string') errorMessage = error;
-    throw new Error(errorMessage);
+    if (response.status === 401 || response.status === 403) {
+      throw new LoginError(
+        'El correo o la contraseña son incorrectos. Revisá tus datos e intentá de nuevo.',
+        'INVALID_CREDENTIALS',
+        response.status
+      );
+    }
+    if (response.status === 400 || response.status === 422) {
+      throw new LoginError(
+        backendMessage
+          ? translateBackendMessage(backendMessage)
+          : 'Los datos ingresados no son válidos. Revisá el formulario.',
+        'VALIDATION',
+        response.status
+      );
+    }
+    if (response.status === 429) {
+      throw new LoginError(
+        'Demasiados intentos. Esperá unos minutos antes de volver a intentar.',
+        'VALIDATION',
+        response.status
+      );
+    }
+    if (response.status >= 500) {
+      throw new LoginError(
+        'El servidor no está respondiendo en este momento. Intentá nuevamente en unos minutos.',
+        'SERVER',
+        response.status
+      );
+    }
+    throw new LoginError(
+      backendMessage || 'No se pudo iniciar sesión. Intentá nuevamente.',
+      'UNKNOWN',
+      response.status
+    );
   }
+
+  let apiResponse: LoginApiResponse;
+  try {
+    apiResponse = (await response.json()) as LoginApiResponse;
+  } catch {
+    throw new LoginError(
+      'La respuesta del servidor no es válida. Intentá nuevamente.',
+      'SERVER'
+    );
+  }
+
+  if (!apiResponse.data || !apiResponse.data.token || !apiResponse.data.user) {
+    logger.error('Login: Invalid response structure', apiResponse);
+    throw new LoginError(
+      'La respuesta del servidor no es válida. Intentá nuevamente.',
+      'SERVER'
+    );
+  }
+
+  return apiResponse;
 }
 
 export async function registerUser(
@@ -838,7 +962,8 @@ export async function addProductToCart(
 export async function removeProductFromCart(
   cartId: number,
   productId: number,
-  token: string | null
+  token: string | null,
+  quantity?: number
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
     return null;
@@ -849,8 +974,9 @@ export async function removeProductFromCart(
   }
 
   try {
+    const qs = quantity && quantity > 0 ? `?quantity=${quantity}` : '';
     const response = await fetch(
-      `${API_BASE_URL}/cart/${cartId}/delete/product/${productId}`,
+      `${API_BASE_URL}/cart/${cartId}/delete/product/${productId}${qs}`,
       {
         method: 'PATCH',
         headers: {
