@@ -501,7 +501,7 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
   }
 
   try {
-    const url = `${API_BASE_URL}/product/filter?slug=${slug}`;
+    const url = `${API_BASE_URL}/product/filter?slug=${encodeURIComponent(slug)}`;
 
     const headers: HeadersInit = {
       Accept: 'application/json',
@@ -1660,6 +1660,99 @@ export async function uploadImage(
   }
 }
 
+export async function uploadImageWithProgress(
+  token: string,
+  file: File,
+  folder: string | undefined,
+  onProgress: (percent: number, loadedBytes: number, totalBytes: number) => void,
+  signal?: AbortSignal
+): Promise<ImageUploadResponse> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+
+  const url = `${API_BASE_URL}/image/upload`;
+  apiLogger.request('POST', url);
+
+  return new Promise<ImageUploadResponse>((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('image', file);
+    if (folder) {
+      formData.append('folder', folder);
+    }
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('Accept', 'application/json');
+
+    if (xhr.upload) {
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable && event.total > 0) {
+          const percent = Math.round((event.loaded / event.total) * 100);
+          onProgress(percent, event.loaded, event.total);
+        }
+      });
+    }
+
+    xhr.onload = () => {
+      apiLogger.response('POST', url, xhr.status);
+      if (xhr.status >= 200 && xhr.status < 300) {
+        try {
+          const json = JSON.parse(xhr.responseText) as
+            | { status: string; data: ImageUploadResponse }
+            | ImageUploadResponse;
+          const data =
+            'data' in json && (json as { data: ImageUploadResponse }).data
+              ? (json as { data: ImageUploadResponse }).data
+              : (json as ImageUploadResponse);
+          resolve(data);
+        } catch (parseErr) {
+          reject(
+            new Error('Respuesta inválida del servidor al subir la imagen')
+          );
+        }
+      } else {
+        let message = `Error ${xhr.status} al subir la imagen`;
+        try {
+          const errJson = JSON.parse(xhr.responseText);
+          if (errJson?.message) {
+            message = Array.isArray(errJson.message)
+              ? errJson.message.join(', ')
+              : String(errJson.message);
+          }
+        } catch {
+          // keep default message
+        }
+        reject(new Error(message));
+      }
+    };
+
+    xhr.onerror = () => {
+      apiLogger.error('POST', url, 'network error');
+      reject(new Error('Error de red al subir la imagen'));
+    };
+
+    xhr.ontimeout = () => {
+      reject(new Error('Tiempo de espera agotado al subir la imagen'));
+    };
+
+    xhr.onabort = () => {
+      reject(new DOMException('Upload aborted', 'AbortError'));
+    };
+
+    if (signal) {
+      if (signal.aborted) {
+        xhr.abort();
+        return;
+      }
+      signal.addEventListener('abort', () => xhr.abort(), { once: true });
+    }
+
+    xhr.send(formData);
+  });
+}
+
 export async function uploadMultipleImages(
   token: string,
   files: File[],
@@ -1836,6 +1929,15 @@ export async function getImageUrl(
   }
 }
 
+export class ImageInUseError extends Error {
+  inUseByProductIds: number[];
+  constructor(message: string, inUseByProductIds: number[]) {
+    super(message);
+    this.name = 'ImageInUseError';
+    this.inUseByProductIds = inUseByProductIds;
+  }
+}
+
 export async function deleteImage(token: string, key: string): Promise<void> {
   if (!API_BASE_URL) {
     throw new Error('API URL not configured.');
@@ -1853,6 +1955,22 @@ export async function deleteImage(token: string, key: string): Promise<void> {
       },
       cache: 'no-store',
     });
+
+    if (response.status === 409) {
+      let body: { message?: string; inUseByProductIds?: number[] } = {};
+      try {
+        body = await response.json();
+      } catch {
+        // body vacío o no-JSON, fallback abajo
+      }
+      const ids = Array.isArray(body.inUseByProductIds)
+        ? body.inUseByProductIds
+        : [];
+      throw new ImageInUseError(
+        body.message ?? 'Image is in use by one or more products.',
+        ids
+      );
+    }
 
     await handleResponse<{ message: string }>(response);
     apiLogger.response('DELETE', url, response.status);
@@ -1979,7 +2097,8 @@ export async function uploadProductImage(
 
 export async function getProductImages(
   token: string | null,
-  productId: number
+  productId: number,
+  signal?: AbortSignal
 ): Promise<ProductImage[]> {
   if (!API_BASE_URL) {
     throw new Error('API URL not configured.');
@@ -2001,6 +2120,7 @@ export async function getProductImages(
       method: 'GET',
       headers,
       cache: 'no-store',
+      signal,
     });
 
     // Si es una petición pública (sin token) y recibe 401, no redirigir al login

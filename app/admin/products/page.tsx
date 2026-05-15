@@ -49,7 +49,11 @@ export default function ProductsPage() {
     type: 'success' | 'error';
   } | null>(null);
 
-  const handleCreateProduct = async (data: Omit<Product, 'id' | 'slug'>, selectedImages?: ImageListItem[]) => {
+  const handleCreateProduct = async (
+    data: Omit<Product, 'id' | 'slug'>,
+    selectedImages?: ImageListItem[],
+    _imagesLoaded?: boolean
+  ) => {
     setIsSubmitting(true);
     try {
       const newProduct = await createNewProduct(data);
@@ -92,13 +96,25 @@ export default function ProductsPage() {
     }
   };
 
-  const handleEditProduct = async (data: Omit<Product, 'id' | 'slug'>, selectedImages?: ImageListItem[]) => {
+  const handleEditProduct = async (
+    data: Omit<Product, 'id' | 'slug'>,
+    selectedImages?: ImageListItem[],
+    imagesLoaded?: boolean
+  ) => {
     if (!selectedProduct || !token) return;
     setIsSubmitting(true);
     try {
       await editProduct(selectedProduct.id, data, true);
 
-      if (selectedImages !== undefined) {
+      // Cinturón-y-tirantes: si el modal no terminó de cargar las imágenes
+      // existentes del producto (race condition, fetch fallido), NO tocar
+      // la relación de imágenes. selectedImages estaría incompleto y el diff
+      // borraría todas las asociadas. El modal ya bloquea el submit, pero
+      // este check protege contra cualquier ruta futura que llegue acá sin
+      // imagesLoaded=true.
+      const shouldSyncImages = selectedImages !== undefined && imagesLoaded === true;
+
+      if (shouldSyncImages) {
         try {
           const existingImages = await getProductImages(token, selectedProduct.id);
           const existingImagesByKey = new Map(
@@ -106,23 +122,28 @@ export default function ProductsPage() {
           );
           const selectedKeys = new Set(selectedImages.map((img) => img.key));
 
+          let failedRemovals = 0;
+          let failedAdds = 0;
+
           // Desasociar imágenes removidas (en paralelo, batches de 3)
           const toRemove = existingImages.filter((img) => !selectedKeys.has(img.imageKey));
           const batchSize = 3;
           for (let i = 0; i < toRemove.length; i += batchSize) {
             const batch = toRemove.slice(i, i + batchSize);
-            await Promise.allSettled(
+            const results = await Promise.allSettled(
               batch.map((img) => deleteProductImage(token, selectedProduct.id, img.id))
             );
+            failedRemovals += results.filter((r) => r.status === 'rejected').length;
           }
 
           // Asociar imágenes nuevas (en paralelo, batches de 3)
           const toAdd = selectedImages.filter((img) => !existingImagesByKey.has(img.key));
           for (let i = 0; i < toAdd.length; i += batchSize) {
             const batch = toAdd.slice(i, i + batchSize);
-            await Promise.allSettled(
+            const results = await Promise.allSettled(
               batch.map((img) => associateProductImage(token, selectedProduct.id, img.key, false))
             );
+            failedAdds += results.filter((r) => r.status === 'rejected').length;
           }
 
           // Reordenar con un solo call (obtener IDs actualizados una sola vez)
@@ -135,6 +156,16 @@ export default function ProductsPage() {
             if (finalImageIds.length > 0) {
               await reorderProductImages(token, selectedProduct.id, finalImageIds);
             }
+          }
+
+          if (failedRemovals > 0 || failedAdds > 0) {
+            const parts: string[] = [];
+            if (failedAdds > 0) parts.push(`${failedAdds} no se pudieron asociar`);
+            if (failedRemovals > 0) parts.push(`${failedRemovals} no se pudieron eliminar`);
+            showToast(
+              `Producto actualizado, pero ${parts.join(' y ')}`,
+              'error'
+            );
           }
         } catch (imgError) {
           console.error('Error managing product images:', imgError);
@@ -174,6 +205,7 @@ export default function ProductsPage() {
   const handleCloseModal = () => {
     setIsModalOpen(false);
     setSelectedProduct(null);
+    loadProducts(pagination.page, searchQuery, selectedCategory);
   };
 
   const handleSubmit = selectedProduct

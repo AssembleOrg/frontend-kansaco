@@ -339,7 +339,7 @@ const FeaturedProducts = () => {
                           )}
                         </div>
 
-                        <Link href={`/productos/${product.slug}`} className="mt-auto">
+                        <Link href={`/productos/${encodeURIComponent(product.slug)}`} className="mt-auto">
                           <Button
                             className="w-full bg-[#16a245] text-white transition-all duration-300 hover:bg-[#0d7a32]"
                             size="sm"

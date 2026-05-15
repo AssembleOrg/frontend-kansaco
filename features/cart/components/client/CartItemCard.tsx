@@ -92,7 +92,7 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
     <>
       <div className="group relative flex gap-3 rounded-xl border border-neutral-200 bg-white p-3 transition-shadow hover:shadow-sm">
         <Link
-          href={`/productos/${product.slug}`}
+          href={`/productos/${encodeURIComponent(product.slug)}`}
           className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-neutral-100 bg-neutral-50"
         >
           <Image
@@ -107,7 +107,7 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
         <div className="flex min-w-0 flex-1 flex-col">
           <div className="flex items-start justify-between gap-2">
             <Link
-              href={`/productos/${product.slug}`}
+              href={`/productos/${encodeURIComponent(product.slug)}`}
               className="line-clamp-2 text-sm font-medium leading-snug text-neutral-800 hover:text-green-700"
             >
               {product.name}

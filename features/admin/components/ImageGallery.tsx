@@ -4,6 +4,14 @@ import { useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
 import { Trash2, Copy, Loader2, Search, Filter, X } from 'lucide-react';
 import Image from 'next/image';
 import { ImageListItem } from '@/lib/api';
@@ -31,18 +39,22 @@ export default function ImageGallery({
   const [filterPrefix, setFilterPrefix] = useState(selectedPrefix);
   const [deletingKeys, setDeletingKeys] = useState<Set<string>>(new Set());
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [pendingDeleteKey, setPendingDeleteKey] = useState<string | null>(null);
 
-  const handleDelete = async (key: string) => {
-    if (!confirm('¿Estás seguro de que deseas eliminar esta imagen?')) {
-      return;
-    }
+  const requestDelete = (key: string) => {
+    setPendingDeleteKey(key);
+  };
 
+  const confirmDelete = async () => {
+    const key = pendingDeleteKey;
+    if (!key) return;
+    setPendingDeleteKey(null);
     setDeletingKeys((prev) => new Set(prev).add(key));
     try {
       await onDelete(key);
     } catch (error) {
+      // El toast lo muestra page.tsx (incluyendo el caso 409 "imagen en uso").
       console.error('Error deleting image:', error);
-      alert('Error al eliminar la imagen');
     } finally {
       setDeletingKeys((prev) => {
         const next = new Set(prev);
@@ -155,7 +167,7 @@ export default function ImageGallery({
                         variant="destructive"
                         size="icon"
                         className="h-8 w-8"
-                        onClick={() => handleDelete(image.key)}
+                        onClick={() => requestDelete(image.key)}
                         disabled={isDeleting}
                       >
                         {isDeleting ? (
@@ -229,6 +241,28 @@ export default function ImageGallery({
           </>
         )}
       </CardContent>
+
+      <Dialog
+        open={pendingDeleteKey !== null}
+        onOpenChange={(open) => !open && setPendingDeleteKey(null)}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>¿Eliminar esta imagen?</DialogTitle>
+            <DialogDescription>
+              Se borrará del bucket. Si la imagen está en uso por algún producto, no se podrá eliminar.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setPendingDeleteKey(null)}>
+              Cancelar
+            </Button>
+            <Button variant="destructive" onClick={confirmDelete}>
+              Eliminar
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

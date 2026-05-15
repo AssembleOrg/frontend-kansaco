@@ -586,7 +586,7 @@ function OrderItemsList({ items }: { items: SummaryItem[] }) {
           </div>
           <div className="min-w-0 flex-1">
             <Link
-              href={`/productos/${item.product.slug}`}
+              href={`/productos/${encodeURIComponent(item.product.slug)}`}
               className="line-clamp-1 text-sm font-medium text-neutral-800 hover:text-green-700"
             >
               {item.product.name}

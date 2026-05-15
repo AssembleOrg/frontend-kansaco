@@ -300,7 +300,17 @@ function ProductDetailPageContent() {
 
   const params = useParams();
   const searchParams = useSearchParams();
-  const slug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  const rawSlug = Array.isArray(params.slug) ? params.slug[0] : params.slug;
+  const slug = (() => {
+    if (!rawSlug) return rawSlug;
+    try {
+      // Si ya viene decodificado, decodeURIComponent es idempotente sobre slugs sin % crudo;
+      // si viene crudo (ej. "...100%25-sintetico"), lo normaliza a "...100%-sintetico".
+      return decodeURIComponent(rawSlug);
+    } catch {
+      return rawSlug;
+    }
+  })();
 
   // Construir la URL de retorno con los parámetros de la página anterior
   const getBackUrl = () => {

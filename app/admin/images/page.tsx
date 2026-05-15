@@ -1,8 +1,9 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useImages } from '@/features/admin/hooks/useImages';
+import { ImageInUseError } from '@/lib/api';
 import ImageUpload from '@/features/admin/components/ImageUpload';
 import ImageGallery from '@/features/admin/components/ImageGallery';
 
@@ -25,6 +26,17 @@ export default function ImagesPage() {
     message: string;
     type: 'success' | 'error';
   } | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+
+  useEffect(() => {
+    if (!isUploading) return;
+    const handler = (e: BeforeUnloadEvent) => {
+      e.preventDefault();
+      e.returnValue = '';
+    };
+    window.addEventListener('beforeunload', handler);
+    return () => window.removeEventListener('beforeunload', handler);
+  }, [isUploading]);
 
   const showToast = (message: string, type: 'success' | 'error') => {
     setToast({ message, type });
@@ -32,22 +44,28 @@ export default function ImagesPage() {
   };
 
   const handleUpload = async (file: File, folder?: string) => {
+    setIsUploading(true);
     try {
       await uploadSingleImage(file, folder);
       showToast('Imagen subida correctamente', 'success');
     } catch (error) {
       showToast('Error al subir la imagen', 'error');
       throw error;
+    } finally {
+      setIsUploading(false);
     }
   };
 
   const handleUploadMultiple = async (files: File[], folder?: string) => {
+    setIsUploading(true);
     try {
       await uploadMultiple(files, folder);
       showToast(`${files.length} imágenes subidas correctamente`, 'success');
     } catch (error) {
       showToast('Error al subir las imágenes', 'error');
       throw error;
+    } finally {
+      setIsUploading(false);
     }
   };
 
@@ -56,6 +74,13 @@ export default function ImagesPage() {
       await removeImage(key);
       showToast('Imagen eliminada correctamente', 'success');
     } catch (error) {
+      if (error instanceof ImageInUseError) {
+        showToast(
+          'No se puede borrar: la imagen está en uso por uno o más productos.',
+          'error'
+        );
+        return;
+      }
       showToast('Error al eliminar la imagen', 'error');
       throw error;
     }

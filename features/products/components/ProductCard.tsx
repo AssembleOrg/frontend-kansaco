@@ -21,7 +21,8 @@ export default function ProductCard({ product }: { product: Product }) {
     if (page) params.set('page', page);
     if (category) params.set('category', category);
     const queryString = params.toString();
-    return queryString ? `/productos/${product.slug}?${queryString}` : `/productos/${product.slug}`;
+    const safeSlug = encodeURIComponent(product.slug);
+    return queryString ? `/productos/${safeSlug}?${queryString}` : `/productos/${safeSlug}`;
   };
   
   const productDetailUrl = getProductDetailUrl();

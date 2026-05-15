@@ -17,11 +17,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Progress } from '@/components/ui/progress';
 import ImageSelectionModal from './ImageSelectionModal';
 import {
   ImageListItem,
   getProductImages,
-  uploadImage,
+  uploadImageWithProgress,
 } from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { toast } from 'sonner';
@@ -118,11 +119,27 @@ function SortableImageItem({
   );
 }
 
+type UploadItem = {
+  id: string;
+  fileName: string;
+  fileSize: number;
+  progress: number;
+  status: 'uploading' | 'done' | 'error';
+  errorMessage?: string;
+};
+
+function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
 interface ProductFormModalProps {
   product?: Product;
   onSubmit: (
     data: Omit<Product, 'id' | 'slug'>,
-    selectedImages?: ImageListItem[]
+    selectedImages?: ImageListItem[],
+    imagesLoaded?: boolean
   ) => Promise<void>;
   onClose: () => void;
   isLoading?: boolean;
@@ -158,8 +175,12 @@ export default function ProductFormModal({
   const [selectedImages, setSelectedImages] = useState<ImageListItem[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
   const [isLoadingImages, setIsLoadingImages] = useState(false);
+  const [imagesLoaded, setImagesLoaded] = useState(false);
+  const [imagesLoadFailed, setImagesLoadFailed] = useState(false);
   const [brokenImagesCount, setBrokenImagesCount] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
+  const [uploadQueue, setUploadQueue] = useState<UploadItem[]>([]);
+  const uploadAbortRef = useRef<AbortController | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [availableCategories, setAvailableCategories] = useState<Category[]>([]);
   const [isLoadingCategories, setIsLoadingCategories] = useState(false);
@@ -186,13 +207,69 @@ export default function ProductFormModal({
     }
   }, [token]);
 
+  const loadProductImages = useCallback(
+    (productId: number, signal?: AbortSignal) => {
+      if (!token) return;
+      setIsLoadingImages(true);
+      setImagesLoadFailed(false);
+      setImagesLoaded(false);
+      getProductImages(token, productId, signal)
+        .then((productImages) => {
+          if (signal?.aborted) return;
+          const imageListItems: ImageListItem[] = productImages.map((img) => ({
+            key: img.imageKey,
+            url: img.imageUrl,
+            lastModified: img.createdAt,
+            size: 0,
+          }));
+          const sorted = imageListItems.sort((a, b) => {
+            const imgA = productImages.find((img) => img.imageKey === a.key);
+            const imgB = productImages.find((img) => img.imageKey === b.key);
+            if (imgA && imgB) {
+              if (imgA.order !== imgB.order) return imgA.order - imgB.order;
+              return imgA.id - imgB.id;
+            }
+            return 0;
+          });
+          const validImages = sorted.filter(
+            (img) =>
+              img.url && img.url.trim() !== '' && !img.url.includes('undefined')
+          );
+          const broken = sorted.length - validImages.length;
+          if (broken > 0) {
+            setBrokenImagesCount(broken);
+            toast.warning(
+              `Se encontraron ${broken} imagen${broken > 1 ? 'es' : ''} rota${broken > 1 ? 's' : ''}`,
+              {
+                description: 'Fueron removidas automáticamente de la lista.',
+                duration: 5000,
+              }
+            );
+          }
+          setSelectedImages(validImages);
+          setImagesLoaded(true);
+        })
+        .catch((err) => {
+          if (err?.name === 'AbortError' || signal?.aborted) return;
+          console.error('Error loading product images:', err);
+          setImagesLoadFailed(true);
+          setImagesLoaded(false);
+        })
+        .finally(() => {
+          if (signal?.aborted) return;
+          setIsLoadingImages(false);
+        });
+    },
+    [token]
+  );
+
   // Load product data and images
   useEffect(() => {
     if (product) {
-      // Derive category names from categories objects if available (more reliable than category string array)
-      const categoryNames = product.categories && product.categories.length > 0
-        ? product.categories.map((c) => c.name)
-        : product.category ?? [];
+      const categoryNames =
+        product.categories && product.categories.length > 0
+          ? product.categories.map((c) => c.name)
+          : product.category ?? [];
       setFormData({
         ...product,
         name: product.name ?? '',
@@ -208,54 +285,22 @@ export default function ProductFormModal({
         imageUrl: product.imageUrl ?? '',
         isFeatured: product.isFeatured ?? false,
       });
+      setBrokenImagesCount(0);
+      setImagesLoadFailed(false);
+      setImagesLoaded(false);
 
       if (product.id && token) {
-        setIsLoadingImages(true);
-        getProductImages(token, product.id)
-          .then((productImages) => {
-            const imageListItems: ImageListItem[] = productImages.map(
-              (img) => ({
-                key: img.imageKey,
-                url: img.imageUrl,
-                lastModified: img.createdAt,
-                size: 0,
-              })
-            );
-            // Sort by order
-            const sorted = imageListItems.sort((a, b) => {
-              const imgA = productImages.find((img) => img.imageKey === a.key);
-              const imgB = productImages.find((img) => img.imageKey === b.key);
-              if (imgA && imgB) {
-                if (imgA.order !== imgB.order) return imgA.order - imgB.order;
-                return imgA.id - imgB.id;
-              }
-              return 0;
-            });
-
-            // Filter out broken images (no URL or invalid URL)
-            const validImages = sorted.filter(
-              (img) => img.url && img.url.trim() !== '' && !img.url.includes('undefined')
-            );
-            const broken = sorted.length - validImages.length;
-            if (broken > 0) {
-              setBrokenImagesCount(broken);
-              toast.warning(`Se encontraron ${broken} imagen${broken > 1 ? 'es' : ''} rota${broken > 1 ? 's' : ''}`, {
-                description: 'Fueron removidas automáticamente de la lista.',
-                duration: 5000,
-              });
-            }
-            setSelectedImages(validImages);
-          })
-          .catch((err) => {
-            console.error('Error loading product images:', err);
-          })
-          .finally(() => setIsLoadingImages(false));
+        const controller = new AbortController();
+        loadProductImages(product.id, controller.signal);
+        return () => controller.abort();
       }
     } else {
       setSelectedImages([]);
       setBrokenImagesCount(0);
+      setImagesLoadFailed(false);
+      setImagesLoaded(true); // create flow: no images to load
     }
-  }, [product, token]);
+  }, [product, token, loadProductImages]);
 
   const handleInputChange = (
     e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
@@ -312,69 +357,193 @@ export default function ProductFormModal({
     setSelectedImages((prev) => prev.filter((img) => img.key !== key));
   };
 
-  // Inline file upload directly from form
+  const uploadingItems = uploadQueue.filter((it) => it.status === 'uploading');
+  const batchProgressPercent =
+    uploadingItems.length === 0
+      ? 0
+      : Math.round(
+          uploadingItems.reduce((sum, it) => sum + it.progress, 0) /
+            uploadingItems.length
+        );
+
+  const handleClose = useCallback(() => {
+    if (isUploading) {
+      const confirmed = window.confirm(
+        'Hay imágenes subiendo. ¿Cancelar la subida y cerrar igualmente?'
+      );
+      if (!confirmed) return;
+      uploadAbortRef.current?.abort();
+    }
+    onClose();
+  }, [isUploading, onClose]);
+
+  const dismissDoneItem = useCallback((id: string) => {
+    window.setTimeout(() => {
+      setUploadQueue((prev) => prev.filter((it) => it.id !== id));
+    }, 1500);
+  }, []);
+
+  const handleDismissUploadItem = useCallback((id: string) => {
+    setUploadQueue((prev) => prev.filter((it) => it.id !== id));
+  }, []);
+
+  // Inline file upload with REAL progress (xhr-based)
   const handleInlineUpload = useCallback(
     async (files: FileList | File[]) => {
       if (!token) return;
 
       const fileArray = Array.from(files);
       const validTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
-      const validFiles = fileArray.filter(
-        (f) => validTypes.includes(f.type) && f.size <= 10 * 1024 * 1024
-      );
-
-      if (validFiles.length === 0) {
-        toast.error('Archivos no válidos', {
-          description: 'Solo se permiten imágenes (JPEG, PNG, GIF, WEBP) de hasta 10MB.',
-        });
-        return;
+      const validFiles: File[] = [];
+      const invalidDetails: string[] = [];
+      for (const f of fileArray) {
+        if (!validTypes.includes(f.type)) {
+          invalidDetails.push(`${f.name}: formato no permitido`);
+        } else if (f.size > 10 * 1024 * 1024) {
+          invalidDetails.push(`${f.name}: supera 10MB`);
+        } else {
+          validFiles.push(f);
+        }
       }
 
+      if (invalidDetails.length > 0) {
+        toast.error(
+          `${invalidDetails.length} archivo${invalidDetails.length > 1 ? 's' : ''} rechazado${invalidDetails.length > 1 ? 's' : ''}`,
+          {
+            description: invalidDetails.slice(0, 3).join(' · '),
+          }
+        );
+      }
+
+      if (validFiles.length === 0) return;
+
+      // Create one queue entry per file BEFORE starting
+      const entries = validFiles.map((file) => ({
+        id:
+          typeof crypto !== 'undefined' && 'randomUUID' in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+        file,
+      }));
+      setUploadQueue((prev) => [
+        ...prev,
+        ...entries.map(({ id, file }) => ({
+          id,
+          fileName: file.name,
+          fileSize: file.size,
+          progress: 0,
+          status: 'uploading' as const,
+        })),
+      ]);
+
+      // Shared AbortController for this batch — supports cancel-on-close
+      const controller = new AbortController();
+      uploadAbortRef.current = controller;
       setIsUploading(true);
-      const loadingToast = toast.loading(
-        `Subiendo ${validFiles.length} imagen${validFiles.length > 1 ? 'es' : ''}...`
-      );
 
       try {
         const newImages: ImageListItem[] = [];
-        // Upload in batches of 2 to avoid 429
-        for (let i = 0; i < validFiles.length; i += 2) {
-          const batch = validFiles.slice(i, i + 2);
+        let succeeded = 0;
+        let failed = 0;
+
+        // Batches of 2 to respect backend throttle (3 req/2s)
+        for (let i = 0; i < entries.length; i += 2) {
+          if (controller.signal.aborted) break;
+          const batch = entries.slice(i, i + 2);
           const results = await Promise.allSettled(
-            batch.map((file) => uploadImage(token, file, 'products'))
+            batch.map(({ id, file }) =>
+              uploadImageWithProgress(
+                token,
+                file,
+                'products',
+                (percent) => {
+                  setUploadQueue((prev) =>
+                    prev.map((it) =>
+                      it.id === id ? { ...it, progress: percent } : it
+                    )
+                  );
+                },
+                controller.signal
+              )
+                .then((res) => ({ id, res }))
+                .catch((err) => {
+                  throw { id, err };
+                })
+            )
           );
+
           for (const result of results) {
             if (result.status === 'fulfilled') {
+              const { id, res } = result.value;
               newImages.push({
-                key: result.value.key,
-                url: result.value.url,
-                lastModified: result.value.lastModified,
-                size: result.value.size,
+                key: res.key,
+                url: res.url,
+                lastModified: res.lastModified,
+                size: res.size,
               });
+              succeeded += 1;
+              setUploadQueue((prev) =>
+                prev.map((it) =>
+                  it.id === id ? { ...it, progress: 100, status: 'done' } : it
+                )
+              );
+              dismissDoneItem(id);
+            } else {
+              const reason = result.reason as
+                | { id: string; err: unknown }
+                | undefined;
+              if (reason && typeof reason === 'object' && 'id' in reason) {
+                const err = reason.err;
+                const isAbort =
+                  err instanceof DOMException && err.name === 'AbortError';
+                if (!isAbort) failed += 1;
+                const message = isAbort
+                  ? 'Cancelado'
+                  : err instanceof Error
+                    ? err.message
+                    : 'Error al subir';
+                setUploadQueue((prev) =>
+                  prev.map((it) =>
+                    it.id === reason.id
+                      ? {
+                          ...it,
+                          status: isAbort ? 'error' : 'error',
+                          errorMessage: message,
+                        }
+                      : it
+                  )
+                );
+              } else {
+                failed += 1;
+              }
             }
           }
         }
 
         if (newImages.length > 0) {
           setSelectedImages((prev) => [...prev, ...newImages]);
-          toast.dismiss(loadingToast);
-          toast.success(
-            `${newImages.length} imagen${newImages.length > 1 ? 'es' : ''} subida${newImages.length > 1 ? 's' : ''}`
-          );
-        } else {
-          toast.dismiss(loadingToast);
-          toast.error('No se pudo subir ninguna imagen');
         }
-      } catch (err) {
-        console.error('Error uploading:', err);
-        toast.dismiss(loadingToast);
-        toast.error('Error al subir imágenes');
+
+        if (succeeded > 0 && failed === 0) {
+          toast.success(
+            `${succeeded} imagen${succeeded > 1 ? 'es' : ''} subida${succeeded > 1 ? 's' : ''}`
+          );
+        } else if (succeeded > 0 && failed > 0) {
+          toast.warning(
+            `${succeeded} subida${succeeded > 1 ? 's' : ''}, ${failed} con error`
+          );
+        } else if (failed > 0) {
+          toast.error(
+            `No se pudo subir ${failed === 1 ? 'la imagen' : 'ninguna imagen'}`
+          );
+        }
       } finally {
         setIsUploading(false);
+        uploadAbortRef.current = null;
         if (fileInputRef.current) fileInputRef.current.value = '';
       }
     },
-    [token]
+    [token, dismissDoneItem]
   );
 
   // Drop zone handlers
@@ -397,6 +566,25 @@ export default function ProductFormModal({
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
+
+    // Guardia: si estamos editando un producto, NO permitir guardar hasta que las
+    // imágenes existentes hayan terminado de cargar o que la carga haya fallado y
+    // el usuario sepa que tiene que reintentar. Sin esta guardia, selectedImages
+    // puede estar vacío y el diff en handleEditProduct desasocia TODAS las imágenes.
+    if (product?.id) {
+      if (isLoadingImages) {
+        toast.error('Esperá a que terminen de cargar las imágenes existentes', {
+          description: 'Si guardás ahora se pueden perder las imágenes del producto.',
+        });
+        return;
+      }
+      if (imagesLoadFailed) {
+        toast.error('No se pudieron cargar las imágenes del producto', {
+          description: 'Reintentá la carga antes de guardar para no perder imágenes.',
+        });
+        return;
+      }
+    }
 
     if (!formData.name.trim()) {
       setError('El nombre del producto es requerido');
@@ -427,7 +615,7 @@ export default function ProductFormModal({
     try {
       const { slug, ...dataToSubmit } = formData;
       const submitData = { ...dataToSubmit, price: finalPrice };
-      await onSubmit(submitData, selectedImages);
+      await onSubmit(submitData, selectedImages, imagesLoaded);
       onClose();
     } catch (err) {
       const errorMessage =
@@ -445,7 +633,7 @@ export default function ProductFormModal({
             {product ? 'Editar Producto' : 'Crear Nuevo Producto'}
           </h2>
           <button
-            onClick={onClose}
+            onClick={handleClose}
             disabled={isLoading}
             className="rounded-lg p-1 hover:bg-gray-100"
           >
@@ -643,6 +831,30 @@ export default function ProductFormModal({
               </div>
             )}
 
+            {/* Load failed banner */}
+            {imagesLoadFailed && product?.id && (
+              <div className="mt-3 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium">
+                    No se pudieron cargar las imágenes del producto.
+                  </p>
+                  <p className="text-xs text-red-600">
+                    Reintentá antes de guardar para no perder las imágenes existentes.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => product?.id && loadProductImages(product.id)}
+                  className="shrink-0"
+                >
+                  Reintentar
+                </Button>
+              </div>
+            )}
+
             {/* Image grid with drag & drop */}
             {!isLoadingImages && selectedImages.length > 0 && (
               <div className="mt-3 space-y-2">
@@ -699,7 +911,9 @@ export default function ProductFormModal({
                 ) : (
                   <Upload className="h-4 w-4" />
                 )}
-                {isUploading ? 'Subiendo...' : 'Subir nueva'}
+                {isUploading
+                  ? `Subiendo ${batchProgressPercent}%`
+                  : 'Subir nueva'}
               </Button>
 
               <input
@@ -715,6 +929,63 @@ export default function ProductFormModal({
                 }}
               />
             </div>
+
+            {/* Real-time upload progress list (xhr.upload.onprogress) */}
+            {uploadQueue.length > 0 && (
+              <div className="mt-3 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                {uploadQueue.map((item) => (
+                  <div key={item.id} className="text-xs">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="truncate font-medium text-gray-700">
+                        {item.fileName}
+                      </span>
+                      <div className="flex shrink-0 items-center gap-2">
+                        <span className="text-gray-500">
+                          {formatBytes(item.fileSize)}
+                        </span>
+                        {item.status === 'uploading' && (
+                          <span className="font-semibold text-green-700">
+                            {item.progress}%
+                          </span>
+                        )}
+                        {item.status === 'done' && (
+                          <span className="font-semibold text-green-700">
+                            ✓ Listo
+                          </span>
+                        )}
+                        {item.status === 'error' && (
+                          <button
+                            type="button"
+                            onClick={() => handleDismissUploadItem(item.id)}
+                            className="rounded p-0.5 text-red-600 hover:bg-red-100"
+                            aria-label="Descartar"
+                          >
+                            <X className="h-3.5 w-3.5" />
+                          </button>
+                        )}
+                      </div>
+                    </div>
+                    <Progress
+                      value={
+                        item.status === 'done'
+                          ? 100
+                          : item.status === 'error'
+                            ? item.progress
+                            : item.progress
+                      }
+                      className={`mt-1 h-1.5 ${
+                        item.status === 'error' ? 'bg-red-100' : ''
+                      }`}
+                    />
+                    {item.status === 'error' && item.errorMessage && (
+                      <p className="mt-1 text-[11px] text-red-600">
+                        {item.errorMessage}
+                      </p>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
 
             {/* Drop zone (shown when no images) */}
             {!isLoadingImages && selectedImages.length === 0 && (
@@ -795,7 +1066,7 @@ export default function ProductFormModal({
         {/* Footer */}
         <div className="flex gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
           <Button
-            onClick={onClose}
+            onClick={handleClose}
             variant="outline"
             disabled={isLoading}
             className="flex-1"
@@ -804,7 +1075,11 @@ export default function ProductFormModal({
           </Button>
           <Button
             onClick={handleSubmit}
-            disabled={isLoading || isUploading}
+            disabled={
+              isLoading ||
+              isUploading ||
+              (!!product?.id && (isLoadingImages || imagesLoadFailed))
+            }
             className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
           >
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
