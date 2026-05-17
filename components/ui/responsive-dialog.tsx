@@ -58,7 +58,9 @@ export function ResponsiveDialogContent({
         side="bottom"
         className={cn(
           'safe-bottom max-h-[92dvh] overflow-y-auto overscroll-contain-y rounded-t-2xl border-t-0 p-5 pt-6',
-          className
+          className,
+          // force correct slide animation regardless of caller overrides
+          'data-[state=open]:!slide-in-from-bottom data-[state=closed]:!slide-out-to-bottom'
         )}
         {...props}
       >

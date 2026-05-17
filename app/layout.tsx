@@ -41,7 +41,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="es" className={inter.variable}>
-<body className="antialiased">
+      <body className={`${inter.variable} font-sans antialiased`}>
         {children}
         <Toaster />
         <WhatsAppButton />

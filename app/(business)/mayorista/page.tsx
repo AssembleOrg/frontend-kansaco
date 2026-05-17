@@ -1,5 +1,6 @@
 'use client';
 
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import {
@@ -9,15 +10,23 @@ import {
   Building2,
   Calculator,
   CheckCircle,
-  ArrowRight,
   Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
+import MayoristaApplicationModal from '@/components/forms/MayoristaApplicationModal';
 
 export default function MayoristaPage() {
+  const [modalOpen, setModalOpen] = useState(false);
+
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#aplicar') {
+      setModalOpen(true);
+      history.replaceState(null, '', window.location.pathname);
+    }
+  }, []);
   const requirements = [
     {
       icon: FileText,
@@ -64,18 +73,18 @@ export default function MayoristaPage() {
           />
         </div>
 
-        <div className="container mx-auto px-4 py-24">
+        <div className="container mx-auto px-4 py-16 md:py-24">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h1 className="mb-6 text-5xl font-black text-white md:text-6xl">
+            <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-5xl md:text-6xl">
               CONVERTITE EN
               <span className="block text-[#16a245]">MAYORISTA KANSACO</span>
             </h1>
-            <p className="mx-auto max-w-3xl text-xl text-gray-300">
+            <p className="mx-auto max-w-3xl text-lg text-gray-300 sm:text-xl">
               Únete a nuestra red de distribuidores con el respaldo de más de
               medio siglo de experiencia.
             </p>
@@ -132,7 +141,7 @@ export default function MayoristaPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-gradient-to-b from-gray-900 to-black py-24">
+      <section className="bg-gradient-to-b from-gray-900 to-black py-16">
         <div className="container mx-auto px-4">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
@@ -145,20 +154,18 @@ export default function MayoristaPage() {
               ¿Listo para unirte a nuestra red?
             </h2>
             <p className="mb-8 text-xl text-gray-300">
-              Crea tu cuenta ahora y comienza a disfrutar de los beneficios
-              exclusivos para mayoristas KANSACO
+              Completá el formulario de solicitud y nuestro equipo te
+              contactará para sumarte como distribuidor KANSACO.
             </p>
             <div className="flex flex-col gap-4 sm:flex-row sm:justify-center">
-              <Link href="/register">
-                <Button
-                  size="lg"
-                  className="bg-[#16a245] text-white transition-all duration-300 hover:scale-105 hover:bg-[#0d7a32]"
-                >
-                  <Users className="mr-2 h-5 w-5" />
-                  Crear Cuenta de Mayorista
-                  <ArrowRight className="ml-2 h-5 w-5" />
-                </Button>
-              </Link>
+              <Button
+                size="lg"
+                onClick={() => setModalOpen(true)}
+                className="bg-[#16a245] text-white transition-all duration-300 hover:scale-105 hover:bg-[#0d7a32]"
+              >
+                <Users className="mr-2 h-5 w-5" />
+                Solicitar cuenta de mayorista
+              </Button>
               <Link href="/contacto">
                 <Button
                   size="lg"
@@ -166,20 +173,21 @@ export default function MayoristaPage() {
                   className="border-[#16a245] text-[#16a245] transition-all duration-300 hover:bg-[#16a245] hover:text-white"
                 >
                   <Phone className="mr-2 h-5 w-5" />
-                  ¿Tienes dudas? Contáctanos
+                  ¿Tenes dudas? Contáctanos
                 </Button>
               </Link>
             </div>
-            <p className="mt-6 text-sm text-gray-400">
-              Al crear tu cuenta, selecciona &quot;Cliente Mayorista&quot; para
-              acceder a precios especiales
-            </p>
           </motion.div>
         </div>
       </section>
 
       <Footer />
       <BackToHomeButton />
+
+      <MayoristaApplicationModal
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+      />
     </div>
   );
 }

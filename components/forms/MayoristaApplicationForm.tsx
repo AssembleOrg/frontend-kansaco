@@ -11,7 +11,11 @@ type AfipSituacion =
   | 'Responsable Inscripto'
   | 'Persona Jurídica';
 
-export default function ContactFormMailto() {
+type Props = {
+  onSubmitSuccess?: () => void;
+};
+
+export default function MayoristaApplicationForm({ onSubmitSuccess }: Props = {}) {
   const [nombre, setNombre] = useState('');
   const [email, setEmail] = useState('');
   const [cuit, setCuit] = useState('');
@@ -49,7 +53,7 @@ Situación ante AFIP: ${afip}
 ${mensaje ? `Información adicional / Carta de presentación:\n${mensaje}` : ''}
 
 ---
-Este email fue enviado desde el formulario de contacto de Kansaco
+Este email fue enviado desde el formulario de solicitud de mayorista de Kansaco
     `.trim();
 
     const emailDestino = siteConfig.contact.email;
@@ -66,6 +70,8 @@ Este email fue enviado desde el formulario de contacto de Kansaco
         window.location.href = mailtoLink;
       }
     }
+
+    onSubmitSuccess?.();
   };
 
   const inputClass =
@@ -74,54 +80,71 @@ Este email fue enviado desde el formulario de contacto de Kansaco
 
   return (
     <form onSubmit={handleSubmit} className="space-y-5">
-      {/* Nombre */}
-      <div>
-        <label htmlFor="nombre" className={labelClass}>
-          Tu nombre <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="text"
-          id="nombre"
-          value={nombre}
-          onChange={(e) => setNombre(e.target.value)}
-          className={inputClass}
-          placeholder="Nombre completo o razón social"
-          required
-        />
+      <div className="grid gap-5 sm:grid-cols-2">
+        {/* Nombre */}
+        <div>
+          <label htmlFor="nombre" className={labelClass}>
+            Tu nombre <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="text"
+            id="nombre"
+            value={nombre}
+            onChange={(e) => setNombre(e.target.value)}
+            className={inputClass}
+            placeholder="Nombre completo o razón social"
+            required
+          />
+        </div>
+
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className={labelClass}>
+            Tu correo electrónico <span className="text-red-500">*</span>
+          </label>
+          <input
+            type="email"
+            id="email"
+            value={email}
+            onChange={(e) => setEmail(e.target.value)}
+            className={inputClass}
+            placeholder="tu@email.com"
+            required
+          />
+        </div>
+
+        {/* CUIT */}
+        <div>
+          <label htmlFor="cuit" className={labelClass}>
+            Tu CUIT
+          </label>
+          <input
+            type="text"
+            id="cuit"
+            value={cuit}
+            onChange={(e) => setCuit(e.target.value)}
+            className={inputClass}
+            placeholder="XX-XXXXXXXX-X"
+          />
+        </div>
+
+        {/* Teléfono */}
+        <div>
+          <label htmlFor="telefono" className={labelClass}>
+            Teléfono
+          </label>
+          <input
+            type="tel"
+            id="telefono"
+            value={telefono}
+            onChange={(e) => setTelefono(e.target.value)}
+            className={inputClass}
+            placeholder="+54 9 11 XXXX-XXXX"
+          />
+        </div>
       </div>
 
-      {/* Email */}
-      <div>
-        <label htmlFor="email" className={labelClass}>
-          Tu correo electrónico <span className="text-red-500">*</span>
-        </label>
-        <input
-          type="email"
-          id="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          className={inputClass}
-          placeholder="tu@email.com"
-          required
-        />
-      </div>
-
-      {/* CUIT */}
-      <div>
-        <label htmlFor="cuit" className={labelClass}>
-          Tu CUIT
-        </label>
-        <input
-          type="text"
-          id="cuit"
-          value={cuit}
-          onChange={(e) => setCuit(e.target.value)}
-          className={inputClass}
-          placeholder="XX-XXXXXXXX-X"
-        />
-      </div>
-
-      {/* Domicilio */}
+      {/* Domicilio - full width */}
       <div>
         <label htmlFor="domicilio" className={labelClass}>
           Domicilio completo (Localidad y Provincia)
@@ -136,49 +159,36 @@ Este email fue enviado desde el formulario de contacto de Kansaco
         />
       </div>
 
-      {/* Código Postal */}
-      <div>
-        <label htmlFor="codigoPostal" className={labelClass}>
-          Código Postal
-        </label>
-        <input
-          type="text"
-          id="codigoPostal"
-          value={codigoPostal}
-          onChange={(e) => setCodigoPostal(e.target.value)}
-          className={inputClass}
-          placeholder="XXXX"
-        />
-      </div>
+      <div className="grid gap-5 sm:grid-cols-2">
+        {/* Código Postal */}
+        <div>
+          <label htmlFor="codigoPostal" className={labelClass}>
+            Código Postal
+          </label>
+          <input
+            type="text"
+            id="codigoPostal"
+            value={codigoPostal}
+            onChange={(e) => setCodigoPostal(e.target.value)}
+            className={inputClass}
+            placeholder="XXXX"
+          />
+        </div>
 
-      {/* Teléfono */}
-      <div>
-        <label htmlFor="telefono" className={labelClass}>
-          Teléfono
-        </label>
-        <input
-          type="tel"
-          id="telefono"
-          value={telefono}
-          onChange={(e) => setTelefono(e.target.value)}
-          className={inputClass}
-          placeholder="+54 9 11 XXXX-XXXX"
-        />
-      </div>
-
-      {/* Zona de distribución */}
-      <div>
-        <label htmlFor="zonaDistribucion" className={labelClass}>
-          Zona de distribución
-        </label>
-        <input
-          type="text"
-          id="zonaDistribucion"
-          value={zonaDistribucion}
-          onChange={(e) => setZonaDistribucion(e.target.value)}
-          className={inputClass}
-          placeholder="Ej: GBA Norte, Córdoba Capital, etc."
-        />
+        {/* Zona de distribución */}
+        <div>
+          <label htmlFor="zonaDistribucion" className={labelClass}>
+            Zona de distribución
+          </label>
+          <input
+            type="text"
+            id="zonaDistribucion"
+            value={zonaDistribucion}
+            onChange={(e) => setZonaDistribucion(e.target.value)}
+            className={inputClass}
+            placeholder="Ej: GBA Norte, Córdoba Capital, etc."
+          />
+        </div>
       </div>
 
       {/* Situación ante AFIP */}
@@ -222,7 +232,7 @@ Este email fue enviado desde el formulario de contacto de Kansaco
         className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#16a245] px-6 py-3 font-semibold text-white transition-all hover:bg-[#128a38] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
       >
         <Mail className="h-5 w-5" />
-        Enviar Consulta
+        Enviar Solicitud
       </button>
 
       <p className="text-center text-xs text-gray-400">

@@ -38,12 +38,12 @@ export default function TerminosYCondicionesPage() {
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#16a245]/20">
               <Scale className="h-10 w-10 text-[#16a245]" />
             </div>
-            <h1 className="mb-6 text-5xl font-black text-white md:text-6xl">
+            <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-5xl md:text-6xl">
               TÉRMINOS Y
               <span className="block text-[#16a245]">CONDICIONES</span>
             </h1>
-            <p className="mx-auto max-w-3xl text-xl text-gray-300">
-              Estos términos y condiciones rigen el uso de nuestro sitio web y la compra 
+            <p className="mx-auto max-w-3xl text-lg text-gray-300 sm:text-xl">
+              Estos términos y condiciones rigen el uso de nuestro sitio web y la compra
               de productos KANSACO. Por favor, léelos cuidadosamente.
             </p>
           </motion.div>

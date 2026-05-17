@@ -62,9 +62,18 @@ const Navbar = () => {
   const isAdmin = isAuthenticated && user?.rol === 'ADMIN';
 
   useEffect(() => {
-    // Marcar como hidratado después del primer render en el cliente
     setIsHydrated(true);
   }, []);
+
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      const prev = document.body.style.overflow;
+      document.body.style.overflow = 'hidden';
+      return () => {
+        document.body.style.overflow = prev;
+      };
+    }
+  }, [isMobileMenuOpen]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -422,7 +431,7 @@ const Navbar = () => {
                           }}
                           className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
                         >
-                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          <LayoutDashboard className="mr-2 h-3.5 w-3.5" />
                           Ir a Dashboard
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -432,7 +441,7 @@ const Navbar = () => {
                           }}
                           className="cursor-pointer text-gray-300 hover:bg-[#16a245]/10 hover:text-[#16a245] focus:bg-[#16a245]/10 focus:text-[#16a245]"
                         >
-                          <Package className="mr-2 h-4 w-4" />
+                          <Package className="mr-2 h-3.5 w-3.5" />
                           Ver historial de pedidos
                         </DropdownMenuItem>
                         <DropdownMenuItem
@@ -532,23 +541,23 @@ const Navbar = () => {
       <AnimatePresence>
         {isMobileMenuOpen && (
           <motion.div
-            className="border-t border-gray-800/50 bg-black/95 backdrop-blur-md xl:hidden"
+            className="max-h-[calc(100vh-4rem)] overflow-y-auto overscroll-contain-y border-t border-gray-800/50 bg-black xl:hidden"
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
             transition={{ duration: 0.3 }}
           >
-            <div className="space-y-4 px-4 py-6">
+            <div className="space-y-2 px-4 py-4">
               <div>
                 <button
                   onClick={() =>
                     setIsMobileProductsDropdownOpen(!isMobileProductsDropdownOpen)
                   }
-                  className="flex w-full items-center justify-between py-2 font-medium text-white"
+                  className="flex w-full items-center justify-between py-1.5 text-sm font-medium text-white"
                 >
                   <span>Productos</span>
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
                       isMobileProductsDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -557,7 +566,7 @@ const Navbar = () => {
                 <AnimatePresence>
                   {isMobileProductsDropdownOpen && (
                     <motion.div
-                      className="mt-2 space-y-2 pl-4"
+                      className="mt-1 space-y-1 pl-3"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -567,16 +576,16 @@ const Navbar = () => {
                         <Link
                           key={category.name}
                           href={category.href}
-                          className="block py-1 text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
+                          className="block py-0.5 text-xs text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           {category.name}
                         </Link>
                       ))}
-                      <div className="mt-2 border-t border-gray-700 pt-2">
+                      <div className="mt-1 border-t border-gray-700 pt-1">
                         <Link
                           href="/productos"
-                          className="block py-1 font-medium text-[#16a245] transition-colors duration-200 hover:text-[#16a245]/80"
+                          className="block py-0.5 text-xs font-medium text-[#16a245] transition-colors duration-200 hover:text-[#16a245]/80"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           Ver Todos los Productos
@@ -592,11 +601,11 @@ const Navbar = () => {
                   onClick={() =>
                     setIsMobileProductLinesDropdownOpen(!isMobileProductLinesDropdownOpen)
                   }
-                  className="flex w-full items-center justify-between py-2 font-medium text-white"
+                  className="flex w-full items-center justify-between py-1.5 text-sm font-medium text-white"
                 >
                   <span>Nuestra Línea</span>
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
                       isMobileProductLinesDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -605,7 +614,7 @@ const Navbar = () => {
                 <AnimatePresence>
                   {isMobileProductLinesDropdownOpen && (
                     <motion.div
-                      className="mt-2 space-y-2 pl-4"
+                      className="mt-1 space-y-1 pl-3"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -615,7 +624,7 @@ const Navbar = () => {
                         <Link
                           key={category.name}
                           href={category.href}
-                          className="block py-1 text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
+                          className="block py-0.5 text-xs text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           {category.name}
@@ -631,11 +640,11 @@ const Navbar = () => {
                   onClick={() =>
                     setIsMobileLubricantDropdownOpen(!isMobileLubricantDropdownOpen)
                   }
-                  className="flex w-full items-center justify-between py-2 font-medium text-white"
+                  className="flex w-full items-center justify-between py-1.5 text-sm font-medium text-white"
                 >
                   <span>El Lubricante</span>
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
                       isMobileLubricantDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -644,7 +653,7 @@ const Navbar = () => {
                 <AnimatePresence>
                   {isMobileLubricantDropdownOpen && (
                     <motion.div
-                      className="mt-2 space-y-2 pl-4"
+                      className="mt-1 space-y-1 pl-3"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -654,7 +663,7 @@ const Navbar = () => {
                         <Link
                           key={category.name}
                           href={category.href}
-                          className="block py-1 text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
+                          className="block py-0.5 text-xs text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           {category.name}
@@ -670,11 +679,11 @@ const Navbar = () => {
                   onClick={() =>
                     setIsMobileAboutUsDropdownOpen(!isMobileAboutUsDropdownOpen)
                   }
-                  className="flex w-full items-center justify-between py-2 font-medium text-white"
+                  className="flex w-full items-center justify-between py-1.5 text-sm font-medium text-white"
                 >
                   <span>Sobre Nosotros</span>
                   <ChevronDown
-                    className={`h-4 w-4 transition-transform duration-200 ${
+                    className={`h-3.5 w-3.5 transition-transform duration-200 ${
                       isMobileAboutUsDropdownOpen ? 'rotate-180' : ''
                     }`}
                   />
@@ -683,7 +692,7 @@ const Navbar = () => {
                 <AnimatePresence>
                   {isMobileAboutUsDropdownOpen && (
                     <motion.div
-                      className="mt-2 space-y-2 pl-4"
+                      className="mt-1 space-y-1 pl-3"
                       initial={{ opacity: 0, height: 0 }}
                       animate={{ opacity: 1, height: 'auto' }}
                       exit={{ opacity: 0, height: 0 }}
@@ -693,7 +702,7 @@ const Navbar = () => {
                         <Link
                           key={category.name}
                           href={category.href}
-                          className="block py-1 text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
+                          className="block py-0.5 text-xs text-gray-300 transition-colors duration-200 hover:text-[#16a245]"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
                           {category.name}
@@ -707,7 +716,7 @@ const Navbar = () => {
               {isAdmin && (
                 <Link
                   href="/admin/dashboard"
-                  className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                  className="block py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
                   onClick={() => setIsMobileMenuOpen(false)}
                 >
                   Admin
@@ -716,18 +725,17 @@ const Navbar = () => {
 
               <Link
                 href="/contacto"
-                className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                className="block py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
                 onClick={() => setIsMobileMenuOpen(false)}
               >
                 Contacto
               </Link>
 
-              <div className="border-t border-gray-700 pt-4">
+              <div className="border-t border-gray-700 pt-2">
                 {!isHydrated ? (
-                  // Estado neutral durante la hidratación
-                  <div className="py-2 text-gray-400">Cargando...</div>
+                  <div className="py-2 text-sm text-gray-400">Cargando...</div>
                 ) : isAuthenticated ? (
-                  <div className="space-y-2">
+                  <div className="space-y-1">
                     <p className="text-sm text-gray-300">
                       Hola, {user?.nombre || user?.email?.split('@')[0]}
                     </p>
@@ -735,36 +743,36 @@ const Navbar = () => {
                       <>
                         <Link
                           href="/admin/dashboard"
-                          className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                          className="flex items-center py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          <LayoutDashboard className="mr-2 h-3.5 w-3.5" />
                           Ir a Dashboard
                         </Link>
                         <Link
                           href="/mis-pedidos"
-                          className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                          className="flex items-center py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          <Package className="mr-2 h-4 w-4" />
+                          <Package className="mr-2 h-3.5 w-3.5" />
                           Ver historial de pedidos
                         </Link>
                         <Link
                           href="/admin/pedidos-solicitados"
-                          className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                          className="flex items-center py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
                           onClick={() => setIsMobileMenuOpen(false)}
                         >
-                          <FileText className="mr-2 h-4 w-4" />
+                          <FileText className="mr-2 h-3.5 w-3.5" />
                           Pedidos solicitados
                         </Link>
                       </>
                     ) : (
                       <Link
                         href="/mis-pedidos"
-                        className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                        className="flex items-center py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
                         onClick={() => setIsMobileMenuOpen(false)}
                       >
-                        <Package className="mr-2 h-4 w-4" />
+                        <Package className="mr-2 h-3.5 w-3.5" />
                         Ver historial de pedidos
                       </Link>
                     )}
@@ -774,16 +782,16 @@ const Navbar = () => {
                         setIsMobileMenuOpen(false);
                         router.push('/');
                       }}
-                      className="flex items-center py-2 font-medium text-white transition-colors duration-200 hover:text-red-400"
+                      className="flex items-center py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-red-400"
                     >
-                      <LogOut className="mr-2 h-4 w-4" />
+                      <LogOut className="mr-2 h-3.5 w-3.5" />
                       Cerrar Sesión
                     </button>
                   </div>
                 ) : (
                   <Link
                     href="/login"
-                    className="block py-2 font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
+                    className="block py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
                     onClick={() => setIsMobileMenuOpen(false)}
                   >
                     Iniciar Sesión

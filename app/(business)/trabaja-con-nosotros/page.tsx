@@ -57,10 +57,10 @@ export default function TrabajaConNosotrosPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h1 className="mb-2 text-5xl font-black text-[#16a245] md:text-6xl">
+            <h1 className="mb-2 text-4xl font-black text-[#16a245] sm:text-5xl md:text-6xl">
               TRABAJÁ CON NOSOTROS
             </h1>
-            <p className="mx-auto max-w-4xl text-xl text-gray-300">
+            <p className="mx-auto max-w-4xl text-lg text-gray-300 sm:text-xl">
               Sumate al equipo de Kansaco y sé parte de una empresa con más de 30
               años liderando la industria lubricante en Argentina.
             </p>

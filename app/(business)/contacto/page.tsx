@@ -6,7 +6,6 @@ import { MapPin, Phone, Mail, Clock, Facebook, Instagram } from 'lucide-react';
 import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
-import ContactFormMailto from '@/components/forms/ContactFormMailto';
 import { siteConfig } from '@/lib/site-config';
 
 export default function ContactoPage() {
@@ -51,10 +50,10 @@ export default function ContactoPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <h1 className="mb-2 text-5xl font-black text-[#16a245] md:text-6xl">
+            <h1 className="mb-2 text-4xl font-black text-[#16a245] sm:text-5xl md:text-6xl">
               CONTÁCTANOS
             </h1>
-            <p className="mx-auto max-w-4xl text-xl text-gray-300">
+            <p className="mx-auto max-w-4xl text-lg text-gray-300 sm:text-xl">
               ¿Necesitas ayuda o asesoramiento? Comunícate con nosotros por los
               medios que prefieras.
             </p>
@@ -192,7 +191,7 @@ export default function ContactoPage() {
               </motion.div>
             </div>
 
-            {/* Contact Form Section - Nueva */}
+            {/* CTA para mayoristas */}
             <motion.div
               initial={{ opacity: 0, y: 30 }}
               whileInView={{ opacity: 1, y: 0 }}
@@ -200,15 +199,20 @@ export default function ContactoPage() {
               viewport={{ once: true }}
               className="mx-auto mt-8 max-w-5xl"
             >
-              <div className="rounded-2xl border border-gray-800 bg-gray-900/50 p-8 backdrop-blur-sm">
-                <h3 className="mb-4 text-2xl font-bold text-white text-center">
-                  ¿Querés ser parte de Kansaco?
+              <div className="rounded-2xl border border-[#16a245]/40 bg-gradient-to-br from-[#16a245]/10 to-gray-900/50 p-8 text-center backdrop-blur-sm">
+                <h3 className="mb-3 text-2xl font-bold text-white">
+                  ¿Querés ser parte de Kansaco como distribuidor?
                 </h3>
-                <p className="mb-6 text-center text-gray-300">
-                  Completá el formulario y te contactamos
+                <p className="mb-6 text-gray-300">
+                  Si querés sumarte como mayorista o distribuidor, completá
+                  nuestro formulario de solicitud.
                 </p>
-
-                <ContactFormMailto />
+                <Link
+                  href="/mayorista"
+                  className="inline-flex items-center gap-2 rounded-lg bg-[#16a245] px-6 py-3 font-semibold text-white transition-all hover:scale-105 hover:bg-[#128a38]"
+                >
+                  Conocé el programa mayorista
+                </Link>
               </div>
             </motion.div>
           </div>

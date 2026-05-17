@@ -2,11 +2,11 @@
 'use client';
 
 import { useState, FormEvent } from 'react';
+import { useRouter } from 'next/navigation';
 import { registerUser } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { UserRole } from '@/types/auth';
 import PhoneInput, { isValidPhoneNumber } from 'react-phone-number-input';
 import 'react-phone-number-input/style.css';
 import {
@@ -27,15 +27,16 @@ import {
   User as UserIcon,
   Mail,
   Lock,
-  Building2,
-  Store,
   ShoppingBag,
   ArrowRight,
+  Building2,
+  ChevronRight,
 } from 'lucide-react';
 import Link from 'next/link';
 import Image from 'next/image';
 
 export default function RegisterPage() {
+  const router = useRouter();
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
@@ -43,7 +44,6 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [telefono, setTelefono] = useState<string | undefined>(undefined);
   const [direccion, setDireccion] = useState('');
-  const [rol, setRol] = useState<UserRole>('CLIENTE_MINORISTA');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -97,7 +97,7 @@ export default function RegisterPage() {
         apellido,
         telefono: telefonoWhatsapp,
         direccion: direccion || undefined,
-        rol,
+        rol: 'CLIENTE_MINORISTA' as const,
       };
       await registerUser(payload);
 
@@ -111,7 +111,10 @@ export default function RegisterPage() {
       setApellido('');
       setTelefono(undefined);
       setDireccion('');
-      setRol('CLIENTE_MINORISTA');
+
+      setTimeout(() => {
+        router.push('/login');
+      }, 1500);
     } catch (err) {
       if (err instanceof Error) {
         setError(err.message);
@@ -141,13 +144,13 @@ export default function RegisterPage() {
             <CardHeader className="text-center pb-0 relative z-10">
               <div className="mb-6 inline-block">
                 <div className="relative">
-                  <div className="bg-gradient-to-br from-gray-800 to-gray-950 rounded-2xl shadow-lg p-6 border border-gray-700">
+                  <div className="bg-gradient-to-br from-gray-800 to-gray-950 rounded-2xl shadow-lg p-4 border border-gray-700">
                     <Image
                       src="/logo-kansaco.webp"
                       quality={90}
                       alt="Kansaco"
-                      width={100}
-                      height={100}
+                      width={128}
+                      height={128}
                       className="mx-auto"
                     />
                   </div>
@@ -194,46 +197,24 @@ export default function RegisterPage() {
                 </Alert>
               )}
 
-              {/* Tipo de Cliente - Toggle */}
-              <div className="space-y-2">
-                <Label className="text-gray-300 font-medium">
-                  Tipo de Cliente
-                </Label>
-                <div className="grid grid-cols-2 gap-3">
-                  <button
-                    type="button"
-                    onClick={() => setRol('CLIENTE_MINORISTA')}
-                    disabled={isRegistering}
-                    className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                      rol === 'CLIENTE_MINORISTA'
-                        ? 'border-[#16a245] bg-[#16a245]/10 text-[#16a245]'
-                        : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
-                    }`}
-                  >
-                    <Store className="h-5 w-5" />
-                    <div className="text-left">
-                      <div className="font-semibold">Minorista</div>
-                      <div className="text-xs text-gray-400">Compra individual</div>
-                    </div>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setRol('CLIENTE_MAYORISTA')}
-                    disabled={isRegistering}
-                    className={`flex items-center justify-center gap-2 rounded-lg border-2 p-4 transition-all ${
-                      rol === 'CLIENTE_MAYORISTA'
-                        ? 'border-[#16a245] bg-[#16a245]/10 text-[#16a245]'
-                        : 'border-gray-700 bg-gray-800 text-gray-300 hover:border-gray-600'
-                    }`}
-                  >
-                    <Building2 className="h-5 w-5" />
-                    <div className="text-left">
-                      <div className="font-semibold">Mayorista</div>
-                      <div className="text-xs text-gray-400">Compra al por mayor</div>
-                    </div>
-                  </button>
+              {/* Aviso para mayoristas */}
+              <Link
+                href="/mayorista"
+                className="group flex items-center gap-3 rounded-xl border border-gray-700 bg-gray-800/60 p-4 transition-all duration-200 hover:border-[#16a245]/50 hover:bg-gray-800 active:scale-[0.98]"
+              >
+                <div className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-lg bg-[#16a245]/15 text-[#16a245] transition-colors group-hover:bg-[#16a245]/25">
+                  <Building2 className="h-5 w-5" />
                 </div>
-              </div>
+                <div className="flex-1 text-left">
+                  <div className="text-sm font-semibold text-white">
+                    ¿Sos mayorista o distribuidor?
+                  </div>
+                  <div className="text-xs text-gray-400">
+                    Solicitá tu cuenta de distribuidor
+                  </div>
+                </div>
+                <ChevronRight className="h-5 w-5 flex-shrink-0 text-gray-500 transition-all group-hover:translate-x-0.5 group-hover:text-[#16a245]" />
+              </Link>
 
               {/* Nombre */}
               <div className="space-y-2">

@@ -1,3 +1,4 @@
+@import "tw-animate-css";
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
@@ -85,21 +86,6 @@
   color: #065f46 !important;
 }
 
-/* Animate-in for the dropdown */
-@keyframes fade-in-scale {
-  from {
-    opacity: 0;
-    transform: scale(0.96) translateY(-4px);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-}
-
-.animate-in {
-  animation: fade-in-scale 0.15s ease-out;
-}
 
 /* Mobile Optimization - Prevent horizontal overflow */
 html, body {
@@ -254,6 +240,9 @@ button, a[role="button"], [data-slot="button"] {
     font-feature-settings:
       'rlig' 1,
       'calt' 1;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
   }
 }
 
@@ -338,4 +327,26 @@ button, a[role="button"], [data-slot="button"] {
 .phone-input-dark .PhoneInputInput:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+}
+
+.phone-input-dark .PhoneInputCountrySelect {
+  background: #1f2937;
+  color: #ffffff;
+  cursor: pointer;
+}
+
+.phone-input-dark .PhoneInputCountrySelect option {
+  background: #1f2937;
+  color: #ffffff;
+  padding: 0.5rem;
+}
+
+.phone-input-dark .PhoneInputCountry:hover {
+  border-color: #16a245;
+  background: #273548;
+}
+
+.phone-input-dark .PhoneInputCountry:focus-within {
+  border-color: #16a245;
+  box-shadow: 0 0 0 1px rgba(22, 162, 69, 0.3);
 }

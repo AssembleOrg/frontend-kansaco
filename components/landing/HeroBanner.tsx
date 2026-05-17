@@ -539,19 +539,20 @@ const HeroBanner = () => {
 
             {/* CTA Buttons */}
             <motion.div
-              className="flex w-full max-w-sm flex-col gap-4 sm:max-w-none sm:flex-row sm:justify-center lg:w-auto lg:justify-start"
+              className="flex w-full max-w-sm flex-col gap-4 sm:max-w-none sm:flex-row sm:flex-wrap sm:justify-center lg:w-auto lg:justify-start"
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.5 }}
             >
               <motion.div
+                className="w-full sm:w-auto"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
               >
                 <Button
                   asChild
                   size="lg"
-                  className="group relative overflow-hidden border-none bg-gradient-to-r from-[#16a245] to-[#0d7a32] px-6 py-3 text-base font-bold text-white shadow-2xl transition-all duration-300 hover:from-[#0d7a32] hover:to-[#16a245] hover:shadow-[#16a245]/25 sm:px-8 sm:py-4 sm:text-lg"
+                  className="group relative w-full overflow-hidden border-none bg-gradient-to-r from-[#16a245] to-[#0d7a32] px-6 py-3 text-base font-bold text-white shadow-2xl transition-all duration-300 hover:from-[#0d7a32] hover:to-[#16a245] hover:shadow-[#16a245]/25 sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                 >
                   <Link
                     href="/productos"
@@ -563,24 +564,47 @@ const HeroBanner = () => {
                 </Button>
               </motion.div>
 
-              <motion.div
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <Button
-                  asChild
-                  variant="outline"
-                  size="lg"
-                  className="group border-2 border-[#16a245]/50 bg-black/20 px-6 py-3 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white sm:px-8 sm:py-4 sm:text-lg"
+              <div className="flex w-full gap-3 sm:contents">
+                <motion.div
+                  className="flex-1 sm:flex-initial"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
                 >
-                  <Link
-                    href="/contacto"
-                    className="flex items-center justify-center gap-2"
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="group w-full border-2 border-[#16a245]/50 bg-black/20 px-6 py-3 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                   >
-                    Contactanos
-                  </Link>
-                </Button>
-              </motion.div>
+                    <Link
+                      href="/register"
+                      className="flex items-center justify-center gap-2"
+                    >
+                      Registrate
+                    </Link>
+                  </Button>
+                </motion.div>
+
+                <motion.div
+                  className="flex-1 sm:flex-initial"
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <Button
+                    asChild
+                    variant="outline"
+                    size="lg"
+                    className="group w-full border-2 border-[#16a245]/50 bg-black/20 px-6 py-3 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
+                  >
+                    <Link
+                      href="/contacto"
+                      className="flex items-center justify-center gap-2"
+                    >
+                      Contactanos
+                    </Link>
+                  </Button>
+                </motion.div>
+              </div>
             </motion.div>
 
             <motion.div

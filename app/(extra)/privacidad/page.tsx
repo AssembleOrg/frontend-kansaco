@@ -38,12 +38,12 @@ export default function PrivacidadPage() {
             <div className="mx-auto mb-6 flex h-20 w-20 items-center justify-center rounded-full bg-[#16a245]/20">
               <Shield className="h-10 w-10 text-[#16a245]" />
             </div>
-            <h1 className="mb-6 text-5xl font-black text-white md:text-6xl">
+            <h1 className="mb-6 text-4xl font-black leading-tight text-white sm:text-5xl md:text-6xl">
               POLÍTICA DE
               <span className="block text-[#16a245]">PRIVACIDAD</span>
             </h1>
-            <p className="mx-auto max-w-3xl text-xl text-gray-300">
-              En KANSACO respetamos y protegemos tu privacidad. Conoce cómo recopilamos, 
+            <p className="mx-auto max-w-3xl text-lg text-gray-300 sm:text-xl">
+              En KANSACO respetamos y protegemos tu privacidad. Conoce cómo recopilamos,
               utilizamos y protegemos tu información personal.
             </p>
           </motion.div>
