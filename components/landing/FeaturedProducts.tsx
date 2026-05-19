@@ -7,7 +7,7 @@ import { ArrowRight, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Product } from '@/types';
 import { NeonBorders } from './HeroBanner';
-import { getProducts, getProductsPaginated } from '@/lib/api';
+import { getProductsPaginated } from '@/lib/api';
 import { getProductCategoryNames } from '@/lib/productUtils';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -17,45 +17,31 @@ const FeaturedProducts = () => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [itemsPerPage, setItemsPerPage] = useState(3);
 
-  // Fetch productos destacados con fallback
+  // Fetch productos visibles una sola vez; priorizamos los featured en el cliente.
   useEffect(() => {
+    let cancelled = false;
     const fetchProducts = async () => {
       try {
-        // Intentar obtener productos destacados
         const result = await getProductsPaginated(null, {
           page: 1,
           limit: 9,
           isVisible: true,
-          isFeatured: true,
         });
+        if (cancelled) return;
 
-        // Fallback: si no hay destacados, mostrar productos visibles
-        if (result.data.length === 0) {
-          const fallbackResult = await getProductsPaginated(null, {
-            page: 1,
-            limit: 9,
-            isVisible: true,
-          });
-          setProducts(fallbackResult.data);
-        } else {
-          setProducts(result.data);
-        }
-      } catch {
-        // Fallback en caso de error
-        try {
-          const data = await getProducts(null);
-          const visibleProducts = data
-            .filter((p) => p.isVisible && (p.isFeatured || true))
-            .slice(0, 9);
-          setProducts(visibleProducts);
-        } catch (fallbackError) {
-          console.error('Error fetching products:', fallbackError);
-        }
+        const all = result.data ?? [];
+        const featured = all.filter((p) => p.isFeatured);
+        setProducts(featured.length > 0 ? featured : all);
+      } catch (error) {
+        if (!cancelled) console.error('Error fetching products:', error);
       } finally {
-        setIsLoading(false);
+        if (!cancelled) setIsLoading(false);
       }
     };
     fetchProducts();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Responsive items per page

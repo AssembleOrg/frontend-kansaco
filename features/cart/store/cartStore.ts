@@ -59,6 +59,10 @@ const cancelInFlight = (key: string) => {
   }
 };
 
+// Dedup global del sync: si ya hay un syncWithServer corriendo,
+// los siguientes callers comparten la misma Promise.
+let syncInFlight: Promise<void> | null = null;
+
 export const useCartStore = create<CartState>()(
   persist(
     (set, get) => ({
@@ -68,6 +72,10 @@ export const useCartStore = create<CartState>()(
       isCartOpen: false,
 
       syncWithServer: async () => {
+        if (syncInFlight) {
+          return syncInFlight;
+        }
+
         const authState = useAuthStore.getState();
         if (!authState.token || !authState.user?.id) {
           logger.debug('syncWithServer: Not authenticated, using local cart.');
@@ -79,43 +87,50 @@ export const useCartStore = create<CartState>()(
           return;
         }
 
-        try {
-          set({ isLoading: true, error: null });
+        const run = async () => {
+          try {
+            set({ isLoading: true, error: null });
 
-          const userCartResponse = await getUserCart(
-            authState.user.id,
-            authState.token
-          );
+            const userCartResponse = await getUserCart(
+              authState.user!.id,
+              authState.token!
+            );
 
-          if (userCartResponse?.data?.id) {
-            set({
-              cart: sanitizeCart(userCartResponse.data),
-              isLoading: false,
-              error: null,
-            });
-            logger.debug('syncWithServer: Cart synchronized with server.');
-          } else {
-            logger.info('syncWithServer: Server unavailable, keeping local cart.');
+            if (userCartResponse?.data?.id) {
+              set({
+                cart: sanitizeCart(userCartResponse.data),
+                isLoading: false,
+                error: null,
+              });
+              logger.debug('syncWithServer: Cart synchronized with server.');
+            } else {
+              logger.info('syncWithServer: Server unavailable, keeping local cart.');
+              set({
+                isLoading: false,
+                error: null,
+                cart: sanitizeCart({
+                  ...get().cart,
+                  userId: authState.user!.id,
+                }),
+              });
+            }
+          } catch (error) {
+            logger.info('syncWithServer: Server unavailable, keeping local cart.', error);
             set({
               isLoading: false,
               error: null,
               cart: sanitizeCart({
                 ...get().cart,
-                userId: authState.user.id,
+                userId: authState.user?.id || '',
               }),
             });
           }
-        } catch (error) {
-          logger.info('syncWithServer: Server unavailable, keeping local cart.', error);
-          set({
-            isLoading: false,
-            error: null,
-            cart: sanitizeCart({
-              ...get().cart,
-              userId: authState.user?.id || '',
-            }),
-          });
-        }
+        };
+
+        syncInFlight = run().finally(() => {
+          syncInFlight = null;
+        });
+        return syncInFlight;
       },
 
       // Optimistic + delta semantics. Backend treats ?quantity=N as INCREMENT,

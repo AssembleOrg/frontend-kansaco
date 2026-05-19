@@ -70,6 +70,12 @@ const mapLoginError = (err: unknown): SubmitError => {
           message: err.message,
           code: err.code,
         };
+      case 'RATE_LIMITED':
+        return {
+          title: 'Demasiados intentos',
+          message: err.message,
+          code: err.code,
+        };
       case 'NETWORK':
         return {
           title: 'Sin conexión',

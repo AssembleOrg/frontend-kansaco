@@ -567,18 +567,40 @@ function translateBackendMessage(msg: string): string {
 
 export class LoginError extends Error {
   status: number;
-  code: 'INVALID_CREDENTIALS' | 'VALIDATION' | 'SERVER' | 'NETWORK' | 'UNKNOWN';
+  code: 'INVALID_CREDENTIALS' | 'VALIDATION' | 'SERVER' | 'NETWORK' | 'UNKNOWN' | 'RATE_LIMITED';
+  retryAfterSeconds?: number;
 
   constructor(
     message: string,
     code: LoginError['code'],
-    status = 0
+    status = 0,
+    retryAfterSeconds?: number
   ) {
     super(message);
     this.name = 'LoginError';
     this.code = code;
     this.status = status;
+    this.retryAfterSeconds = retryAfterSeconds;
   }
+}
+
+// Parsea el header Retry-After (RFC 7231): segundos o HTTP-date.
+function parseRetryAfter(value: string | null): number | undefined {
+  if (!value) return undefined;
+  const asNumber = Number(value);
+  if (Number.isFinite(asNumber) && asNumber >= 0) return Math.ceil(asNumber);
+  const asDate = Date.parse(value);
+  if (!Number.isNaN(asDate)) {
+    const diff = Math.ceil((asDate - Date.now()) / 1000);
+    return diff > 0 ? diff : 0;
+  }
+  return undefined;
+}
+
+function formatWait(seconds: number): string {
+  if (seconds < 60) return `${seconds} segundo${seconds === 1 ? '' : 's'}`;
+  const mins = Math.ceil(seconds / 60);
+  return `${mins} minuto${mins === 1 ? '' : 's'}`;
 }
 
 export async function loginUser(
@@ -653,10 +675,15 @@ export async function loginUser(
       );
     }
     if (response.status === 429) {
+      const retryAfterSeconds = parseRetryAfter(response.headers.get('Retry-After'));
+      const wait = retryAfterSeconds && retryAfterSeconds > 0
+        ? ` Esperá ${formatWait(retryAfterSeconds)} antes de volver a intentar.`
+        : ' Esperá unos minutos antes de volver a intentar.';
       throw new LoginError(
-        'Demasiados intentos. Esperá unos minutos antes de volver a intentar.',
-        'VALIDATION',
-        response.status
+        `Demasiados intentos.${wait}`,
+        'RATE_LIMITED',
+        response.status,
+        retryAfterSeconds
       );
     }
     if (response.status >= 500) {
