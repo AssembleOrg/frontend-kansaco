@@ -1478,6 +1478,11 @@ export async function downloadOrderPDF(
       cache: 'no-store',
     });
 
+    if (response.status === 401) {
+      handleUnauthorized();
+      throw new Error('Unauthorized - Please login again');
+    }
+
     if (!response.ok) {
       const errorText = await response.text();
       throw new Error(`Failed to download PDF: ${errorText}`);
@@ -1739,6 +1744,9 @@ export async function uploadImageWithProgress(
             new Error('Respuesta inválida del servidor al subir la imagen')
           );
         }
+      } else if (xhr.status === 401) {
+        handleUnauthorized();
+        reject(new Error('Unauthorized - Please login again'));
       } else {
         let message = `Error ${xhr.status} al subir la imagen`;
         try {
@@ -2050,6 +2058,10 @@ export async function associateProductImage(
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        handleUnauthorized();
+        throw new Error('Unauthorized - Please login again');
+      }
       // Si el endpoint no existe (404), intentar con upload
       if (response.status === 404) {
         throw new Error('ASSOCIATE_ENDPOINT_NOT_AVAILABLE');
@@ -2108,6 +2120,10 @@ export async function uploadProductImage(
     });
 
     if (!response.ok) {
+      if (response.status === 401) {
+        handleUnauthorized();
+        throw new Error('Unauthorized - Please login again');
+      }
       throw new Error(
         `Failed to upload image: ${response.status} ${response.statusText}`
       );

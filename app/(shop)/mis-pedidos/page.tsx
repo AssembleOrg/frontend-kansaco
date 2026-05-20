@@ -241,7 +241,7 @@ function OrdersHistoryContent() {
                   {pagination.total} pedido{pagination.total !== 1 ? 's' : ''} en total
                 </>
               ) : (
-                <span>No hay pedidos para mostrar</span>
+                <span>No hay pedidos para mostrar.</span>
               )}
             </div>
             <div className="flex gap-2">
