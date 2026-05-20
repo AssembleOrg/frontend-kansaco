@@ -145,15 +145,25 @@ const HeroBanner = () => {
   const [isPlaying, setIsPlaying] = useState(true);
   const [isMuted, setIsMuted] = useState(true);
   const [isVideoLoaded, setIsVideoLoaded] = useState(false);
+  const [videoSrc, setVideoSrc] = useState('');
 
   useEffect(() => {
+    // Esperar a que el poster y el contenido crítico carguen antes de iniciar el video
+    const timer = setTimeout(() => {
+      setVideoSrc('https://kansaco-images.nyc3.cdn.digitaloceanspaces.com/videos/video-recortado-kansaco.mp4');
+    }, 2000);
+    return () => clearTimeout(timer);
+  }, []);
+
+  useEffect(() => {
+    if (!videoSrc) return;
     const video = videoRef.current;
     if (!video) return;
-    const handleCanPlayThrough = () => setIsVideoLoaded(true);
-    video.addEventListener('canplaythrough', handleCanPlayThrough);
-    if (video.readyState >= 3) setIsVideoLoaded(true);
-    return () => video.removeEventListener('canplaythrough', handleCanPlayThrough);
-  }, []);
+    const handleCanPlay = () => setIsVideoLoaded(true);
+    video.addEventListener('canplay', handleCanPlay);
+    if (video.readyState >= 2) setIsVideoLoaded(true);
+    return () => video.removeEventListener('canplay', handleCanPlay);
+  }, [videoSrc]);
 
   const togglePlay = () => {
     const video = videoRef.current;
@@ -198,9 +208,7 @@ const HeroBanner = () => {
   return (
     <section className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white lg:flex-row">
       {/* Video Section - 1/2 - OCULTO EN MÓVILES */}
-      <div className={`relative h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black transition-all duration-700 ${
-        isVideoLoaded ? 'hidden lg:block lg:w-1/2' : 'hidden'
-      }`}>
+      <div className={`relative h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black transition-all duration-700 hidden lg:block lg:w-1/2`}>
         {/* Video Element */}
         <video
           ref={videoRef}
@@ -212,9 +220,19 @@ const HeroBanner = () => {
           className="h-full w-full object-contain"
           poster="/landing/business-kansaco.webp"
         >
-          <source src="/video-recortado-kansaco.mp4" type="video/mp4" />
+          {videoSrc && <source src={videoSrc} type="video/mp4" />}
           Tu navegador no soporta el tag de video.
         </video>
+
+        {/* Poster overlay — se desvanece cuando el video está listo */}
+        <img
+          src="/landing/business-kansaco.webp"
+          alt=""
+          aria-hidden="true"
+          className={`absolute inset-0 h-full w-full object-contain transition-opacity duration-700 ${
+            isVideoLoaded ? 'opacity-0 pointer-events-none' : 'opacity-100'
+          }`}
+        />
 
         {/* Video Overlay */}
         <div className="absolute inset-0 bg-gradient-to-r from-black/30 via-transparent to-black/50"></div>
@@ -255,8 +273,7 @@ const HeroBanner = () => {
         </motion.div>
 
         {/* Subtle Animated Particles */}
-        {isVideoLoaded && (
-          <div className="absolute inset-0 hidden lg:block">
+        <div className="absolute inset-0 hidden lg:block">
           <motion.div
             className="absolute left-20 top-20 h-1 w-1 rounded-full bg-[#16a245] opacity-40"
             animate={{
@@ -296,23 +313,17 @@ const HeroBanner = () => {
             }}
           />
         </div>
-        )}
       </div>
 
       {/* Content Section - 1/2 en desktop, full width en móvil */}
-      <div className={`relative flex min-h-screen flex-col transition-all duration-700 ${
-        isVideoLoaded
-          ? 'w-full lg:w-1/2 lg:items-start lg:text-left items-center justify-center text-center lg:h-screen'
-          : 'w-full items-center justify-center text-center'
-      }`}>
+      <div className="relative flex min-h-screen flex-col transition-all duration-700 w-full lg:w-1/2 lg:items-start lg:text-left items-center justify-center text-center lg:h-screen">
         {/* Simple Lightning Borders */}
-        {isVideoLoaded && (
-          <motion.div
-            className="pointer-events-none absolute inset-0 z-50"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 1, delay: 1 }}
-          >
+        <motion.div
+          className="pointer-events-none absolute inset-0 z-50"
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 1, delay: 1 }}
+        >
           {/* Top Lightning Border */}
           <motion.div
             className="absolute left-0 right-0 top-0 h-2 bg-gradient-to-r from-transparent via-[#16a245] to-transparent"
@@ -456,7 +467,6 @@ const HeroBanner = () => {
             }}
           />
         </motion.div>
-        )}
 
         <div
           ref={contentRef}
