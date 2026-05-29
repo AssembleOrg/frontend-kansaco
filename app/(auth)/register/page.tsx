@@ -1,7 +1,8 @@
 // /app/(auth)/register/page.tsx
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useState, useEffect, FormEvent } from 'react';
+import { REGISTRATION_ENABLED } from '@/lib/flags';
 import { useRouter } from 'next/navigation';
 import { registerUser } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -37,6 +38,14 @@ import Image from 'next/image';
 
 export default function RegisterPage() {
   const router = useRouter();
+
+  // REGISTRATION_ENABLED: redirigir si el registro está deshabilitado temporalmente
+  useEffect(() => {
+    if (!REGISTRATION_ENABLED) {
+      router.replace('/productos');
+    }
+  }, [router]);
+
   const [nombre, setNombre] = useState('');
   const [apellido, setApellido] = useState('');
   const [email, setEmail] = useState('');
@@ -125,6 +134,11 @@ export default function RegisterPage() {
       setIsRegistering(false);
     }
   };
+
+  // Previene el flash del formulario mientras se ejecuta el redirect
+  if (!REGISTRATION_ENABLED) {
+    return null;
+  }
 
   return (
     <div className="min-h-screen bg-gradient-to-b from-black via-gray-950 to-black py-12 px-4 relative overflow-hidden">

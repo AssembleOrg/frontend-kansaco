@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useMemo, useCallback, Suspense, type FormEvent, type ChangeEvent } from 'react';
+import { REGISTRATION_ENABLED } from '@/lib/flags';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { LoginError } from '@/lib/api';
@@ -414,17 +415,26 @@ function LoginContent() {
                   <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
                 </Link>
 
-                <div className="mt-6">
-                  <p className="text-sm text-gray-300 text-center">
-                    ¿No tienes una cuenta?{' '}
-                    <Link
-                      href="/register"
-                      className="text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline transition-colors"
-                    >
-                      Regístrate aquí
-                    </Link>
-                  </p>
-                </div>
+                {/* REGISTRATION_ENABLED: ocultar link de registro mientras no esté habilitado */}
+                {REGISTRATION_ENABLED ? (
+                  <div className="mt-6">
+                    <p className="text-sm text-gray-300 text-center">
+                      ¿No tienes una cuenta?{' '}
+                      <Link
+                        href="/register"
+                        className="text-[#16a245] hover:text-[#0d7a32] font-medium hover:underline transition-colors"
+                      >
+                        Regístrate aquí
+                      </Link>
+                    </p>
+                  </div>
+                ) : (
+                  <div className="mt-6">
+                    <p className="text-sm text-gray-500 text-center">
+                      El registro de nuevos usuarios estará disponible próximamente.
+                    </p>
+                  </div>
+                )}
 
                 <div className="mt-8 pt-6 border-t border-gray-800">
                   <p className="text-xs text-gray-300 text-center leading-relaxed">

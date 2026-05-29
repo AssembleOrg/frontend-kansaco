@@ -102,6 +102,7 @@ export default function AnalyticsPage() {
 
   // Events state
   const [events, setEvents] = useState<AnalyticsEvent[]>([]);
+  const [eventsError, setEventsError] = useState<string | null>(null);
   const [eventsPagination, setEventsPagination] = useState({ page: 1, totalPages: 1, total: 0, hasNext: false, hasPrev: false });
   const [eventFilters, setEventFilters] = useState({
     userId: '',
@@ -159,6 +160,7 @@ export default function AnalyticsPage() {
   const loadEvents = useCallback(async (page = 1) => {
     if (!token) return;
     setIsLoading(true);
+    setEventsError(null);
     try {
       const result = await getAnalyticsEvents(token, {
         page,
@@ -173,6 +175,7 @@ export default function AnalyticsPage() {
       setEventsPagination({ page: result.page, totalPages: result.totalPages, total: result.total, hasNext: result.hasNext, hasPrev: result.hasPrev });
     } catch (error) {
       console.error('Error loading events:', error);
+      setEventsError('No se pudieron cargar los registros. Intentá de nuevo.');
     } finally {
       setIsLoading(false);
     }
@@ -202,14 +205,16 @@ export default function AnalyticsPage() {
     if (!token) return;
     setIsLoading(true);
     try {
-      const result = await getProductRanking(token, { order: productRankOrder, limit: 20 });
+      const df = period === 'custom' && customDateRange.from ? format(customDateRange.from, 'yyyy-MM-dd') : undefined;
+      const dt = period === 'custom' && customDateRange.to ? format(customDateRange.to, 'yyyy-MM-dd') : undefined;
+      const result = await getProductRanking(token, { order: productRankOrder, limit: 20, period, dateFrom: df, dateTo: dt });
       setProductRanking(result);
     } catch (error) {
       console.error('Error loading product ranking:', error);
     } finally {
       setIsLoading(false);
     }
-  }, [token, productRankOrder]);
+  }, [token, productRankOrder, period, customDateRange]);
 
   // Load user activity detail
   const handleViewUser = async (user: AnalyticsUser) => {
@@ -250,6 +255,7 @@ export default function AnalyticsPage() {
       else if (activeTab === 'events') await loadEvents(eventsPagination.page);
       else if (activeTab === 'users') await loadUsers(usersPagination.page);
       else if (activeTab === 'products') await loadProductRanking();
+      else if (activeTab === 'compare') await loadCompare();
     } finally {
       setIsRefreshing(false);
     }
@@ -374,6 +380,11 @@ export default function AnalyticsPage() {
           bottomProducts={bottomProducts}
           topViewed={topViewed}
           isLoading={isLoading}
+          onNavigateToEvents={(filters) => {
+            setEventFilters((prev) => ({ ...prev, ...filters }));
+            setActiveTab('events');
+          }}
+          onNavigateToUsers={() => setActiveTab('users')}
         />
       )}
 
@@ -383,8 +394,8 @@ export default function AnalyticsPage() {
           pagination={eventsPagination}
           filters={eventFilters}
           isLoading={isLoading}
+          error={eventsError}
           onFilterChange={(key, value) => setEventFilters((prev) => ({ ...prev, [key]: value }))}
-          onApplyFilters={() => loadEvents(1)}
           onPageChange={(page) => loadEvents(page)}
           formatDate={formatDate}
         />
@@ -555,7 +566,7 @@ export default function AnalyticsPage() {
 // Overview Tab with Charts
 // =============================================
 function OverviewTab({
-  stats, topSearches, anonymousSearches, topProducts, bottomProducts, topViewed, isLoading,
+  stats, topSearches, anonymousSearches, topProducts, bottomProducts, topViewed, isLoading, onNavigateToEvents, onNavigateToUsers,
 }: {
   stats: AnalyticsStats | null;
   topSearches: TopSearch[];
@@ -564,6 +575,8 @@ function OverviewTab({
   bottomProducts: ProductRankingItem[];
   topViewed: TopViewedProduct[];
   isLoading: boolean;
+  onNavigateToEvents: (filters: { eventType?: string; dateFrom?: string; dateTo?: string; search?: string; userId?: string }) => void;
+  onNavigateToUsers: () => void;
 }) {
   const isMobile = useIsMobile();
   if (isLoading && !stats) {
@@ -576,6 +589,10 @@ function OverviewTab({
       </div>
     );
   }
+
+  const todayStr = format(new Date(), 'yyyy-MM-dd');
+  const weekStr = format(startOfWeek(new Date(), { weekStartsOn: 1 }), 'yyyy-MM-dd');
+  const monthStr = format(startOfMonth(new Date()), 'yyyy-MM-dd');
 
   // Chart data
   const loginChartData = [
@@ -611,25 +628,27 @@ function OverviewTab({
       <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
         <StatCard
           icon={<Users className="h-5 w-5 text-blue-600" />}
-          title="Usuarios"
+          title="Usuarios totales"
           value={stats?.totalUsers ?? 0}
+          onClick={onNavigateToUsers}
         />
         <StatCard
           icon={<LogIn className="h-5 w-5 text-green-600" />}
           title="Logins hoy"
           value={stats?.logins?.today ?? 0}
-          subtitle={`Sem: ${stats?.logins?.week ?? 0} · Mes: ${stats?.logins?.month ?? 0}`}
+          onClick={() => onNavigateToEvents({ eventType: 'login', dateFrom: todayStr })}
         />
         <StatCard
           icon={<Search className="h-5 w-5 text-purple-600" />}
           title="Búsquedas hoy"
           value={stats?.searches?.today ?? 0}
-          subtitle={`Sem: ${stats?.searches?.week ?? 0} · Mes: ${stats?.searches?.month ?? 0}`}
+          onClick={() => onNavigateToEvents({ eventType: 'search', dateFrom: todayStr })}
         />
         <StatCard
           icon={<Activity className="h-5 w-5 text-orange-600" />}
-          title="Eventos"
+          title="Interacciones totales"
           value={stats?.totalEvents ?? 0}
+          onClick={() => onNavigateToEvents({})}
         />
       </div>
 
@@ -876,17 +895,18 @@ function OverviewTab({
 }
 
 function StatCard({
-  icon, title, value, subtitle,
+  icon, title, value, onClick,
 }: {
   icon: React.ReactNode;
   title: string;
   value: number;
-  subtitle?: string;
-  bgColor?: string;
-  borderColor?: string;
+  onClick?: () => void;
 }) {
   return (
-    <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-shadow hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] sm:p-5">
+    <div
+      onClick={onClick}
+      className={`rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_3px_rgba(0,0,0,0.04)] transition-all hover:shadow-[0_2px_8px_rgba(0,0,0,0.06)] sm:p-5 ${onClick ? 'cursor-pointer hover:ring-1 hover:ring-green-300' : ''}`}
+    >
       <div className="mb-2 flex items-center gap-2.5">
         <div className="rounded-lg bg-neutral-50 p-2 ring-1 ring-neutral-200/70">
           {icon}
@@ -896,7 +916,6 @@ function StatCard({
       <p className="text-2xl font-semibold tabular-nums tracking-tight text-neutral-900 sm:text-3xl">
         {value.toLocaleString('es-AR')}
       </p>
-      {subtitle && <p className="mt-1 text-[11px] tabular-nums text-neutral-500">{subtitle}</p>}
     </div>
   );
 }
@@ -1188,14 +1207,14 @@ function PeriodSelector({
 // Events Tab
 // =============================================
 function EventsTab({
-  events, pagination, filters, isLoading, onFilterChange, onApplyFilters, onPageChange, formatDate,
+  events, pagination, filters, isLoading, error, onFilterChange, onPageChange, formatDate,
 }: {
   events: AnalyticsEvent[];
   pagination: { page: number; totalPages: number; total: number; hasNext: boolean; hasPrev: boolean };
   filters: { userId: string; eventType: string; dateFrom: string; dateTo: string; search: string };
   isLoading: boolean;
+  error: string | null;
   onFilterChange: (key: string, value: string) => void;
-  onApplyFilters: () => void;
   onPageChange: (page: number) => void;
   formatDate: (d: string) => string;
 }) {
@@ -1207,11 +1226,11 @@ function EventsTab({
           <Filter className="h-4 w-4 text-neutral-500" />
           <span className="text-sm font-medium text-neutral-700">Filtros</span>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <Input
-            placeholder="ID de usuario"
-            value={filters.userId}
-            onChange={(e) => onFilterChange('userId', e.target.value)}
+            placeholder="Email, producto o término..."
+            value={filters.search}
+            onChange={(e) => onFilterChange('search', e.target.value)}
             className="text-sm"
           />
           <select
@@ -1221,7 +1240,7 @@ function EventsTab({
           >
             <option value="">Todos los tipos</option>
             <option value="login">Login</option>
-            <option value="search">Busqueda</option>
+            <option value="search">Búsqueda</option>
             <option value="product_view">Vista de producto</option>
           </select>
           <Input
@@ -1236,15 +1255,6 @@ function EventsTab({
             onChange={(e) => onFilterChange('dateTo', e.target.value)}
             className="text-sm"
           />
-          <Input
-            placeholder="Buscar en payload..."
-            value={filters.search}
-            onChange={(e) => onFilterChange('search', e.target.value)}
-            className="text-sm"
-          />
-          <Button onClick={onApplyFilters} className="bg-green-600 hover:bg-green-700 text-sm">
-            Filtrar
-          </Button>
         </div>
       </div>
 
@@ -1252,8 +1262,10 @@ function EventsTab({
       <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)] lg:hidden">
         {isLoading && events.length === 0 ? (
           <p className="px-4 py-8 text-center text-sm text-neutral-500">Cargando...</p>
+        ) : error ? (
+          <p className="px-4 py-8 text-center text-sm text-red-500">{error}</p>
         ) : events.length === 0 ? (
-          <p className="px-4 py-8 text-center text-sm text-neutral-500">No se encontraron eventos</p>
+          <p className="px-4 py-8 text-center text-sm text-neutral-500">No se encontraron registros</p>
         ) : (
           events.map((event) => {
             const detalle =
@@ -1261,10 +1273,10 @@ function EventsTab({
                 ? `"${event.payload.query}" (${event.payload.resultsCount ?? '?'} resultados)`
                 : event.eventType === 'product_view' && event.payload?.productName
                   ? event.payload.productName
-                  : event.payload?.rol
-                    ? `Rol: ${event.payload.rol}`
+                  : event.eventType === 'login'
+                    ? 'Ingresó al sistema'
                     : null;
-            const usuario = event.payload?.email || event.userId || 'Visitante';
+            const usuario = event.payload?.email || 'Visitante';
             return (
               <div
                 key={event.id}
@@ -1338,8 +1350,10 @@ function EventsTab({
             <tbody className="divide-y divide-neutral-200/60">
               {isLoading && events.length === 0 ? (
                 <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-500">Cargando...</td></tr>
+              ) : error ? (
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-red-500">{error}</td></tr>
               ) : events.length === 0 ? (
-                <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-500">No se encontraron eventos</td></tr>
+                <tr><td colSpan={4} className="px-4 py-8 text-center text-neutral-500">No se encontraron registros</td></tr>
               ) : (
                 events.map((event) => (
                   <tr key={event.id} className="transition-colors hover:bg-neutral-50/60">
@@ -1359,15 +1373,15 @@ function EventsTab({
                       </span>
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600">
-                      {event.payload?.email || event.userId || <span className="italic text-neutral-400">Visitante</span>}
+                      {event.payload?.email || <span className="italic text-neutral-400">Visitante</span>}
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600">
                       {event.eventType === 'search' && event.payload?.query
                         ? `"${event.payload.query}" (${event.payload.resultsCount ?? '?'} resultados)`
                         : event.eventType === 'product_view' && event.payload?.productName
                           ? event.payload.productName
-                          : event.payload?.rol
-                            ? `Rol: ${event.payload.rol}`
+                          : event.eventType === 'login'
+                            ? 'Ingresó al sistema'
                             : '-'}
                     </td>
                   </tr>

@@ -7,6 +7,7 @@ import { useState, useRef, useEffect } from 'react';
 import { Play, Pause, ChevronDown, ArrowDownRight, Volume2, VolumeX } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { scrollToSection } from '@/lib/scrollUtils';
+import { REGISTRATION_ENABLED } from '@/lib/flags';
 
 // Componente reutilizable para efectos de neón
 export const NeonBorders = ({
@@ -575,25 +576,36 @@ const HeroBanner = () => {
               </motion.div>
 
               <div className="flex w-full gap-3 sm:contents">
-                <motion.div
-                  className="flex-1 sm:flex-initial"
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                >
-                  <Button
-                    asChild
-                    variant="outline"
-                    size="lg"
-                    className="group w-full border-2 border-[#16a245]/50 bg-black/20 px-6 py-3 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
+                {/* REGISTRATION_ENABLED: ocultar botón de registro mientras no esté habilitado */}
+                {REGISTRATION_ENABLED ? (
+                  <motion.div
+                    className="flex-1 sm:flex-initial"
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
                   >
-                    <Link
-                      href="/register"
-                      className="flex items-center justify-center gap-2"
+                    <Button
+                      asChild
+                      variant="outline"
+                      size="lg"
+                      className="group w-full border-2 border-[#16a245]/50 bg-black/20 px-6 py-3 text-base font-semibold text-white backdrop-blur-sm transition-all duration-300 hover:border-[#16a245] hover:bg-[#16a245]/20 hover:text-white sm:w-auto sm:px-8 sm:py-4 sm:text-lg"
                     >
-                      Registrate
-                    </Link>
-                  </Button>
-                </motion.div>
+                      <Link
+                        href="/register"
+                        className="flex items-center justify-center gap-2"
+                      >
+                        Registrate
+                      </Link>
+                    </Button>
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="flex-1 sm:flex-initial flex items-center justify-center px-4 py-2 rounded-lg border border-[#16a245]/30 bg-black/20 text-sm text-[#16a245]/70 backdrop-blur-sm"
+                  >
+                    ¡Próximamente podrás crear tu cuenta!
+                  </motion.div>
+                )}
 
                 <motion.div
                   className="flex-1 sm:flex-initial"
