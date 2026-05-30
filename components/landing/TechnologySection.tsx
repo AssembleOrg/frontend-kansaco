@@ -84,13 +84,13 @@ const TechnologySection = () => {
       {/* Subtle animated background elements */}
       <div className="absolute inset-0 opacity-60">
         {/* Floating oil molecules */}
-        {Array.from({ length: 8 }).map((_, i) => (
+        {Array.from({ length: 4 }).map((_, i) => (
           <div
             key={`molecule-${i}`}
             className="absolute h-2 w-2 rounded-full bg-[#16a245]"
             style={{
-              left: `${15 + i * 10}%`,
-              top: `${20 + i * 8}%`,
+              left: `${15 + i * 20}%`,
+              top: `${20 + i * 16}%`,
               animationDelay: `${i * 0.8}s`,
               animation: 'float 8s ease-in-out infinite',
             }}

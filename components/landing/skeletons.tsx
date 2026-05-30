@@ -1,5 +1,5 @@
 export const FeaturedProductsSkeleton = () => (
-  <section className="bg-gray-900 py-24">
+  <section className="min-h-[1320px] bg-gray-900 py-24 lg:min-h-[1000px]">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mb-16 text-center">
         <div className="mx-auto mb-4 h-8 w-64 animate-pulse rounded bg-gray-800" />
@@ -20,7 +20,7 @@ export const FeaturedProductsSkeleton = () => (
 );
 
 export const CategoriesSkeleton = () => (
-  <section className="min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-800 py-20">
+  <section className="bg-gradient-to-br from-gray-900 via-black to-gray-800 py-20">
     <div className="container mx-auto px-4">
       <div className="mb-12 flex flex-col items-center gap-4">
         <div className="h-8 w-48 animate-pulse rounded bg-gray-700" />
@@ -36,7 +36,7 @@ export const CategoriesSkeleton = () => (
 );
 
 export const TechnologySkeleton = () => (
-  <section className="overflow-hidden bg-gradient-to-b from-black via-gray-950 to-gray-900 py-24">
+  <section className="min-h-[2236px] overflow-hidden bg-gradient-to-b from-black via-gray-950 to-gray-900 py-24 lg:min-h-[1000px]">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 gap-20 lg:grid-cols-2">
         <div className="space-y-6">
@@ -55,7 +55,7 @@ export const TechnologySkeleton = () => (
 );
 
 export const ArgentinaSkeleton = () => (
-  <section className="bg-gradient-to-b from-gray-900 via-gray-950 to-black py-20">
+  <section className="min-h-[714px] bg-gradient-to-b from-gray-900 via-gray-950 to-black py-20 lg:min-h-[640px]">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="mx-auto h-64 w-full max-w-2xl animate-pulse rounded-2xl bg-gray-800" />
     </div>
@@ -63,7 +63,7 @@ export const ArgentinaSkeleton = () => (
 );
 
 export const FooterSkeleton = () => (
-  <footer className="bg-gradient-to-b from-black via-gray-950 to-gray-900 py-16">
+  <footer className="min-h-[1399px] bg-gradient-to-b from-black via-gray-950 to-gray-900 py-16 lg:min-h-[500px]">
     <div className="container mx-auto px-4 sm:px-6 lg:px-8">
       <div className="grid grid-cols-1 gap-12 md:grid-cols-4">
         {[...Array(4)].map((_, i) => (

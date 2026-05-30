@@ -9,8 +9,8 @@ import dynamic from 'next/dynamic';
 import Navbar from '@/components/landing/Navbar';
 import HeroBanner from '@/components/landing/HeroBanner';
 import LaEmpresaSection from '@/components/landing/LaEmpresaSection';
+import CategoriesSection from '@/components/landing/CategoriesSection';
 import {
-  CategoriesSkeleton,
   TechnologySkeleton,
   FeaturedProductsSkeleton,
   ArgentinaSkeleton,
@@ -18,11 +18,10 @@ import {
 } from '@/components/landing/skeletons';
 
 // Below-the-fold: difiero el chunk hasta que el usuario scrollea (Suspense
-// muestra el skeleton mientras carga). Cada uno arrastra framer-motion
-// y/o assets propios, así reducimos el bundle inicial de la home.
-const CategoriesSection = dynamic(
-  () => import('@/components/landing/CategoriesSection'),
-);
+// muestra el skeleton mientras carga). Cada uno arrastra framer-motion y/o
+// assets propios, así reducimos el bundle inicial de la home.
+// IMPORTANTE: cada skeleton DEBE reservar la misma altura que su sección real
+// (mismos paddings/grid/min-h) para no provocar layout shift al hidratar.
 const TechnologySection = dynamic(
   () => import('@/components/landing/TechnologySection'),
 );
@@ -47,14 +46,11 @@ const FloatingScrollTop = dynamic(() =>
 
 export default function HomePage() {
   return (
-    <main className="min-h-screen">
+    <main>
       <Navbar />
       <HeroBanner />
       <LaEmpresaSection />
-
-      <Suspense fallback={<CategoriesSkeleton />}>
-        <CategoriesSection />
-      </Suspense>
+      <CategoriesSection />
 
       <Suspense fallback={<TechnologySkeleton />}>
         <TechnologySection />

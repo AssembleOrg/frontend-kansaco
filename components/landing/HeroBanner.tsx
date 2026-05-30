@@ -207,7 +207,7 @@ const HeroBanner = () => {
   };
 
   return (
-    <section className="relative flex min-h-screen flex-col overflow-hidden bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white lg:flex-row">
+    <section className="relative flex min-h-screen flex-col bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white lg:flex-row">
       {/* Video Section - 1/2 - OCULTO EN MÓVILES */}
       <div className={`relative h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-black transition-all duration-700 hidden lg:block lg:w-1/2`}>
         {/* Video Element */}
@@ -325,16 +325,10 @@ const HeroBanner = () => {
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}
         >
-          {/* Top Lightning Border */}
+          {/* Top Lightning Border — glow fijo (shadow), solo opacity animada */}
           <motion.div
-            className="absolute left-0 right-0 top-0 h-2 bg-gradient-to-r from-transparent via-[#16a245] to-transparent"
-            animate={{
-              opacity: [0.6, 1, 0.6],
-              boxShadow: [
-                '0 0 20px #16a245',
-                '0 0 50px #16a245, 0 0 80px #16a245',
-              ],
-            }}
+            className="absolute left-0 right-0 top-0 h-2 bg-gradient-to-r from-transparent via-[#16a245] to-transparent shadow-[0_0_35px_#16a245]"
+            animate={{ opacity: [0.6, 1, 0.6] }}
             transition={{
               duration: 2,
               repeat: Infinity,
@@ -342,16 +336,10 @@ const HeroBanner = () => {
             }}
           />
 
-          {/* Right Lightning Border */}
+          {/* Right Lightning Border — glow fijo, solo opacity animada */}
           <motion.div
-            className="absolute bottom-0 right-0 top-0 w-2 bg-gradient-to-b from-transparent via-[#16a245] to-transparent"
-            animate={{
-              opacity: [0.6, 1, 0.6],
-              boxShadow: [
-                '0 0 20px #16a245',
-                '0 0 50px #16a245, 0 0 80px #16a245',
-              ],
-            }}
+            className="absolute bottom-0 right-0 top-0 w-2 bg-gradient-to-b from-transparent via-[#16a245] to-transparent shadow-[0_0_35px_#16a245]"
+            animate={{ opacity: [0.6, 1, 0.6] }}
             transition={{
               duration: 2,
               repeat: Infinity,
@@ -360,16 +348,10 @@ const HeroBanner = () => {
             }}
           />
 
-          {/* Bottom Lightning Border */}
+          {/* Bottom Lightning Border — glow fijo, solo opacity animada */}
           <motion.div
-            className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-transparent via-[#16a245] to-transparent"
-            animate={{
-              opacity: [0.6, 1, 0.6],
-              boxShadow: [
-                '0 0 20px #16a245',
-                '0 0 50px #16a245, 0 0 80px #16a245',
-              ],
-            }}
+            className="absolute bottom-0 left-0 right-0 h-2 bg-gradient-to-r from-transparent via-[#16a245] to-transparent shadow-[0_0_35px_#16a245]"
+            animate={{ opacity: [0.6, 1, 0.6] }}
             transition={{
               duration: 2,
               repeat: Infinity,
@@ -378,16 +360,10 @@ const HeroBanner = () => {
             }}
           />
 
-          {/* Left Lightning Border */}
+          {/* Left Lightning Border — glow fijo, solo opacity animada */}
           <motion.div
-            className="absolute bottom-0 left-0 top-0 w-2 bg-gradient-to-b from-transparent via-[#16a245] to-transparent"
-            animate={{
-              opacity: [0.6, 1, 0.6],
-              boxShadow: [
-                '0 0 20px #16a245',
-                '0 0 50px #16a245, 0 0 80px #16a245',
-              ],
-            }}
+            className="absolute bottom-0 left-0 top-0 w-2 bg-gradient-to-b from-transparent via-[#16a245] to-transparent shadow-[0_0_35px_#16a245]"
+            animate={{ opacity: [0.6, 1, 0.6] }}
             transition={{
               duration: 2,
               repeat: Infinity,
@@ -396,77 +372,13 @@ const HeroBanner = () => {
             }}
           />
 
-          {/* Corner Lightning Glows - Más grandes y brillantes */}
-          <motion.div
-            className="absolute left-0 top-0 h-8 w-8 rounded-full bg-[#16a245] blur-md"
-            animate={{
-              opacity: [0.7, 1, 0.7],
-              scale: [1, 2, 1],
-              boxShadow: [
-                '0 0 30px #16a245',
-                '0 0 60px #16a245, 0 0 100px #16a245',
-              ],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: 'easeInOut',
-            }}
-          />
-
-          <motion.div
-            className="absolute right-0 top-0 h-8 w-8 rounded-full bg-[#16a245] blur-md"
-            animate={{
-              opacity: [0.7, 1, 0.7],
-              scale: [1, 2, 1],
-              boxShadow: [
-                '0 0 30px #16a245',
-                '0 0 60px #16a245, 0 0 100px #16a245',
-              ],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: 0.75,
-            }}
-          />
-
-          <motion.div
-            className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-[#16a245] blur-md"
-            animate={{
-              opacity: [0.7, 1, 0.7],
-              scale: [1, 2, 1],
-              boxShadow: [
-                '0 0 30px #16a245',
-                '0 0 60px #16a245, 0 0 100px #16a245',
-              ],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: 1.5,
-            }}
-          />
-
-          <motion.div
-            className="absolute bottom-0 left-0 h-8 w-8 rounded-full bg-[#16a245] blur-md"
-            animate={{
-              opacity: [0.7, 1, 0.7],
-              scale: [1, 2, 1],
-              boxShadow: [
-                '0 0 30px #16a245',
-                '0 0 60px #16a245, 0 0 100px #16a245',
-              ],
-            }}
-            transition={{
-              duration: 3,
-              repeat: Infinity,
-              ease: 'easeInOut',
-              delay: 2.25,
-            }}
-          />
+          {/* Corner Glows — estáticos (antes 4 motion.div con scale+boxShadow
+              animados en loop; eran casi invisibles sobre el video y caros en 3G
+              por el repaint del blur por frame). Glow fijo, sin animación. */}
+          <div className="absolute left-0 top-0 h-8 w-8 rounded-full bg-[#16a245] opacity-80 blur-md shadow-[0_0_45px_#16a245]" />
+          <div className="absolute right-0 top-0 h-8 w-8 rounded-full bg-[#16a245] opacity-80 blur-md shadow-[0_0_45px_#16a245]" />
+          <div className="absolute bottom-0 right-0 h-8 w-8 rounded-full bg-[#16a245] opacity-80 blur-md shadow-[0_0_45px_#16a245]" />
+          <div className="absolute bottom-0 left-0 h-8 w-8 rounded-full bg-[#16a245] opacity-80 blur-md shadow-[0_0_45px_#16a245]" />
         </motion.div>
 
         <div

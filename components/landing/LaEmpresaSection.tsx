@@ -19,7 +19,7 @@ const LaEmpresaSection = () => {
       {/* Subtle animated background elements */}
       <div className="absolute inset-0 opacity-40">
         {/* Floating particles */}
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <motion.div
             key={`particle-${i}`}
             className="absolute h-1.5 w-1.5 rounded-full bg-[#16a245]"

@@ -84,7 +84,7 @@ const FeaturedProducts = () => {
 
   if (isLoading) {
     return (
-      <section className="bg-gray-900 py-24">
+      <section className="min-h-[1320px] bg-gray-900 py-24 lg:min-h-[1000px]">
         <div className="container mx-auto px-4 sm:px-6 lg:px-8">
           <div className="mb-16 text-center">
             <div className="mx-auto mb-4 h-8 w-64 animate-pulse rounded bg-gray-800"></div>
@@ -109,18 +109,18 @@ const FeaturedProducts = () => {
   }
 
   return (
-    <section id="featured-products" className="relative overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-gray-900 py-24">
+    <section id="featured-products" className="relative min-h-[1320px] overflow-hidden bg-gradient-to-b from-gray-900 via-gray-950 to-gray-900 py-24 lg:min-h-[1000px]">
       <div className="absolute left-0 right-0 top-0 h-24 bg-gradient-to-b from-gray-900/80 to-transparent"></div>
 
       {/* Background decorations */}
       <div className="absolute inset-0 opacity-45">
-        {Array.from({ length: 6 }).map((_, i) => (
+        {Array.from({ length: 3 }).map((_, i) => (
           <div
             key={`oil-drop-${i}`}
             className="absolute h-3 w-2 rounded-full bg-[#16a245]"
             style={{
-              left: `${20 + i * 12}%`,
-              top: `${15 + i * 10}%`,
+              left: `${20 + i * 24}%`,
+              top: `${15 + i * 20}%`,
               clipPath: 'ellipse(50% 60% at 50% 40%)',
               animationDelay: `${i * 1.5}s`,
               animation: 'dropFlow 10s ease-in-out infinite',
@@ -254,8 +254,9 @@ const FeaturedProducts = () => {
               </>
             )}
 
-            {/* Products Grid */}
-            <div className="overflow-hidden px-2">
+            {/* Products Grid — min-h estable = altura de una fila de cards (h-[420px]),
+                evita layout shift al rotar de slide (mode="wait" deja un instante vacío) */}
+            <div className="min-h-[420px] overflow-hidden px-2">
               <AnimatePresence mode="wait">
                 <motion.div
                   key={currentIndex}
@@ -268,7 +269,7 @@ const FeaturedProducts = () => {
                   {getCurrentProducts().map((product) => (
                     <div
                       key={product.id}
-                      className="group mx-auto flex h-full w-full max-w-sm flex-col rounded-lg border border-gray-800/50 bg-gray-900/50 p-6 transition-all duration-300 hover:border-[#16a245]/50 hover:bg-gray-900/70"
+                      className="group mx-auto flex h-[420px] w-full max-w-sm flex-col rounded-lg border border-gray-800/50 bg-gray-900/50 p-6 transition-all duration-300 hover:border-[#16a245]/50 hover:bg-gray-900/70"
                     >
                       {/* Product Image */}
                       <div className="relative mb-6 h-48 overflow-hidden rounded-lg bg-gradient-to-br from-gray-800 to-gray-900">
