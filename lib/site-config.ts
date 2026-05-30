@@ -12,7 +12,8 @@ export const siteConfig = {
     cuit: '30-58610901-0',
     tagline: 'Ingeniería Líquida',
     description:
-      'Kansaco - Plataforma ecommerce. Productos dirigidos a los sistemas de lubricación',
+      'Kansaco - Lubricantes y Aceites Industriales',
+    url: 'https://kansaco.com',
   },
 
   // Contacto

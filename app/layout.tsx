@@ -21,7 +21,11 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: siteConfig.company.name,
+  metadataBase: new URL('https://kansaco.com'),
+  title: {
+    default: 'Kansaco - Lubricantes y Aceites Industriales',
+    template: '%s | Kansaco',
+  },
   description: siteConfig.company.description,
   manifest: '/site.webmanifest',
   icons: {
@@ -31,6 +35,28 @@ export const metadata: Metadata = {
       { url: '/favicon.ico', sizes: '48x48' },
     ],
     apple: [{ url: '/apple-touch-icon.png', sizes: '180x180' }],
+  },
+  openGraph: {
+    title: 'Kansaco - Lubricantes y Aceites Industriales',
+    description: siteConfig.company.description,
+    url: siteConfig.company.url,
+    siteName: siteConfig.company.name,
+    images: [
+      {
+        url: '/logo-kansaco.webp',
+        width: 1200,
+        height: 630,
+        alt: 'Kansaco - Lubricantes y Aceites Industriales',
+      },
+    ],
+    locale: 'es_AR',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary_large_image',
+    title: 'Kansaco - Lubricantes y Aceites Industriales',
+    description: siteConfig.company.description,
+    images: ['/logo-kansaco.webp'],
   },
 };
 
