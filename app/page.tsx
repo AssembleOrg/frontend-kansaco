@@ -36,13 +36,13 @@ const LubriExpertoCTA = dynamic(
   () => import('@/components/landing/LubriExpertoCTA'),
 );
 const Footer = dynamic(() => import('@/components/landing/Footer'));
-// Solo aparece tras scrollear → no necesita SSR.
-const FloatingScrollTop = dynamic(
-  () =>
-    import('@/components/landing/FloatingScrollTop').then(
-      (mod) => mod.FloatingScrollTop,
-    ),
-  { ssr: false },
+// Arranca oculto hasta scroll > 100px, así que el SSR renderea null —
+// sin mismatch y sin necesidad de { ssr: false } (que tira en Server
+// Components en Next 15).
+const FloatingScrollTop = dynamic(() =>
+  import('@/components/landing/FloatingScrollTop').then(
+    (mod) => mod.FloatingScrollTop,
+  ),
 );
 
 export default function HomePage() {
