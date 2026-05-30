@@ -76,14 +76,37 @@ const Navbar = () => {
   }, [isMobileMenuOpen]);
 
   useEffect(() => {
+    // Coalescemos scrolls a 1 update por frame. Sin esto, cada pixel
+    // dispara dos setStates → re-render del Navbar entero (~14 useStates,
+    // framer-motion adentro). En mobile mata el FPS y bloquea el main
+    // thread durante navegación.
+    let rafId: number | null = null;
+    let lastVisible = false;
+    let lastScrolled = false;
+
     const handleScroll = () => {
-      const scrollPosition = window.scrollY;
-      setIsVisible(scrollPosition > 100);
-      setIsScrolled(scrollPosition > 20);
+      if (rafId !== null) return;
+      rafId = requestAnimationFrame(() => {
+        rafId = null;
+        const scrollPosition = window.scrollY;
+        const nextVisible = scrollPosition > 100;
+        const nextScrolled = scrollPosition > 20;
+        if (nextVisible !== lastVisible) {
+          lastVisible = nextVisible;
+          setIsVisible(nextVisible);
+        }
+        if (nextScrolled !== lastScrolled) {
+          lastScrolled = nextScrolled;
+          setIsScrolled(nextScrolled);
+        }
+      });
     };
 
-    window.addEventListener('scroll', handleScroll);
-    return () => window.removeEventListener('scroll', handleScroll);
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (rafId !== null) cancelAnimationFrame(rafId);
+    };
   }, []);
 
   // Reset mobile dropdowns when burger menu closes

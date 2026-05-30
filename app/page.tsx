@@ -5,16 +5,10 @@
 // 5. Acento complementario: #f7faf8 (para fondos alternos)
 
 import { Suspense } from 'react';
+import dynamic from 'next/dynamic';
 import Navbar from '@/components/landing/Navbar';
 import HeroBanner from '@/components/landing/HeroBanner';
 import LaEmpresaSection from '@/components/landing/LaEmpresaSection';
-import CategoriesSection from '@/components/landing/CategoriesSection';
-import TechnologySection from '@/components/landing/TechnologySection';
-import FeaturedProducts from '@/components/landing/FeaturedProducts';
-import LubriExpertoCTA from '@/components/landing/LubriExpertoCTA';
-import ArgentinaSection from '@/components/landing/ArgentinaSection';
-import Footer from '@/components/landing/Footer';
-import { FloatingScrollTop } from '@/components/landing/FloatingScrollTop';
 import {
   CategoriesSkeleton,
   TechnologySkeleton,
@@ -22,6 +16,34 @@ import {
   ArgentinaSkeleton,
   FooterSkeleton,
 } from '@/components/landing/skeletons';
+
+// Below-the-fold: difiero el chunk hasta que el usuario scrollea (Suspense
+// muestra el skeleton mientras carga). Cada uno arrastra framer-motion
+// y/o assets propios, así reducimos el bundle inicial de la home.
+const CategoriesSection = dynamic(
+  () => import('@/components/landing/CategoriesSection'),
+);
+const TechnologySection = dynamic(
+  () => import('@/components/landing/TechnologySection'),
+);
+const FeaturedProducts = dynamic(
+  () => import('@/components/landing/FeaturedProducts'),
+);
+const ArgentinaSection = dynamic(
+  () => import('@/components/landing/ArgentinaSection'),
+);
+const LubriExpertoCTA = dynamic(
+  () => import('@/components/landing/LubriExpertoCTA'),
+);
+const Footer = dynamic(() => import('@/components/landing/Footer'));
+// Solo aparece tras scrollear → no necesita SSR.
+const FloatingScrollTop = dynamic(
+  () =>
+    import('@/components/landing/FloatingScrollTop').then(
+      (mod) => mod.FloatingScrollTop,
+    ),
+  { ssr: false },
+);
 
 export default function HomePage() {
   return (

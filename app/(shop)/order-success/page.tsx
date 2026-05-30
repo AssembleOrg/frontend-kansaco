@@ -4,6 +4,7 @@
 import { useEffect, useState, Suspense, useRef } from 'react';
 import { useSearchParams } from 'next/navigation';
 import Link from 'next/link';
+import dynamic from 'next/dynamic';
 import {
   CheckCircle,
   Building2,
@@ -14,7 +15,24 @@ import {
   Home,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { PDFPedidoDownloadButton } from '@/features/shop/components/PDFPedido';
+
+// @react-pdf/renderer pesa ~500KB gz — lo cargamos solo cuando se
+// monta este componente, no en el bundle inicial de la ruta.
+const PDFPedidoDownloadButton = dynamic(
+  () =>
+    import('@/features/shop/components/PDFPedido').then(
+      (mod) => mod.PDFPedidoDownloadButton,
+    ),
+  {
+    ssr: false,
+    loading: () => (
+      <Button disabled variant="outline" className="w-full sm:w-auto">
+        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+        Preparando descarga...
+      </Button>
+    ),
+  },
+);
 import { Order } from '@/types/order';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getOrderById } from '@/lib/api';
