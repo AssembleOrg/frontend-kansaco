@@ -23,7 +23,7 @@ export const siteConfig = {
     phones: ['4237-2636', '1365', '0813'],
     phoneDisplay: '4237-2636 / 1365 / 0813',
     location: 'Magallanes 2051, Fcio. Varela, Bs As. Arg',
-    businessHours: 'Lun - Vie: 8:00 - 18:00',
+    businessHours: 'Lun - Vie: 9:00hs - 17:00hs',
   },
 
   // Redes sociales

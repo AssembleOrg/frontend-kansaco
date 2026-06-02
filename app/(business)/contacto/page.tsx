@@ -120,7 +120,7 @@ export default function ContactoPage() {
                     <div>
                       <h4 className="font-semibold text-white">Horarios</h4>
                       <p className="text-gray-300">
-                        Lunes a Viernes: 9:00hs - 17:00hs
+                        {siteConfig.contact.businessHours}
                       </p>
                     </div>
                   </div>
