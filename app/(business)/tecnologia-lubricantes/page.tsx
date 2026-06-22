@@ -72,7 +72,7 @@ function TecnologiaLubricantesContent() {
               playsInline
               className="h-full w-full object-cover"
             >
-              <source src="/landing/kansaco-oil.mp4" type="video/mp4" />
+              <source src="https://kansaco-images.nyc3.cdn.digitaloceanspaces.com/videos/kansaco-oil.mp4" type="video/mp4" />
             </video>
             <div className="absolute inset-0 bg-gradient-to-b from-black/80 via-black/60 to-black/90" />
           </div>

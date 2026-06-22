@@ -208,14 +208,14 @@ const TechnologySection = () => {
               <div className="relative h-full w-full">
                 {shouldLoadVideo ? (
                   <video
-                    src="/landing/kansaco-oil.mp4"
+                    src="https://kansaco-images.nyc3.cdn.digitaloceanspaces.com/videos/kansaco-oil.mp4"
                     autoPlay
                     loop
                     muted
                     playsInline
                     className="h-full w-full object-cover"
                   >
-                    <source src="/landing/kansaco-oil.mp4" type="video/mp4" />
+                    <source src="https://kansaco-images.nyc3.cdn.digitaloceanspaces.com/videos/kansaco-oil.mp4" type="video/mp4" />
                   </video>
                 ) : (
                   <div className="flex h-full w-full items-center justify-center">

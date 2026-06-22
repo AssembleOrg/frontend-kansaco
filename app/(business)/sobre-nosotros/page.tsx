@@ -74,7 +74,7 @@ function SobreNosotrosContent() {
               className="h-full w-full object-cover"
             >
               <source
-                src="/landing/presentacion-kansaco.mp4"
+                src="https://kansaco-images.nyc3.cdn.digitaloceanspaces.com/videos/presentacion-kansaco.mp4"
                 type="video/mp4"
               />
             </video>
