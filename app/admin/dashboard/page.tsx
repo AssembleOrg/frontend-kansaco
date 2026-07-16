@@ -12,6 +12,8 @@ import {
   UserCog,
   Settings,
   LayoutDashboard,
+  Percent,
+  UserCheck,
 } from 'lucide-react';
 
 type Shortcut = {
@@ -26,6 +28,8 @@ const SHORTCUTS: Shortcut[] = [
   { label: 'Productos', desc: 'Catálogo y precios', href: '/admin/products', icon: Package },
   { label: 'Categorías', desc: 'Organización', href: '/admin/categories', icon: Tag },
   { label: 'Imágenes', desc: 'Galería del catálogo', href: '/admin/images', icon: ImageIcon },
+  { label: 'Listas de precios', desc: 'Recargo % por categoría', href: '/admin/pricing', icon: Percent },
+  { label: 'Cuentas', desc: 'Aprobar y asignar rol', href: '/admin/users', icon: UserCheck },
   { label: 'Analytics', desc: 'Métricas y reportes', href: '/admin/analytics', icon: BarChart3 },
   { label: 'Negocios', desc: 'Pipeline comercial', href: '/admin/negocios', icon: Briefcase },
   { label: 'Leads', desc: 'Contactos del CRM', href: '/admin/leads', icon: Users },

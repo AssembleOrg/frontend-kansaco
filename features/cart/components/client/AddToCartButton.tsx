@@ -8,6 +8,7 @@ import { useCartStore } from '@/features/cart/store/cartStore';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { Product } from '@/types/product';
+import { esCategoriaB2B } from '@/types/auth';
 import { AddToCartModal } from './AddToCartModal';
 
 interface AddToCartButtonProps {
@@ -31,6 +32,7 @@ export const AddToCartButton = ({
   const openCart = useCartStore((s) => s.openCart);
 
   const isAuthenticated = !!(token && user?.id);
+  const canBuy = esCategoriaB2B(user?.rol);
 
   // No renderizar si no hay producto
   if (!product) {
@@ -47,6 +49,7 @@ export const AddToCartButton = ({
       router.push('/login');
       return;
     }
+    if (!canBuy) return; // cuenta pendiente / sin categoría B2B
 
     // Abrir el modal para seleccionar cantidad y presentación
     setIsModalOpen(true);
@@ -75,17 +78,18 @@ export const AddToCartButton = ({
     <>
       <Button
         onClick={handleClick}
-        disabled={isLoading}
+        disabled={isLoading || (isAuthenticated && !canBuy)}
         className={className}
         size="lg"
       >
         <ShoppingCart className="w-4 h-4 mr-2" />
-        {isLoading 
-          ? 'Agregando...' 
-          : isAuthenticated 
-            ? 'Agregar al carrito' 
-            : 'Iniciar sesión para comprar'
-        }
+        {isLoading
+          ? 'Agregando...'
+          : !isAuthenticated
+            ? 'Iniciar sesión para comprar'
+            : !canBuy
+              ? 'Cuenta pendiente de aprobación'
+              : 'Agregar al carrito'}
       </Button>
 
       <AddToCartModal

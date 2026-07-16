@@ -38,7 +38,7 @@ export const CartDrawer = () => {
   const isCartOpen = useCartStore((s) => s.isCartOpen);
   const closeCart = useCartStore((s) => s.closeCart);
 
-  const { cart, itemCount, isLoading, error, syncCart, clearCart } = useCart();
+  const { cart, itemCount, isLoading, error, syncCart, clearCart, subtotal, formatPrice } = useCart();
 
   const [isEditMode, setIsEditMode] = useState(false);
   const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
@@ -249,6 +249,15 @@ export const CartDrawer = () => {
                 {productCount} · {itemCount} {itemCount === 1 ? 'ud.' : 'uds.'}
               </span>
             </div>
+
+            {subtotal > 0 && (
+              <div className="mt-1 flex items-center justify-between text-base">
+                <span className="font-medium text-neutral-700">Subtotal</span>
+                <span className="font-bold tabular-nums text-neutral-900">
+                  {formatPrice(subtotal)}
+                </span>
+              </div>
+            )}
 
             <div className="mt-3 flex flex-col gap-2">
               {isEditMode ? (

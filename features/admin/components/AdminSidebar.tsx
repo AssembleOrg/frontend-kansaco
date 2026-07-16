@@ -13,6 +13,8 @@ import {
   Users,
   UserCog,
   Settings,
+  Percent,
+  UserCheck,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
@@ -39,6 +41,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Productos', href: '/admin/products', icon: Package },
       { label: 'Categorías', href: '/admin/categories', icon: Tag },
       { label: 'Imágenes', href: '/admin/images', icon: Image },
+      { label: 'Listas de precios', href: '/admin/pricing', icon: Percent },
     ],
   },
   {
@@ -46,6 +49,12 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Órdenes', href: '/admin/orders', icon: ShoppingCart },
       { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Usuarios',
+    items: [
+      { label: 'Cuentas', href: '/admin/users', icon: UserCheck },
     ],
   },
   {

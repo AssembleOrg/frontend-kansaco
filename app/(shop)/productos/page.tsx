@@ -184,8 +184,9 @@ function ProductsContent() {
             hasPrev: result.hasPrev,
           });
         } catch {
-          // Si falla el endpoint paginado (puede requerir auth), usar fallback
-          const fetchedProducts = await getProducts(null);
+          // Si falla el endpoint paginado (puede requerir auth), usar fallback.
+          // Pasamos el token para que el backend devuelva el precio del rol.
+          const fetchedProducts = await getProducts(token);
           // Filtrar localmente por visibilidad y categoría
           let filtered = fetchedProducts.filter((p) => p.isVisible);
 

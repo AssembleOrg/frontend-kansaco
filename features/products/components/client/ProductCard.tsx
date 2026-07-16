@@ -9,23 +9,28 @@ import { useCart } from '@/features/cart/hooks/useCart';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { esCategoriaB2B } from '@/types/auth';
 
 interface ProductCardProps {
   product: Product;
 }
 
 export default function ProductCard({ product }: ProductCardProps) {
-  const { addToCart, formatPrice, getProductPrice } = useCart();
-  const { token } = useAuth();
+  const { addToCart, formatPrice } = useCart();
+  const { token, user } = useAuth();
   const router = useRouter();
   const [isHovered, setIsHovered] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
+
+  const canBuy = esCategoriaB2B(user?.rol);
+  const hasPrice = typeof product.price === 'number' && product.price > 0;
 
   const handleAddToCart = async () => {
     if (!token) {
       router.push('/login?redirect=/productos&message=Para comenzar a armar tu carrito, necesitas iniciar sesión');
       return;
     }
+    if (!canBuy) return;
     setIsAddingToCart(true);
     try {
       await addToCart(product, 1);
@@ -75,16 +80,43 @@ export default function ProductCard({ product }: ProductCardProps) {
         <p className="mb-4 line-clamp-2 flex-1 text-sm text-gray-600">
           {product.description}
         </p>
+
+        {/* Precio: sólo visible para categorías B2B logueadas. */}
+        <div className="mt-auto min-h-[1.5rem]">
+          {hasPrice ? (
+            <p className="text-xl font-bold text-primary">
+              {formatPrice(product.price as number)}
+            </p>
+          ) : !token ? (
+            <button
+              type="button"
+              onClick={() =>
+                router.push(
+                  '/login?redirect=/productos&message=Iniciá sesión para ver los precios'
+                )
+              }
+              className="text-sm font-medium text-primary underline-offset-2 hover:underline"
+            >
+              Iniciá sesión para ver precios
+            </button>
+          ) : !canBuy ? (
+            <p className="text-sm font-medium text-amber-600">
+              Cuenta pendiente de aprobación
+            </p>
+          ) : (
+            <p className="text-sm text-gray-500">Consultar precio</p>
+          )}
+        </div>
       </CardContent>
       <CardFooter className="p-4 pt-0">
         <Button
           onClick={handleAddToCart}
-          disabled={isAddingToCart}
+          disabled={isAddingToCart || (!!token && !canBuy)}
           className="w-full"
           variant="default"
         >
           <ShoppingCart className="mr-2 h-4 w-4" />
-          Agregar al Carrito
+          {!!token && !canBuy ? 'No disponible' : 'Agregar al Carrito'}
         </Button>
       </CardFooter>
     </Card>

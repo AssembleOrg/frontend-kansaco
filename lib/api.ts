@@ -5,6 +5,7 @@ import {
   LoginApiResponse,
   RegisterPayload,
   RegisterApiResponse,
+  UserRole,
 } from '@/types/auth';
 import {
   SendOrderEmailData,
@@ -496,7 +497,10 @@ function getMockProducts(): Product[] {
   ];
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(
+  slug: string,
+  token?: string | null,
+): Promise<Product | null> {
   if (!API_BASE_URL) {
     return null;
   }
@@ -507,9 +511,10 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     const headers: HeadersInit = {
       Accept: 'application/json',
     };
-    // if (token) {
-    //   headers.Authorization = `Bearer ${token}`;
-    // }
+    // El token permite que el backend devuelva el precio de la lista del rol.
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
 
     const response = await fetch(url, {
       method: 'GET',
@@ -2784,4 +2789,88 @@ export async function getUserActivity(
   userId: string,
 ): Promise<UserActivity> {
   return fetchAnalytics<UserActivity>(token, `user-activity?userId=${userId}`);
+}
+
+// ---------------------------------------------------------------------------
+// Pricing (listas de precios por rol) — sólo ADMIN
+// ---------------------------------------------------------------------------
+
+export interface RolePricing {
+  id: number;
+  rol: UserRole;
+  percentage: number;
+}
+
+export async function getRolePricing(token: string): Promise<RolePricing[]> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/pricing/roles`, {
+    method: 'GET',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: RolePricing[] }>(response);
+  return result.data;
+}
+
+export async function updateRolePricing(
+  token: string,
+  items: { rol: UserRole; percentage: number }[],
+): Promise<RolePricing[]> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/pricing/roles`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ items }),
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: RolePricing[] }>(response);
+  return result.data;
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios (gestión de rol / aprobación) — sólo ADMIN
+// ---------------------------------------------------------------------------
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+  rol: UserRole;
+}
+
+export async function getAdminUsers(token: string): Promise<AdminUser[]> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/user`, {
+    method: 'GET',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: AdminUser[] }>(response);
+  return result.data;
+}
+
+export async function changeUserRole(
+  token: string,
+  userId: string,
+  rol: UserRole,
+): Promise<AdminUser> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/user/${userId}/rol`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ rol }),
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: AdminUser }>(response);
+  return result.data;
 }

@@ -166,10 +166,15 @@ function LoginContent() {
     setSubmitError(null);
 
     try {
-      await login({ email: normalizedEmail, password });
+      const result = await login({ email: normalizedEmail, password });
+      // El store devuelve { token, user } en el nivel superior.
+      const loggedUser = (result as { user?: { rol?: string } })?.user;
 
       const requested = searchParams.get('redirect');
-      const redirectUrl = isSafeRedirect(requested) ? requested : '/productos';
+      // ADMIN sin redirect explícito → dashboard. El resto → productos.
+      const defaultUrl =
+        loggedUser?.rol === 'ADMIN' ? '/admin/dashboard' : '/productos';
+      const redirectUrl = isSafeRedirect(requested) ? requested : defaultUrl;
       router.push(redirectUrl);
     } catch (err) {
       setSubmitError(mapLoginError(err));

@@ -1,6 +1,25 @@
 // types/auth.ts
 
-export type UserRole = 'ADMIN' | 'CLIENTE_MINORISTA' | 'CLIENTE_MAYORISTA' | 'ASISTENTE';
+export type UserRole =
+  | 'ADMIN'
+  | 'CLIENTE_MINORISTA'
+  | 'CLIENTE_MAYORISTA'
+  | 'ASISTENTE'
+  | 'SUBMAYORISTA'
+  | 'REVENDEDOR'
+  | 'TALLER';
+
+// Categorías comerciales B2B que operan (ven precios y pueden comprar).
+// CLIENTE_MINORISTA = usuario creado/pendiente sin categoría (Kansaco no vende minorista).
+export const B2B_ROLES: readonly UserRole[] = [
+  'CLIENTE_MAYORISTA',
+  'SUBMAYORISTA',
+  'REVENDEDOR',
+  'TALLER',
+];
+
+export const esCategoriaB2B = (rol: UserRole | null | undefined): boolean =>
+  !!rol && B2B_ROLES.includes(rol);
 
 export interface Discount {
   id: number;
