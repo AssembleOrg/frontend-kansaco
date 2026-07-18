@@ -10,6 +10,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { esCategoriaB2B } from '@/types/auth';
+import { PRICES_ENABLED } from '@/lib/flags';
 
 interface ProductCardProps {
   product: Product;
@@ -23,7 +24,8 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
   const canBuy = esCategoriaB2B(user?.rol);
-  const hasPrice = typeof product.price === 'number' && product.price > 0;
+  const hasPrice =
+    PRICES_ENABLED && typeof product.price === 'number' && product.price > 0;
 
   const handleAddToCart = async () => {
     if (!token) {

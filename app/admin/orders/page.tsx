@@ -5,11 +5,12 @@ import { useOrders } from '@/features/admin/hooks/useOrders';
 import { Order, OrderStatus } from '@/types/order';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Eye, Search, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Download, Eye, Search, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { downloadOrderPDF } from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { OrderDetailsModal } from '@/features/orders/components/OrderDetailsModal';
+import { OrderNoteModal } from '@/features/orders/components/OrderNoteModal';
 import { toast } from 'sonner';
 import {
   ColumnDef,
@@ -31,28 +32,54 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; bg: stri
 
 export default function OrdersPage() {
   const { token } = useAuth();
-  const { orders, isLoading, error, pagination, updateStatus, refresh, goToPage } = useOrders();
+  const { orders, isLoading, error, pagination, updateStatus, updateNotes, refresh, goToPage } = useOrders();
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [provinciaFilter, setProvinciaFilter] = useState<string>('all');
   const [sorting, setSorting] = useState<SortingState>([]);
+  // Orden pendiente de cancelar (abre el modal que pide el motivo).
+  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
+  const [isCancelling, setIsCancelling] = useState(false);
 
-  // Filtrar órdenes por búsqueda
+  // Filtrar órdenes por búsqueda + provincia
   const filteredOrders = useMemo(() => {
     if (!orders || !Array.isArray(orders)) return [];
     return orders.filter((order) => {
+      if (provinciaFilter !== 'all' && order.contactInfo?.provincia !== provinciaFilter) {
+        return false;
+      }
       const searchLower = searchTerm.toLowerCase();
       return (
         order.contactInfo?.fullName?.toLowerCase().includes(searchLower) ||
         order.contactInfo?.email?.toLowerCase().includes(searchLower) ||
         order.contactInfo?.phone?.includes(searchTerm) ||
-        order.id.toLowerCase().includes(searchLower)
+        order.id?.toLowerCase().includes(searchLower)
       );
     });
-  }, [orders, searchTerm]);
+  }, [orders, searchTerm, provinciaFilter]);
+
+  // Provincias presentes en los pedidos cargados (para el filtro).
+  const provincias = useMemo(() => {
+    const set = new Set<string>();
+    for (const o of orders) {
+      const p = o.contactInfo?.provincia?.trim();
+      if (p) set.add(p);
+    }
+    return Array.from(set).sort((a, b) => a.localeCompare(b));
+  }, [orders]);
 
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
+    // Al cancelar, pedir el motivo antes de aplicar el cambio.
+    if (newStatus === 'CANCELADO') {
+      const order = orders.find((o) => o.id === orderId);
+      if (order) {
+        setOrderToCancel(order);
+        return;
+      }
+    }
+
     try {
       await updateStatus(orderId, newStatus);
       toast.success('Estado actualizado correctamente');
@@ -60,7 +87,24 @@ export default function OrdersPage() {
     } catch {
       toast.error('Error al actualizar el estado');
     }
-  }, [updateStatus, refresh]);
+  }, [orders, updateStatus, refresh]);
+
+  // Confirma la cancelación: cambia el estado y guarda el motivo en las notas.
+  const handleConfirmCancel = useCallback(async (finalNotes: string) => {
+    if (!orderToCancel) return;
+    setIsCancelling(true);
+    try {
+      await updateStatus(orderToCancel.id, 'CANCELADO');
+      await updateNotes(orderToCancel.id, finalNotes);
+      toast.success('Orden cancelada y motivo registrado');
+      setOrderToCancel(null);
+      refresh();
+    } catch {
+      toast.error('Error al cancelar la orden');
+    } finally {
+      setIsCancelling(false);
+    }
+  }, [orderToCancel, updateStatus, updateNotes, refresh]);
 
   const handleDownloadPDF = useCallback(async (orderId: string) => {
     if (!token) return;
@@ -197,6 +241,11 @@ export default function OrdersPage() {
           const order = row.original;
           return (
             <div className="flex items-center justify-center gap-2">
+              {order.notes && (
+                <span title="Esta orden tiene notas">
+                  <FileText className="h-4 w-4 text-amber-500" />
+                </span>
+              )}
               <Button
                 onClick={() => {
                   setSelectedOrder(order);
@@ -280,16 +329,37 @@ export default function OrdersPage() {
         </Button>
       </div>
 
-      {/* Búsqueda */}
-      <div className="relative">
-        <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-        <Input
-          type="text"
-          placeholder="Buscar por nombre, email, teléfono o ID..."
-          value={searchTerm}
-          onChange={(e) => setSearchTerm(e.target.value)}
-          className="pl-10"
-        />
+      {/* Búsqueda + filtro por provincia */}
+      <div className="flex flex-col gap-3 sm:flex-row">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+          <Input
+            type="text"
+            placeholder="Buscar por nombre, email, teléfono o ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+        <select
+          value={provinciaFilter}
+          onChange={(e) => setProvinciaFilter(e.target.value)}
+          disabled={provincias.length === 0}
+          className="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 sm:w-56"
+        >
+          {provincias.length === 0 ? (
+            <option value="all">Sin zonas aún</option>
+          ) : (
+            <>
+              <option value="all">Todas las provincias</option>
+              {provincias.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </>
+          )}
+        </select>
       </div>
 
       {/* Tabla de Órdenes */}
@@ -528,6 +598,20 @@ export default function OrdersPage() {
         order={selectedOrder}
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
+        allowNotes
+        onOrderUpdated={refresh}
+      />
+
+      {/* Modal - Motivo de cancelación */}
+      <OrderNoteModal
+        open={!!orderToCancel}
+        onOpenChange={(open) => {
+          if (!open) setOrderToCancel(null);
+        }}
+        mode="cancel"
+        initialNotes={orderToCancel?.notes}
+        isSubmitting={isCancelling}
+        onConfirm={handleConfirmCancel}
       />
     </div>
   );

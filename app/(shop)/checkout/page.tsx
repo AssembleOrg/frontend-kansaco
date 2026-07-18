@@ -47,8 +47,8 @@ export default function CheckoutPage() {
     user ? `${user.nombre} ${user.apellido}`.trim() : ''
   );
   const [email, setEmail] = useState(user?.email || '');
-  const [phone, setPhone] = useState('');
-  const [address, setAddress] = useState('');
+  const [phone, setPhone] = useState(user?.telefono || '');
+  const [address, setAddress] = useState(user?.direccion || '');
   const [notes, setNotes] = useState('');
 
   const [cuit, setCuit] = useState('');
@@ -95,6 +95,8 @@ export default function CheckoutPage() {
     if (user) {
       if (!fullName) setFullName(`${user.nombre} ${user.apellido}`.trim());
       if (!email) setEmail(user.email || '');
+      if (!phone && user.telefono) setPhone(user.telefono);
+      if (!address && user.direccion) setAddress(user.direccion);
     }
   }, [
     token,
@@ -106,6 +108,8 @@ export default function CheckoutPage() {
     router,
     fullName,
     email,
+    phone,
+    address,
     orderConfirmed,
   ]);
 
@@ -153,7 +157,16 @@ export default function CheckoutPage() {
     try {
       const orderEmailData: SendOrderEmailData = {
         customerType: isMayorista ? 'CLIENTE_MAYORISTA' : 'CLIENTE_MINORISTA',
-        contactInfo: { fullName, email, phone, address },
+        contactInfo: {
+          fullName,
+          email,
+          phone,
+          address,
+          // Zona tomada del perfil del usuario (snapshot en la orden).
+          localidad: user?.localidad || undefined,
+          provincia: user?.provincia || undefined,
+          codigoPostal: user?.codigoPostal || undefined,
+        },
         items: validItems.map((item) => ({
           productId: item.product.id,
           productName: item.product.name,

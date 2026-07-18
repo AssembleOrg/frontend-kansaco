@@ -32,6 +32,9 @@ export interface User {
   nombre: string;
   apellido: string;
   direccion?: string;
+  localidad?: string;
+  provincia?: string;
+  codigoPostal?: string;
   telefono: string;
   rol: UserRole;
   descuentosAplicados: Discount[];
@@ -56,6 +59,9 @@ export interface RegisterPayload {
   nombre: string;
   apellido: string;
   direccion?: string;
+  localidad?: string;
+  provincia?: string;
+  codigoPostal?: string;
   telefono: string;
   rol?: UserRole;
 }

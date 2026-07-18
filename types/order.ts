@@ -11,6 +11,9 @@ export interface OrderContactInfo {
   email: string;
   phone: string;
   address: string;
+  localidad?: string;
+  provincia?: string;
+  codigoPostal?: string;
 }
 
 // Estados de orden

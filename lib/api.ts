@@ -1597,7 +1597,14 @@ export async function updateOrder(
 
     const result = await handleResponse<OrderApiResponse>(response);
     apiLogger.response('PATCH', url, response.status);
-    return result.data;
+
+    // Manejar doble-nested por si el backend envuelve la respuesta
+    // (mismo patrón que updateOrderStatus).
+    const order = result.data;
+    if (order && typeof order === 'object' && 'data' in order && !('id' in order)) {
+      return (order as { data: Order }).data;
+    }
+    return order;
   } catch (error) {
     apiLogger.error('PATCH', url, error);
     throw error;
@@ -2737,6 +2744,18 @@ export async function getAnalyticsUsers(
   return fetchAnalytics<PaginatedUsersResponse>(token, `users?${params.toString()}`);
 }
 
+export interface UsersByZoneItem {
+  provincia: string;
+  count: number; // compat: = total
+  total: number;
+  enabled: number;
+  pending: number;
+}
+
+export async function getUsersByZone(token: string): Promise<UsersByZoneItem[]> {
+  return fetchAnalytics<UsersByZoneItem[]>(token, 'users-by-zone');
+}
+
 export async function getProductRanking(
   token: string,
   options?: { order?: 'top' | 'bottom'; limit?: number; period?: string; dateFrom?: string; dateTo?: string },
@@ -2841,6 +2860,10 @@ export interface AdminUser {
   nombre: string;
   apellido: string;
   telefono?: string;
+  direccion?: string;
+  localidad?: string;
+  provincia?: string;
+  codigoPostal?: string;
   rol: UserRole;
 }
 

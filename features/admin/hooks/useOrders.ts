@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { Order, OrderStatus, PaginatedOrdersResponse } from '@/types/order';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { getAllOrdersPaginated, updateOrderStatus } from '@/lib/api';
+import { getAllOrdersPaginated, updateOrderStatus, updateOrder } from '@/lib/api';
 
 export function useOrders() {
   const { token } = useAuth();
@@ -67,12 +67,35 @@ export function useOrders() {
 
     try {
       const updatedOrder = await updateOrderStatus(token, id, status);
+      // Merge defensivo: preservamos el objeto local (con id y campos completos)
+      // por si el backend devuelve la orden con otra forma/anidamiento.
       setOrders(prev =>
-        prev.map(order => order.id === id ? updatedOrder : order)
+        prev.map(order => order.id === id ? { ...order, ...updatedOrder, id } : order)
       );
       return updatedOrder;
     } catch (err) {
       console.error('Error updating order status:', err);
+      throw err;
+    }
+  }, [token]);
+
+  // Actualizar las notas de una orden (motivo de cancelación o nota del admin).
+  // El backend permite al staff editar notas en cualquier estado.
+  const updateNotes = useCallback(async (id: string, notes: string) => {
+    if (!token) {
+      throw new Error('Authentication required');
+    }
+
+    try {
+      const updatedOrder = await updateOrder(token, id, { notes });
+      // Merge defensivo: si el backend devuelve la orden con otra forma
+      // (o sin id por doble-anidamiento), no perdemos el objeto local.
+      setOrders(prev =>
+        prev.map(order => order.id === id ? { ...order, ...updatedOrder, id, notes } : order)
+      );
+      return updatedOrder;
+    } catch (err) {
+      console.error('Error updating order notes:', err);
       throw err;
     }
   }, [token]);
@@ -94,6 +117,7 @@ export function useOrders() {
     pagination,
     getOrder,
     updateStatus,
+    updateNotes,
     refresh,
     goToPage,
   };

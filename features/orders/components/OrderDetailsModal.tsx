@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Order } from '@/types/order';
 import {
   Dialog,
@@ -30,9 +30,10 @@ import {
 } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { OrderEditModal } from './OrderEditModal';
+import { OrderNoteModal } from './OrderNoteModal';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { siteConfig } from '@/lib/site-config';
-import { downloadOrderPDF } from '@/lib/api';
+import { downloadOrderPDF, updateOrder } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface OrderDetailsModalProps {
@@ -40,6 +41,8 @@ interface OrderDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOrderUpdated?: () => void;
+  /** Habilita el botón de notas del admin (editar notas en cualquier estado). */
+  allowNotes?: boolean;
 }
 
 export function OrderDetailsModal({
@@ -47,12 +50,24 @@ export function OrderDetailsModal({
   open,
   onOpenChange,
   onOrderUpdated,
+  allowNotes = false,
 }: OrderDetailsModalProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  // Nota mostrada; se actualiza optimísticamente al guardar (null = usar la de la orden).
+  const [localNotes, setLocalNotes] = useState<string | null>(null);
   const { token } = useAuth();
 
+  // Al cambiar de orden, descartar la nota optimista previa.
+  useEffect(() => {
+    setLocalNotes(null);
+  }, [order?.id]);
+
   if (!order) return null;
+
+  const displayedNotes = localNotes !== null ? localNotes : order.notes;
 
   const isPendiente = order.status === 'PENDIENTE';
 
@@ -71,6 +86,23 @@ export function OrderDetailsModal({
       toast.error('Error al descargar el PDF');
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  const handleSaveNote = async (finalNotes: string) => {
+    if (!token || !order) return;
+    setIsSavingNote(true);
+    try {
+      await updateOrder(token, order.id, { notes: finalNotes });
+      setLocalNotes(finalNotes);
+      toast.success('Nota guardada correctamente');
+      setIsNoteModalOpen(false);
+      onOrderUpdated?.();
+    } catch (error) {
+      console.error('Error guardando la nota:', error);
+      toast.error('Error al guardar la nota');
+    } finally {
+      setIsSavingNote(false);
     }
   };
 
@@ -195,6 +227,30 @@ export function OrderDetailsModal({
                             {order.contactInfo.address}
                           </p>
                         </div>
+                        {order.contactInfo.localidad && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500">Localidad</p>
+                            <p className="text-sm font-medium text-gray-900 break-words">
+                              {order.contactInfo.localidad}
+                            </p>
+                          </div>
+                        )}
+                        {order.contactInfo.provincia && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500">Provincia</p>
+                            <p className="text-sm font-medium text-gray-900 break-words">
+                              {order.contactInfo.provincia}
+                            </p>
+                          </div>
+                        )}
+                        {order.contactInfo.codigoPostal && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500">Código Postal</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {order.contactInfo.codigoPostal}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -284,19 +340,36 @@ export function OrderDetailsModal({
           )}
 
           {/* Notas */}
-          {order.notes && (
+          {(displayedNotes || allowNotes) && (
             <>
               <Separator />
               <div className="space-y-3">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                  <FileText className="h-4 w-4" />
-                  Notas
-                </h3>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {order.notes}
-                  </p>
+                <div className="flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <FileText className="h-4 w-4" />
+                    Notas
+                  </h3>
+                  {allowNotes && (
+                    <Button
+                      onClick={() => setIsNoteModalOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      {displayedNotes ? 'Editar' : 'Agregar'}
+                    </Button>
+                  )}
                 </div>
+                {displayedNotes ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {displayedNotes}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">Sin notas.</p>
+                )}
               </div>
             </>
           )}
@@ -389,6 +462,18 @@ export function OrderDetailsModal({
               onOrderUpdated();
             }
           }}
+        />
+      )}
+
+      {/* Modal de Notas (solo admin) */}
+      {allowNotes && (
+        <OrderNoteModal
+          open={isNoteModalOpen}
+          onOpenChange={setIsNoteModalOpen}
+          mode="note"
+          initialNotes={displayedNotes}
+          isSubmitting={isSavingNote}
+          onConfirm={handleSaveNote}
         />
       )}
     </Dialog>

@@ -11,6 +11,7 @@ import { useCartStore } from '../../store/cartStore';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { updateOrder, validateOrderForEdit } from '@/lib/api';
+import { PRICES_ENABLED } from '@/lib/flags';
 
 import {
   Sheet,
@@ -250,7 +251,7 @@ export const CartDrawer = () => {
               </span>
             </div>
 
-            {subtotal > 0 && (
+            {PRICES_ENABLED && subtotal > 0 && (
               <div className="mt-1 flex items-center justify-between text-base">
                 <span className="font-medium text-neutral-700">Subtotal</span>
                 <span className="font-bold tabular-nums text-neutral-900">

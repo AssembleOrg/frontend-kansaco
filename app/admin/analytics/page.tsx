@@ -9,6 +9,7 @@ import {
   getProductRanking,
   getUserActivity,
   compareProducts,
+  getUsersByZone,
   AnalyticsStats,
   AnalyticsEvent,
   TopSearch,
@@ -16,6 +17,7 @@ import {
   ProductRankingItem,
   TopViewedProduct,
   ProductCompareResult,
+  UsersByZoneItem,
 } from '@/lib/api';
 import {
   BarChart3,
@@ -32,6 +34,9 @@ import {
   Calendar,
   ChevronDown,
   X,
+  MapPin,
+  ArrowUpDown,
+  ChevronRight,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,6 +49,7 @@ import {
 } from '@/components/ui/responsive-dialog';
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   format,
   startOfMonth,
@@ -73,7 +79,7 @@ import {
   Legend,
 } from 'recharts';
 
-type TabKey = 'overview' | 'events' | 'users' | 'products' | 'compare';
+type TabKey = 'overview' | 'events' | 'users' | 'products' | 'compare' | 'zones';
 
 const CHART_COLORS = [
   '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444',
@@ -128,7 +134,25 @@ export default function AnalyticsPage() {
   const [comparePeriodA, setComparePeriodA] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
   const [comparePeriodB, setComparePeriodB] = useState<{ from: Date | undefined; to: Date | undefined }>({ from: undefined, to: undefined });
 
+  // Zones tab state
+  const [zones, setZones] = useState<UsersByZoneItem[]>([]);
+  const [zonesLoaded, setZonesLoaded] = useState(false);
+
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
+
+  const loadZones = useCallback(async () => {
+    if (!token) return;
+    setIsLoading(true);
+    try {
+      const result = await getUsersByZone(token);
+      setZones(result);
+      setZonesLoaded(true);
+    } catch (error) {
+      console.error('Error loading zones:', error);
+    } finally {
+      setIsLoading(false);
+    }
+  }, [token]);
 
   // Load overview data (single endpoint)
   const loadOverview = useCallback(async () => {
@@ -256,6 +280,7 @@ export default function AnalyticsPage() {
       else if (activeTab === 'users') await loadUsers(usersPagination.page);
       else if (activeTab === 'products') await loadProductRanking();
       else if (activeTab === 'compare') await loadCompare();
+      else if (activeTab === 'zones') await loadZones();
     } finally {
       setIsRefreshing(false);
     }
@@ -268,7 +293,8 @@ export default function AnalyticsPage() {
     else if (activeTab === 'events') loadEvents();
     else if (activeTab === 'users') loadUsers();
     else if (activeTab === 'products') loadProductRanking();
-  }, [activeTab, token, loadOverview, loadEvents, loadUsers, loadProductRanking]);
+    else if (activeTab === 'zones' && !zonesLoaded) loadZones();
+  }, [activeTab, token, loadOverview, loadEvents, loadUsers, loadProductRanking, loadZones, zonesLoaded]);
 
   // Debounced user search
   useEffect(() => {
@@ -314,6 +340,7 @@ export default function AnalyticsPage() {
     { key: 'users', label: 'Usuarios', icon: <Users className="h-4 w-4" /> },
     { key: 'products', label: 'Productos', icon: <TrendingUp className="h-4 w-4" /> },
     { key: 'compare', label: 'Comparativas', icon: <BarChart3 className="h-4 w-4" /> },
+    { key: 'zones', label: 'Zonas', icon: <MapPin className="h-4 w-4" /> },
   ];
 
   return (
@@ -437,6 +464,10 @@ export default function AnalyticsPage() {
           onPeriodBChange={setComparePeriodB}
           onCompare={loadCompare}
         />
+      )}
+
+      {activeTab === 'zones' && (
+        <ZonesTab zones={zones} isLoading={isLoading && !zonesLoaded} />
       )}
 
       {/* Modal for custom date range */}
@@ -890,6 +921,228 @@ function OverviewTab({
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+// =============================================
+// Zones Tab — distribución de usuarios por provincia
+// =============================================
+type ZoneSortKey = 'provincia' | 'total' | 'enabled' | 'pending';
+
+function ZonesTab({
+  zones,
+  isLoading,
+}: {
+  zones: UsersByZoneItem[];
+  isLoading: boolean;
+}) {
+  const router = useRouter();
+  const [sortKey, setSortKey] = useState<ZoneSortKey>('total');
+  const [sortAsc, setSortAsc] = useState(false);
+
+  if (isLoading && zones.length === 0) {
+    return (
+      <div className="flex justify-center py-20">
+        <div className="flex flex-col items-center gap-3">
+          <RefreshCw className="h-8 w-8 animate-spin text-green-500" />
+          <p className="text-sm text-gray-500">Cargando zonas...</p>
+        </div>
+      </div>
+    );
+  }
+
+  const withZone = zones.filter((z) => z.provincia !== 'Sin especificar');
+  const unknown = zones.find((z) => z.provincia === 'Sin especificar');
+  const totalConZona = withZone.reduce((sum, z) => sum + z.total, 0);
+  const totalUsers = zones.reduce((sum, z) => sum + z.total, 0);
+  const cobertura = totalUsers > 0 ? Math.round((totalConZona / totalUsers) * 100) : 0;
+
+  // Orden por la columna elegida (las provincias reales; "Sin especificar" va al final).
+  const sorted = [...withZone].sort((a, b) => {
+    const dir = sortAsc ? 1 : -1;
+    if (sortKey === 'provincia') return dir * a.provincia.localeCompare(b.provincia);
+    return dir * (a[sortKey] - b[sortKey]);
+  });
+
+  const toggleSort = (key: ZoneSortKey) => {
+    if (key === sortKey) setSortAsc((v) => !v);
+    else {
+      setSortKey(key);
+      setSortAsc(key === 'provincia'); // texto asc por defecto, números desc
+    }
+  };
+
+  // Top-5 para el donut (+ "Otras" agrupando el resto).
+  const byTotal = [...withZone].sort((a, b) => b.total - a.total);
+  const top5 = byTotal.slice(0, 5);
+  const restTotal = byTotal.slice(5).reduce((s, z) => s + z.total, 0);
+  const donutData = [
+    ...top5.map((z) => ({ name: z.provincia, value: z.total })),
+    ...(restTotal > 0 ? [{ name: 'Otras', value: restTotal }] : []),
+  ];
+
+  const goTo = (provincia: string) =>
+    router.push(`/admin/users?provincia=${encodeURIComponent(provincia)}`);
+
+  const SortableTh = ({ label, k, align = 'right' }: { label: string; k: ZoneSortKey; align?: 'left' | 'right' }) => (
+    <th
+      onClick={() => toggleSort(k)}
+      className={`cursor-pointer select-none px-4 py-3 text-${align} text-[11px] font-semibold uppercase tracking-wide text-neutral-500 hover:text-neutral-700`}
+    >
+      <span className={`inline-flex items-center gap-1 ${align === 'right' ? 'flex-row-reverse' : ''}`}>
+        {label}
+        <ArrowUpDown
+          className={`h-3.5 w-3.5 ${sortKey === k ? 'text-green-600' : 'text-neutral-300'}`}
+        />
+      </span>
+    </th>
+  );
+
+  return (
+    <div className="space-y-5">
+      {/* KPIs */}
+      <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-3">
+        <StatCard
+          icon={<MapPin className="h-5 w-5 text-green-600" />}
+          title="Provincias activas"
+          value={withZone.length}
+        />
+        <StatCard
+          icon={<Users className="h-5 w-5 text-blue-600" />}
+          title="Usuarios con zona"
+          value={totalConZona}
+        />
+        <StatCard
+          icon={<Activity className="h-5 w-5 text-purple-600" />}
+          title="Cobertura de zona"
+          value={cobertura}
+        />
+      </div>
+
+      {withZone.length === 0 ? (
+        <div className="rounded-xl border border-neutral-200/70 bg-white p-6 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <EmptyState text="Todavía no hay usuarios con zona registrada" />
+        </div>
+      ) : (
+        <div className="grid gap-4 lg:grid-cols-[1fr_300px]">
+          {/* Tabla-pivote */}
+          <div className="overflow-hidden rounded-xl border border-neutral-200/70 bg-white shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="border-b border-neutral-200/70 bg-neutral-50/60">
+                  <tr>
+                    <SortableTh label="Provincia" k="provincia" align="left" />
+                    <SortableTh label="Usuarios" k="total" />
+                    <SortableTh label="Habilitados" k="enabled" />
+                    <SortableTh label="Pendientes" k="pending" />
+                    <th className="px-4 py-3 text-right text-[11px] font-semibold uppercase tracking-wide text-neutral-500">
+                      % del total
+                    </th>
+                    <th className="w-8" />
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-neutral-200/60">
+                  {sorted.map((z) => {
+                    const pct = totalConZona > 0 ? Math.round((z.total / totalConZona) * 100) : 0;
+                    return (
+                      <tr
+                        key={z.provincia}
+                        onClick={() => goTo(z.provincia)}
+                        className="group cursor-pointer transition-colors hover:bg-green-50/50"
+                      >
+                        <td className="px-4 py-2.5 text-sm font-medium text-neutral-800">
+                          {z.provincia}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-sm font-semibold tabular-nums text-neutral-900">
+                          {z.total}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-sm tabular-nums text-green-700">
+                          {z.enabled}
+                        </td>
+                        <td className="px-4 py-2.5 text-right text-sm tabular-nums text-amber-600">
+                          {z.pending}
+                        </td>
+                        <td className="px-4 py-2.5">
+                          <div className="flex items-center justify-end gap-2">
+                            <div className="h-1.5 w-16 overflow-hidden rounded-full bg-neutral-100">
+                              <div className="h-full rounded-full bg-green-500" style={{ width: `${pct}%` }} />
+                            </div>
+                            <span className="w-8 text-right text-xs tabular-nums text-neutral-500">{pct}%</span>
+                          </div>
+                        </td>
+                        <td className="pr-3 text-right">
+                          <ChevronRight className="h-4 w-4 text-neutral-300 transition-colors group-hover:text-green-600" />
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  {unknown && unknown.total > 0 && (
+                    <tr className="bg-neutral-50/40 text-neutral-400">
+                      <td className="px-4 py-2.5 text-sm italic">Sin especificar</td>
+                      <td className="px-4 py-2.5 text-right text-sm tabular-nums">{unknown.total}</td>
+                      <td className="px-4 py-2.5 text-right text-sm tabular-nums">{unknown.enabled}</td>
+                      <td className="px-4 py-2.5 text-right text-sm tabular-nums">{unknown.pending}</td>
+                      <td className="px-4 py-2.5" />
+                      <td />
+                    </tr>
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Donut top-5 */}
+          <div className="rounded-xl border border-neutral-200/70 bg-white p-4 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+            <h3 className="mb-1 flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <MapPin className="h-4 w-4 text-green-600" />
+              Top 5 provincias
+            </h3>
+            <p className="mb-2 text-xs text-gray-400">Distribución de usuarios con zona</p>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <PieChart>
+                  <Pie
+                    data={donutData}
+                    cx="50%"
+                    cy="50%"
+                    innerRadius={45}
+                    outerRadius={80}
+                    paddingAngle={2}
+                    dataKey="value"
+                  >
+                    {donutData.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip
+                    contentStyle={{
+                      borderRadius: '12px',
+                      border: '1px solid #e5e7eb',
+                      boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
+                      fontSize: '13px',
+                    }}
+                    formatter={(value) => [`${value} usuarios`, '']}
+                  />
+                </PieChart>
+              </ResponsiveContainer>
+            </div>
+            {/* Leyenda compacta */}
+            <ul className="mt-2 space-y-1">
+              {donutData.map((d, i) => (
+                <li key={d.name} className="flex items-center gap-2 text-xs text-neutral-600">
+                  <span
+                    className="h-2.5 w-2.5 shrink-0 rounded-sm"
+                    style={{ background: CHART_COLORS[i % CHART_COLORS.length] }}
+                  />
+                  <span className="flex-1 truncate">{d.name}</span>
+                  <span className="tabular-nums text-neutral-500">{d.value}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

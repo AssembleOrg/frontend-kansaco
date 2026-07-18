@@ -7,6 +7,7 @@ import { CartItem } from '@/types';
 import { useCartStore } from '../../store/cartStore';
 import { useCart } from '../../hooks/useCart';
 import { Button } from '@/components/ui/button';
+import { PRICES_ENABLED } from '@/lib/flags';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -170,7 +171,7 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
               </Button>
             </div>
 
-            {unitPrice > 0 && (
+            {PRICES_ENABLED && unitPrice > 0 && (
               <div className="text-right">
                 <span className="block text-sm font-semibold tabular-nums text-neutral-800">
                   {formatPrice(unitPrice * localQty)}
