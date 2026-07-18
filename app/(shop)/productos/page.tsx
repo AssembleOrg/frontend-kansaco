@@ -18,7 +18,6 @@ import {
 import { Product } from '@/types';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
-import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import { useCart } from '@/features/cart/hooks/useCart';
@@ -646,7 +645,6 @@ function ProductsContent() {
 export default function ProductosPage() {
   return (
     <div className="min-h-screen bg-black">
-      <Navbar />
       <main className="bg-white pt-20">
         <Suspense
           fallback={

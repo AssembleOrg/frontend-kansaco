@@ -65,6 +65,14 @@ const Navbar = () => {
     setIsHydrated(true);
   }, []);
 
+  // Mostrar el navbar tras 1s aunque no haya scroll. Sin esto, arranca
+  // oculto (isVisible=false) y solo aparece con scroll > 100px, dejando el
+  // menú inaccesible en el tope de la página.
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
   useEffect(() => {
     if (isMobileMenuOpen) {
       const prev = document.body.style.overflow;

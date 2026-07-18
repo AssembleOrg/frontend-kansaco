@@ -24,7 +24,6 @@ import {
 import { NeonBorders } from '@/components/landing/HeroBanner';
 import { AnimatedNumber } from '@/components/ui/AnimatedNumber';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
-import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import Link from 'next/link';
 
@@ -57,7 +56,6 @@ function SobreNosotrosContent() {
 
   return (
     <div className="min-h-screen bg-black">
-      <Navbar />
       <div ref={containerRef} className="bg-black">
         {/* Hero Section - Video Background */}
         <motion.section
