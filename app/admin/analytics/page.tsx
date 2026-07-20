@@ -35,6 +35,7 @@ import {
   ChevronDown,
   X,
   MapPin,
+  Map as MapIcon,
   ArrowUpDown,
   ChevronRight,
 } from 'lucide-react';
@@ -50,6 +51,17 @@ import {
 import { useIsMobile } from '@/hooks/useMediaQuery';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
+
+// Leaflet usa `window` → no puede renderizar en SSR. Se carga solo en cliente.
+const ArgentinaMap = dynamic(() => import('@/components/analytics/ArgentinaMap'), {
+  ssr: false,
+  loading: () => (
+    <div className="flex h-full items-center justify-center">
+      <RefreshCw className="h-8 w-8 animate-spin text-green-500" />
+    </div>
+  ),
+});
 import {
   format,
   startOfMonth,
@@ -79,7 +91,7 @@ import {
   Legend,
 } from 'recharts';
 
-type TabKey = 'overview' | 'events' | 'users' | 'products' | 'compare' | 'zones';
+type TabKey = 'overview' | 'events' | 'users' | 'products' | 'compare' | 'zones' | 'zonesMap';
 
 const CHART_COLORS = [
   '#10b981', '#3b82f6', '#8b5cf6', '#f59e0b', '#ef4444',
@@ -280,7 +292,7 @@ export default function AnalyticsPage() {
       else if (activeTab === 'users') await loadUsers(usersPagination.page);
       else if (activeTab === 'products') await loadProductRanking();
       else if (activeTab === 'compare') await loadCompare();
-      else if (activeTab === 'zones') await loadZones();
+      else if (activeTab === 'zones' || activeTab === 'zonesMap') await loadZones();
     } finally {
       setIsRefreshing(false);
     }
@@ -293,7 +305,7 @@ export default function AnalyticsPage() {
     else if (activeTab === 'events') loadEvents();
     else if (activeTab === 'users') loadUsers();
     else if (activeTab === 'products') loadProductRanking();
-    else if (activeTab === 'zones' && !zonesLoaded) loadZones();
+    else if ((activeTab === 'zones' || activeTab === 'zonesMap') && !zonesLoaded) loadZones();
   }, [activeTab, token, loadOverview, loadEvents, loadUsers, loadProductRanking, loadZones, zonesLoaded]);
 
   // Debounced user search
@@ -341,6 +353,7 @@ export default function AnalyticsPage() {
     { key: 'products', label: 'Productos', icon: <TrendingUp className="h-4 w-4" /> },
     { key: 'compare', label: 'Comparativas', icon: <BarChart3 className="h-4 w-4" /> },
     { key: 'zones', label: 'Zonas', icon: <MapPin className="h-4 w-4" /> },
+    { key: 'zonesMap', label: 'Mapa', icon: <MapIcon className="h-4 w-4" /> },
   ];
 
   return (
@@ -468,6 +481,14 @@ export default function AnalyticsPage() {
 
       {activeTab === 'zones' && (
         <ZonesTab zones={zones} isLoading={isLoading && !zonesLoaded} />
+      )}
+
+      {activeTab === 'zonesMap' && (
+        <div className="rounded-xl border border-neutral-200/70 bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
+          <div className="h-[70vh] min-h-[420px] overflow-hidden rounded-lg">
+            <ArgentinaMap zones={zones} />
+          </div>
+        </div>
       )}
 
       {/* Modal for custom date range */}
