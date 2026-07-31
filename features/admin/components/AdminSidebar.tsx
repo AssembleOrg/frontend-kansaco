@@ -15,8 +15,10 @@ import {
   Settings,
   Percent,
   UserCheck,
+  Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useNoLeidas } from '@/features/submissions/hooks/useNoLeidas';
 
 interface AdminSidebarProps {
   onNavigate?: () => void;
@@ -58,6 +60,12 @@ const NAV_GROUPS: NavGroup[] = [
     ],
   },
   {
+    label: 'Web',
+    items: [
+      { label: 'Solicitudes', href: '/admin/solicitudes', icon: Inbox },
+    ],
+  },
+  {
     label: 'CRM',
     items: [
       { label: 'Negocios', href: '/admin/negocios', icon: Briefcase },
@@ -70,6 +78,7 @@ const NAV_GROUPS: NavGroup[] = [
 
 export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { noLeidas } = useNoLeidas();
 
   const handleNavigation = () => {
     onNavigate?.();
@@ -112,6 +121,14 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
                     >
                       <Icon className="h-[18px] w-[18px] shrink-0" />
                       <span className="truncate">{item.label}</span>
+                      {item.href === '/admin/solicitudes' && noLeidas > 0 && (
+                        <span
+                          aria-label={`${noLeidas} solicitudes sin leer`}
+                          className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-green-600 px-1.5 text-[11px] font-semibold text-white"
+                        >
+                          {noLeidas > 99 ? '99+' : noLeidas}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );

@@ -1,4 +1,5 @@
 import type { Deal, LeadType } from '@/types/crm';
+import { toWhatsAppDigits } from '@/lib/phone';
 
 export function formatCurrency(value: string | number | null | undefined): string {
   if (value === null || value === undefined || value === '') return '$ 0';
@@ -76,8 +77,10 @@ export function leadTypeBadgeClass(tipo: LeadType): string {
 }
 
 export function buildWhatsAppLink(telefono: string | null | undefined): string | null {
-  if (!telefono) return null;
-  const digits = telefono.replace(/[^\d]/g, '');
+  // `toWhatsAppDigits` normaliza a E.164 cuando puede (así el link funciona
+  // aunque el número se haya cargado como "11 2345-6789") y cae a limpiar los
+  // no-dígitos cuando no, que es el comportamiento que había antes.
+  const digits = toWhatsAppDigits(telefono);
   if (!digits) return null;
   return `https://wa.me/${digits}`;
 }

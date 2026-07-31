@@ -1,134 +1,140 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Mail } from 'lucide-react';
-import { siteConfig } from '@/lib/site-config';
+import { FormField } from '@/components/forms/shared/FormField';
+import { FormSuccessPanel } from '@/components/forms/shared/FormSuccessPanel';
+import { HoneypotField } from '@/components/forms/shared/HoneypotField';
+import { SubmitButton } from '@/components/forms/shared/SubmitButton';
+import { controlClass } from '@/components/forms/shared/formStyles';
+import { usePublicSubmission } from '@/features/submissions/hooks/usePublicSubmission';
+import {
+  lubriExpertoSchema,
+  type LubriExpertoFormValues,
+} from '@/features/submissions/schemas';
 
 export default function LubriExpertoForm() {
-  const [nombre, setNombre] = useState('');
-  const [email, setEmail] = useState('');
-  const [vehiculo, setVehiculo] = useState('');
-  const [consulta, setConsulta] = useState('');
+  const { submit, submittedName, isSuccess, reset: resetStatus } =
+    usePublicSubmission();
 
-  const isMobile =
-    typeof window !== 'undefined' &&
-    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const {
+    register,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<LubriExpertoFormValues>({
+    resolver: zodResolver(lubriExpertoSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+    defaultValues: {
+      nombre: '',
+      email: '',
+      vehiculo: '',
+      mensaje: '',
+      website: '',
+    },
+  });
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: LubriExpertoFormValues) => {
+    const ok = await submit({
+      tipo: 'LUBRI_EXPERTO',
+      nombre: values.nombre,
+      email: values.email,
+      mensaje: values.mensaje,
+      payload: { vehiculo: values.vehiculo ?? '' },
+      website: values.website,
+    });
 
-    if (!nombre || !email || !consulta) {
-      alert('Por favor completá tu nombre, email y la consulta');
-      return;
-    }
-
-    const asunto = `Lubri Experto - ${nombre}`;
-    const cuerpo = `
-Nombre: ${nombre}
-Email: ${email}
-${vehiculo ? `Vehículo / Equipo: ${vehiculo}\n` : ''}
-Consulta:
-${consulta}
-
----
-Consulta enviada desde Lubri Experto - Kansaco
-    `.trim();
-
-    const emailDestino = siteConfig.contact.email;
-
-    if (isMobile) {
-      const mailtoLink = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-      window.location.href = mailtoLink;
-    } else {
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emailDestino)}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-      try {
-        window.open(gmailUrl, '_blank', 'noopener,noreferrer');
-      } catch {
-        const mailtoLink = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-        window.location.href = mailtoLink;
-      }
-    }
+    // En caso de error se conservan los valores para que el visitante
+    // pueda reintentar sin volver a escribir todo.
+    if (ok) reset();
   };
 
-  const inputClass =
-    'w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white placeholder-gray-500 focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50 transition-colors';
-  const labelClass = 'mb-2 block text-sm font-medium text-gray-300';
+  if (isSuccess && submittedName) {
+    return (
+      <FormSuccessPanel
+        nombre={submittedName}
+        description="Un asesor técnico va a revisar tu consulta y responderte por email a la brevedad."
+        onReset={resetStatus}
+      />
+    );
+  }
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form onSubmit={handleSubmit(onSubmit)} className="relative space-y-5" noValidate>
+      <HoneypotField registration={register('website')} />
+
       <div className="grid gap-5 md:grid-cols-2">
-        <div>
-          <label htmlFor="le-nombre" className={labelClass}>
-            Tu nombre <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="le-nombre"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            className={inputClass}
-            placeholder="Juan García"
-            required
-          />
-        </div>
+        <FormField id="le-nombre" label="Tu nombre" required error={errors.nombre?.message}>
+          {(aria) => (
+            <input
+              {...register('nombre')}
+              {...aria}
+              type="text"
+              autoComplete="name"
+              disabled={isSubmitting}
+              className={controlClass(Boolean(errors.nombre))}
+              placeholder="Juan García"
+            />
+          )}
+        </FormField>
 
-        <div>
-          <label htmlFor="le-email" className={labelClass}>
-            Tu correo electrónico <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            id="le-email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className={inputClass}
-            placeholder="tu@email.com"
-            required
-          />
-        </div>
-      </div>
-
-      <div>
-        <label htmlFor="le-vehiculo" className={labelClass}>
-          Vehículo o equipo
-        </label>
-        <input
-          type="text"
-          id="le-vehiculo"
-          value={vehiculo}
-          onChange={(e) => setVehiculo(e.target.value)}
-          className={inputClass}
-          placeholder="Ej: Honda CB 190, Renault Kangoo 1.6, compresor industrial..."
-        />
-      </div>
-
-      <div>
-        <label htmlFor="le-consulta" className={labelClass}>
-          ¿Qué necesitás? <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          id="le-consulta"
-          value={consulta}
-          onChange={(e) => setConsulta(e.target.value)}
-          rows={5}
-          className={inputClass}
-          placeholder="Ej: Necesito un aceite para mi moto de uso urbano, hago unos 50 km diarios por ciudad..."
+        <FormField
+          id="le-email"
+          label="Tu correo electrónico"
           required
-        />
+          error={errors.email?.message}
+        >
+          {(aria) => (
+            <input
+              {...register('email')}
+              {...aria}
+              type="email"
+              autoComplete="email"
+              disabled={isSubmitting}
+              className={controlClass(Boolean(errors.email))}
+              placeholder="tu@email.com"
+            />
+          )}
+        </FormField>
       </div>
 
-      <button
-        type="submit"
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#16a245] px-6 py-3 font-semibold text-white transition-all hover:bg-[#0d7a32] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
+      <FormField id="le-vehiculo" label="Vehículo o equipo" error={errors.vehiculo?.message}>
+        {(aria) => (
+          <input
+            {...register('vehiculo')}
+            {...aria}
+            type="text"
+            disabled={isSubmitting}
+            className={controlClass(Boolean(errors.vehiculo))}
+            placeholder="Ej: Honda CB 190, Renault Kangoo 1.6, compresor industrial..."
+          />
+        )}
+      </FormField>
+
+      <FormField
+        id="le-consulta"
+        label="¿Qué necesitás?"
+        required
+        error={errors.mensaje?.message}
       >
-        <Mail className="h-5 w-5" />
-        Enviar consulta
-      </button>
+        {(aria) => (
+          <textarea
+            {...register('mensaje')}
+            {...aria}
+            rows={5}
+            disabled={isSubmitting}
+            className={controlClass(Boolean(errors.mensaje))}
+            placeholder="Ej: Necesito un aceite para mi moto de uso urbano, hago unos 50 km diarios por ciudad..."
+          />
+        )}
+      </FormField>
+
+      <SubmitButton isSubmitting={isSubmitting} label="Enviar consulta" icon={Mail} />
 
       <p className="text-center text-xs text-gray-500">
-        Al hacer clic, se abrirá{' '}
-        {isMobile ? 'tu app de correo' : 'Gmail en una nueva pestaña'} con los
-        datos pre-llenados
+        Te respondemos por email. No compartimos tus datos con terceros.
       </p>
     </form>
   );

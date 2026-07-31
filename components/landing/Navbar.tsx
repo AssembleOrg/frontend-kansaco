@@ -65,9 +65,8 @@ const Navbar = () => {
     setIsHydrated(true);
   }, []);
 
-  // Mostrar el navbar tras 1s aunque no haya scroll. Sin esto, arranca
-  // oculto (isVisible=false) y solo aparece con scroll > 100px, dejando el
-  // menú inaccesible en el tope de la página.
+  // Mostrar el navbar tras 1s y dejarlo fijo. isVisible solo se setea acá
+  // (una vez); el scroll ya no lo oculta, solo controla isScrolled (estilo).
   useEffect(() => {
     const timer = setTimeout(() => setIsVisible(true), 1000);
     return () => clearTimeout(timer);
@@ -85,11 +84,12 @@ const Navbar = () => {
 
   useEffect(() => {
     // Coalescemos scrolls a 1 update por frame. Sin esto, cada pixel
-    // dispara dos setStates → re-render del Navbar entero (~14 useStates,
+    // dispara un setState → re-render del Navbar entero (~14 useStates,
     // framer-motion adentro). En mobile mata el FPS y bloquea el main
     // thread durante navegación.
+    // Solo controla isScrolled (estilo de fondo); isVisible ya no depende
+    // del scroll, para que el navbar quede fijo una vez que aparece.
     let rafId: number | null = null;
-    let lastVisible = false;
     let lastScrolled = false;
 
     const handleScroll = () => {
@@ -97,12 +97,7 @@ const Navbar = () => {
       rafId = requestAnimationFrame(() => {
         rafId = null;
         const scrollPosition = window.scrollY;
-        const nextVisible = scrollPosition > 100;
         const nextScrolled = scrollPosition > 20;
-        if (nextVisible !== lastVisible) {
-          lastVisible = nextVisible;
-          setIsVisible(nextVisible);
-        }
         if (nextScrolled !== lastScrolled) {
           lastScrolled = nextScrolled;
           setIsScrolled(nextScrolled);
