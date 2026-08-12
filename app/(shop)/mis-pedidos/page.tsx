@@ -238,7 +238,7 @@ function OrdersHistoryContent() {
               {pagination.totalPages > 0 ? (
                 <>
                   Página {pagination.page} de {pagination.totalPages} •{' '}
-                  {pagination.total} pedido{pagination.total !== 1 ? 's' : ''} en total
+                  {pagination.total} pedido{pagination.total !== 1 ? 's' : ''} en total.
                 </>
               ) : (
                 <span>No hay pedidos para mostrar.</span>
