@@ -505,7 +505,7 @@ const HeroBanner = () => {
                         href="/register"
                         className="flex items-center justify-center gap-2"
                       >
-                        Registrate
+                        Registrarme
                       </Link>
                     </Button>
                   </motion.div>
