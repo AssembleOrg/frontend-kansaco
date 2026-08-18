@@ -486,7 +486,15 @@ export default function AnalyticsPage() {
       {activeTab === 'zonesMap' && (
         <div className="rounded-xl border border-neutral-200/70 bg-white p-2 shadow-[0_1px_2px_rgba(0,0,0,0.04)]">
           <div className="h-[70vh] min-h-[420px] overflow-hidden rounded-lg">
-            <ArgentinaMap zones={zones} />
+            {/* Montar el mapa recién con data: el cluster cachea su iconCreateFunction
+                una sola vez; si nace con zones=[] la suma queda en 0 en prod. */}
+            {zones.length > 0 ? (
+              <ArgentinaMap zones={zones} />
+            ) : (
+              <div className="flex h-full items-center justify-center text-sm text-neutral-500">
+                Cargando mapa…
+              </div>
+            )}
           </div>
         </div>
       )}
