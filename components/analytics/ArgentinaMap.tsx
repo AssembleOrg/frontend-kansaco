@@ -93,10 +93,12 @@ export default function ArgentinaMap({ zones }: ArgentinaMapProps) {
 
   const maxTotal = pins.reduce((m, p) => Math.max(m, p.total), 0) || 1;
 
-  // Lookup "lat,lng" → total, para que el cluster sume USUARIOS (no marcadores).
-  const totalByLatLng = useMemo(() => {
+  // Lookup provincia → total, para que el cluster sume USUARIOS (no marcadores).
+  // Se usa provincia (no coords) porque getLatLng() renormaliza los floats y no
+  // hace round-trip a la clave original → los lookups por coords daban 0.
+  const totalByProvincia = useMemo(() => {
     const m = new Map<string, number>();
-    for (const p of pins) m.set(`${p.lat},${p.lng}`, p.total);
+    for (const p of pins) m.set(p.provincia, p.total);
     return m;
   }, [pins]);
 
@@ -104,8 +106,8 @@ export default function ArgentinaMap({ zones }: ArgentinaMapProps) {
   const clusterIcon = (cluster: L.MarkerCluster) => {
     let sum = 0;
     for (const child of cluster.getAllChildMarkers()) {
-      const ll = child.getLatLng();
-      sum += totalByLatLng.get(`${ll.lat},${ll.lng}`) ?? 0;
+      const provincia = (child.options as { provincia?: string }).provincia;
+      sum += (provincia ? totalByProvincia.get(provincia) : 0) ?? 0;
     }
     const size = sizeFor(sum, maxTotal);
     return L.divIcon({
@@ -135,7 +137,7 @@ export default function ArgentinaMap({ zones }: ArgentinaMapProps) {
       <FitBounds pins={pins} />
       <MarkerClusterGroup iconCreateFunction={clusterIcon} showCoverageOnHover={false}>
       {pins.map((p) => (
-        <Marker key={p.provincia} position={[p.lat, p.lng]} icon={makeIcon(p.total, maxTotal)}>
+        <Marker key={p.provincia} position={[p.lat, p.lng]} icon={makeIcon(p.total, maxTotal)} {...({ provincia: p.provincia } as object)}>
           <Popup>
             <div className="space-y-1.5">
               <p className="text-sm font-semibold text-neutral-900">{p.provincia}</p>
