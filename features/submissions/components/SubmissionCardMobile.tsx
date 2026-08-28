@@ -4,6 +4,8 @@ import * as React from 'react';
 import { Mail, Phone } from 'lucide-react';
 import type { Submission } from '../types';
 import { relativeTime, submissionTypeBadgeClass, submissionTypeLabel } from '../utils';
+import { buildWhatsAppLink } from '@/features/crm/utils';
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { cn } from '@/lib/utils';
 
 interface Props {
@@ -13,6 +15,7 @@ interface Props {
 
 export function SubmissionCardMobile({ submission, onOpen }: Props) {
   const { leida, tipo, nombre, email, telefono } = submission;
+  const whatsapp = buildWhatsAppLink(telefono);
 
   return (
     <button
@@ -56,11 +59,36 @@ export function SubmissionCardMobile({ submission, onOpen }: Props) {
             <Mail className="h-3 w-3 shrink-0" aria-hidden="true" />
             <span className="truncate">{email}</span>
           </span>
-          {telefono && (
-            <span className="inline-flex shrink-0 items-center gap-1">
-              <Phone className="h-3 w-3" aria-hidden="true" />
+          {whatsapp ? (
+            // Abre WhatsApp sin disparar el onClick de la card (que abre el
+            // detalle). Va con window.open porque un <a> anidado en <button>
+            // sería HTML inválido.
+            <span
+              role="link"
+              tabIndex={0}
+              title={`WhatsApp ${telefono}`}
+              onClick={(e) => {
+                e.stopPropagation();
+                window.open(whatsapp, '_blank', 'noopener,noreferrer');
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                  window.open(whatsapp, '_blank', 'noopener,noreferrer');
+                }
+              }}
+              className="inline-flex shrink-0 items-center gap-1 text-emerald-600"
+            >
+              <WhatsAppIcon className="h-3 w-3" />
               {telefono}
             </span>
+          ) : (
+            telefono && (
+              <span className="inline-flex shrink-0 items-center gap-1">
+                <Phone className="h-3 w-3" aria-hidden="true" />
+                {telefono}
+              </span>
+            )
           )}
         </div>
 

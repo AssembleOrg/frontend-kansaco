@@ -6,15 +6,16 @@ import {
   Copy,
   Loader2,
   Mail,
-  MessageCircle,
   Phone,
   Trash2,
 } from 'lucide-react';
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { toast } from 'sonner';
 import {
   ResponsiveDialog,
   ResponsiveDialogContent,
   ResponsiveDialogDescription,
+  ResponsiveDialogFooter,
   ResponsiveDialogHeader,
   ResponsiveDialogTitle,
 } from '@/components/ui/responsive-dialog';
@@ -49,6 +50,8 @@ export function SubmissionDetailSheet({
   const [isSaving, setIsSaving] = useState(false);
   const [isTogglingRead, setIsTogglingRead] = useState(false);
   const [copiedKey, setCopiedKey] = useState<string | null>(null);
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Al abrir otra solicitud hay que descartar la nota que estaba en pantalla.
   useEffect(() => {
@@ -103,14 +106,17 @@ export function SubmissionDetailSheet({
 
   async function eliminar() {
     if (!token || !submission) return;
-    if (!confirm(`¿Eliminar la solicitud de "${submission.nombre}"?`)) return;
     try {
+      setIsDeleting(true);
       await deleteSubmission(token, submission.id);
       toast.success('Solicitud eliminada');
+      setConfirmOpen(false);
       onOpenChange(false);
       onChanged();
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Error eliminando');
+    } finally {
+      setIsDeleting(false);
     }
   }
 
@@ -170,7 +176,7 @@ export function SubmissionDetailSheet({
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700 transition-colors hover:bg-emerald-100"
               >
-                <MessageCircle className="h-4 w-4" aria-hidden="true" />
+                <WhatsAppIcon className="h-4 w-4" />
                 WhatsApp
               </a>
             )}
@@ -272,7 +278,7 @@ export function SubmissionDetailSheet({
 
             <Button
               variant="ghost"
-              onClick={eliminar}
+              onClick={() => setConfirmOpen(true)}
               className="text-red-600 hover:bg-red-50 hover:text-red-700"
             >
               <Trash2 className="mr-1.5 h-4 w-4" />
@@ -281,6 +287,43 @@ export function SubmissionDetailSheet({
           </div>
         </div>
       </ResponsiveDialogContent>
+
+      {/* Confirmación de borrado (reemplaza el confirm() nativo) */}
+      <ResponsiveDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <ResponsiveDialogContent className="max-w-sm">
+          <ResponsiveDialogHeader className="text-left">
+            <ResponsiveDialogTitle>Eliminar solicitud</ResponsiveDialogTitle>
+            <ResponsiveDialogDescription>
+              Se va a eliminar la solicitud de{' '}
+              <span className="font-medium text-neutral-800">
+                {submission.nombre}
+              </span>
+              . Esta acción no se puede deshacer.
+            </ResponsiveDialogDescription>
+          </ResponsiveDialogHeader>
+          <ResponsiveDialogFooter className="mt-4 gap-2 sm:justify-end">
+            <Button
+              variant="outline"
+              onClick={() => setConfirmOpen(false)}
+              disabled={isDeleting}
+            >
+              Cancelar
+            </Button>
+            <Button
+              onClick={eliminar}
+              disabled={isDeleting}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {isDeleting ? (
+                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+              ) : (
+                <Trash2 className="mr-1.5 h-4 w-4" />
+              )}
+              Eliminar
+            </Button>
+          </ResponsiveDialogFooter>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
     </ResponsiveDialog>
   );
 }

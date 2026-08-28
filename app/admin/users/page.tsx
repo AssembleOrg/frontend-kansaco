@@ -5,6 +5,8 @@ import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getAdminUsers, changeUserRole, AdminUser } from '@/lib/api';
 import { UserRole, esCategoriaB2B } from '@/types/auth';
+import { buildWhatsAppLink, buildMailtoLink } from '@/features/crm/utils';
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2, RefreshCw, UserCheck, Search } from 'lucide-react';
@@ -285,6 +287,12 @@ function AdminUsersContent() {
             {/* Mini-resumen */}
             <div className="border-t border-neutral-100 pt-3 text-xs text-neutral-500">
               <div className="flex items-center justify-between py-0.5">
+                <span className="font-medium text-neutral-600">Resultados</span>
+                <span className="font-semibold text-neutral-800 tabular-nums">
+                  {filtered.length}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-0.5">
                 <span>Pendientes</span>
                 <span className="font-semibold text-amber-600 tabular-nums">
                   {counts.pending}
@@ -350,14 +358,23 @@ function AdminUsersContent() {
                       <div className="font-medium text-neutral-800">
                         {u.nombre} {u.apellido}
                       </div>
-                      <div className="text-xs text-neutral-500">{u.email}</div>
+                      <a
+                        href={buildMailtoLink(u.email)!}
+                        className="text-xs text-neutral-500 hover:text-neutral-700 hover:underline"
+                      >
+                        {u.email}
+                      </a>
                     </td>
                     <td className="px-4 py-3">
-                      {u.telefono ? (
+                      {buildWhatsAppLink(u.telefono) ? (
                         <a
-                          href={`tel:${u.telefono}`}
-                          className="text-sm text-green-600 hover:underline"
+                          href={buildWhatsAppLink(u.telefono)!}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          title={`WhatsApp ${u.telefono}`}
+                          className="inline-flex items-center gap-1.5 text-sm text-emerald-600 hover:underline"
                         >
+                          <WhatsAppIcon className="h-4 w-4" />
                           {u.telefono}
                         </a>
                       ) : (
@@ -365,11 +382,14 @@ function AdminUsersContent() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {u.provincia || u.localidad ? (
+                      {u.provincia || u.localidad || u.direccion ? (
                         <div className="text-sm text-neutral-700">
                           {[u.localidad, u.provincia].filter(Boolean).join(', ')}
                           {u.codigoPostal && (
                             <span className="text-xs text-neutral-400"> (CP {u.codigoPostal})</span>
+                          )}
+                          {u.direccion && (
+                            <div className="text-xs text-neutral-400">{u.direccion}</div>
                           )}
                         </div>
                       ) : (

@@ -9,7 +9,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getSubmissions } from '@/lib/submissionsApi';
 import { PageHeader } from '@/features/crm/components/mobile/PageHeader';
 import { FilterSheet } from '@/features/crm/components/mobile/FilterSheet';
-import { formatDateTime } from '@/features/crm/utils';
+import { formatDateTime, buildWhatsAppLink } from '@/features/crm/utils';
+import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import type { Submission, SubmissionType } from '@/features/submissions/types';
 import {
   relativeTime,
@@ -36,34 +37,48 @@ export default function SolicitudesPage() {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [tipo, setTipo] = useState<SubmissionType | ''>('');
   const [leida, setLeida] = useState<LeidaFilter>('');
   const [selected, setSelected] = useState<Submission | null>(null);
   const [detailOpen, setDetailOpen] = useState(false);
 
-  const refresh = useCallback(async () => {
-    if (!token) return;
-    try {
-      setIsLoading(true);
-      const data = await getSubmissions(token, {
-        search: search || undefined,
-        tipo: tipo || undefined,
-        leida: leida === '' ? undefined : leida === 'true',
-      });
-      setSubmissions(data);
+  // Debounce del buscador: el texto tipeado (`search`) alimenta el input sin
+  // latencia; sólo `debouncedSearch` dispara el fetch, así no se pega al backend
+  // en cada tecla.
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearch(search), 300);
+    return () => clearTimeout(id);
+  }, [search]);
 
-      // Mantiene el detalle abierto sincronizado tras marcar leída o guardar nota.
-      setSelected((current) =>
-        current ? (data.find((s) => s.id === current.id) ?? null) : null,
-      );
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : 'Error cargando solicitudes',
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [token, search, tipo, leida]);
+  const refresh = useCallback(
+    async ({ silent = false }: { silent?: boolean } = {}) => {
+      if (!token) return;
+      try {
+        // En modo silencioso (recarga tras una acción del detalle) no ponemos el
+        // spinner para que no parpadee toda la lista.
+        if (!silent) setIsLoading(true);
+        const data = await getSubmissions(token, {
+          search: debouncedSearch || undefined,
+          tipo: tipo || undefined,
+          leida: leida === '' ? undefined : leida === 'true',
+        });
+        setSubmissions(data);
+
+        // Mantiene el detalle abierto sincronizado tras marcar leída o guardar nota.
+        setSelected((current) =>
+          current ? (data.find((s) => s.id === current.id) ?? null) : null,
+        );
+      } catch (err) {
+        toast.error(
+          err instanceof Error ? err.message : 'Error cargando solicitudes',
+        );
+      } finally {
+        if (!silent) setIsLoading(false);
+      }
+    },
+    [token, debouncedSearch, tipo, leida],
+  );
 
   useEffect(() => {
     void refresh();
@@ -234,7 +249,21 @@ export default function SolicitudesPage() {
                   </td>
                   <td className="px-4 py-2 text-gray-600">{submission.email}</td>
                   <td className="px-4 py-2 text-gray-600">
-                    {submission.telefono ?? '—'}
+                    {buildWhatsAppLink(submission.telefono) ? (
+                      <a
+                        href={buildWhatsAppLink(submission.telefono)!}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        onClick={(e) => e.stopPropagation()}
+                        title={`WhatsApp ${submission.telefono}`}
+                        className="inline-flex items-center gap-1.5 text-emerald-600 hover:underline"
+                      >
+                        <WhatsAppIcon className="h-4 w-4" />
+                        {submission.telefono}
+                      </a>
+                    ) : (
+                      (submission.telefono ?? '—')
+                    )}
                   </td>
                   <td
                     className="px-4 py-2 text-gray-500"
@@ -253,7 +282,7 @@ export default function SolicitudesPage() {
         submission={selected}
         open={detailOpen}
         onOpenChange={setDetailOpen}
-        onChanged={() => void refresh()}
+        onChanged={() => void refresh({ silent: true })}
       />
     </div>
   );
