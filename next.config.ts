@@ -2,6 +2,14 @@ import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
   images: {
+    // Las imágenes ya se guardan optimizadas (WebP q85, ~110 KB) en el CDN de
+    // DigitalOcean. Re-optimizarlas con el optimizador de Next (sharp) sólo
+    // gastaba RAM del servidor 24/7 (era ~96% del costo del servicio en Railway,
+    // y el disco efímero re-procesaba seguido). Con unoptimized servimos el WebP
+    // del CDN directo: sin sharp, sin cache en memoria. Sin pérdida de calidad
+    // (el browser reescala); sólo baja el archivo completo en vez de un thumbnail
+    // por tamaño — costo de egress bajo, RAM mucho menor.
+    unoptimized: true,
     formats: ['image/webp', 'image/avif'],
     deviceSizes: [640, 750, 828, 1080, 1200],
     imageSizes: [16, 32, 64, 96, 128, 256],
