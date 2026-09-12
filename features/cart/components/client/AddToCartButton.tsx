@@ -8,7 +8,7 @@ import { useCartStore } from '@/features/cart/store/cartStore';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { Product } from '@/types/product';
-import { esCategoriaB2B } from '@/types/auth';
+import { puedeComprar } from '@/types/auth';
 import { AddToCartModal } from './AddToCartModal';
 
 interface AddToCartButtonProps {
@@ -32,7 +32,7 @@ export const AddToCartButton = ({
   const openCart = useCartStore((s) => s.openCart);
 
   const isAuthenticated = !!(token && user?.id);
-  const canBuy = esCategoriaB2B(user?.rol);
+  const canBuy = puedeComprar(user?.rol);
 
   // No renderizar si no hay producto
   if (!product) {

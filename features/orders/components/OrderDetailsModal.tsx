@@ -33,7 +33,7 @@ import { OrderEditModal } from './OrderEditModal';
 import { OrderNoteModal } from './OrderNoteModal';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { siteConfig } from '@/lib/site-config';
-import { downloadOrderPDF, updateOrder } from '@/lib/api';
+import { downloadOrderPDF, updateOrder, updateOrderStatus } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface OrderDetailsModalProps {
@@ -43,6 +43,8 @@ interface OrderDetailsModalProps {
   onOrderUpdated?: () => void;
   /** Habilita el botón de notas del admin (editar notas en cualquier estado). */
   allowNotes?: boolean;
+  /** Staff (ADMIN/ASISTENTE): habilita el atajo para volver a PENDIENTE y editar. */
+  isStaff?: boolean;
 }
 
 export function OrderDetailsModal({
@@ -51,25 +53,31 @@ export function OrderDetailsModal({
   onOpenChange,
   onOrderUpdated,
   allowNotes = false,
+  isStaff = false,
 }: OrderDetailsModalProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
   // Nota mostrada; se actualiza optimísticamente al guardar (null = usar la de la orden).
   const [localNotes, setLocalNotes] = useState<string | null>(null);
+  // Estado mostrado; se actualiza optimísticamente al promover en la descarga (null = usar el de la orden).
+  const [localStatus, setLocalStatus] = useState<Order['status'] | null>(null);
   const { token } = useAuth();
 
-  // Al cambiar de orden, descartar la nota optimista previa.
+  // Al cambiar de orden, descartar los valores optimistas previos.
   useEffect(() => {
     setLocalNotes(null);
+    setLocalStatus(null);
   }, [order?.id]);
 
   if (!order) return null;
 
   const displayedNotes = localNotes !== null ? localNotes : order.notes;
+  const displayedStatus = localStatus ?? order.status;
 
-  const isPendiente = order.status === 'PENDIENTE';
+  const isPendiente = displayedStatus === 'PENDIENTE';
 
   const handleDownloadPDF = async () => {
     if (!token) {
@@ -79,13 +87,50 @@ export function OrderDetailsModal({
 
     setIsDownloading(true);
     try {
+      // Primero promovemos a PROCESANDO (solo si está PENDIENTE) para que el
+      // estado ya actualizado salga impreso en el PDF que genera el backend.
+      const promoted = displayedStatus === 'PENDIENTE';
+      if (promoted) {
+        await updateOrderStatus(token, order.id, 'PROCESANDO');
+        setLocalStatus('PROCESANDO');
+      }
       await downloadOrderPDF(token, order.id);
-      toast.success('PDF descargado correctamente');
+      toast.success(
+        promoted
+          ? 'Pedido marcado como Procesando y PDF descargado'
+          : 'PDF descargado correctamente'
+      );
+      // Refrescar la tabla padre para reflejar el nuevo estado.
+      if (promoted) onOrderUpdated?.();
     } catch (error) {
       console.error('Error descargando PDF:', error);
       toast.error('Error al descargar el PDF');
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  // El backend solo permite editar items en PENDIENTE. Para editar un pedido en
+  // preparación, el staff lo vuelve a PENDIENTE (los estados son libres).
+  const canRevertToPendiente =
+    isStaff && (displayedStatus === 'PROCESANDO' || displayedStatus === 'ENVIADO');
+
+  const handleRevertToPendiente = async () => {
+    if (!token) {
+      toast.error('No estás autenticado');
+      return;
+    }
+    setIsReverting(true);
+    try {
+      await updateOrderStatus(token, order.id, 'PENDIENTE');
+      setLocalStatus('PENDIENTE');
+      toast.success('Pedido devuelto a Pendiente. Ya podés editarlo.');
+      onOrderUpdated?.();
+    } catch (error) {
+      console.error('Error al volver a Pendiente:', error);
+      toast.error('No se pudo cambiar el estado');
+    } finally {
+      setIsReverting(false);
     }
   };
 
@@ -147,8 +192,8 @@ export function OrderDetailsModal({
               <Package className="h-5 w-5" />
               Detalles del Pedido
             </span>
-            <Badge variant={getStatusBadgeVariant(order.status)}>
-              {getStatusLabel(order.status)}
+            <Badge variant={getStatusBadgeVariant(displayedStatus)}>
+              {getStatusLabel(displayedStatus)}
             </Badge>
           </DialogTitle>
           <DialogDescription>
@@ -424,11 +469,38 @@ export function OrderDetailsModal({
               <Edit className="mr-2 h-4 w-4" />
               Editar Orden
             </Button>
+          ) : canRevertToPendiente ? (
+            // Staff: atajo para editar un pedido en preparación devolviéndolo a Pendiente.
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Este pedido está en <strong>{getStatusLabel(displayedStatus)}</strong>. Para editar
+                sus productos, primero volvé a <strong>Pendiente</strong>.
+                <Button
+                  onClick={handleRevertToPendiente}
+                  disabled={isReverting}
+                  variant="outline"
+                  className="mt-3 w-full border-2 border-gray-300 text-gray-700 hover:border-green-600 hover:text-green-700 hover:bg-green-50 font-semibold transition-colors"
+                >
+                  {isReverting ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Cambiando estado...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Volver a Pendiente para editar
+                    </>
+                  )}
+                </Button>
+              </AlertDescription>
+            </Alert>
           ) : (
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Esta orden ha sido <strong>{getStatusLabel(order.status)}</strong> y no puede modificarse.
+                Esta orden ha sido <strong>{getStatusLabel(displayedStatus)}</strong> y no puede modificarse.
                 Si necesitas ayuda, contacta con nosotros:
                 <div className="mt-2 space-y-1">
                   <div>

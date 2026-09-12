@@ -21,6 +21,12 @@ export const B2B_ROLES: readonly UserRole[] = [
 export const esCategoriaB2B = (rol: UserRole | null | undefined): boolean =>
   !!rol && B2B_ROLES.includes(rol);
 
+// Quién puede comprar / ver precios: las categorías B2B más el staff
+// (ADMIN/ASISTENTE) que arma pedidos en nombre de los clientes.
+// Distinto de esCategoriaB2B, que solo marca clientes comerciales habilitados.
+export const puedeComprar = (rol: UserRole | null | undefined): boolean =>
+  esCategoriaB2B(rol) || rol === 'ADMIN' || rol === 'ASISTENTE';
+
 export interface Discount {
   id: number;
   porcentaje: number;

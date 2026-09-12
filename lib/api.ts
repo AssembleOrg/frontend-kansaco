@@ -1322,42 +1322,6 @@ export async function getOrderById(
   }
 }
 
-/**
- * Valida si una orden existe y está disponible para edición
- * @returns objeto con valid, reason y order opcional
- */
-export async function validateOrderForEdit(
-  token: string,
-  orderId: string
-): Promise<{ valid: boolean; reason?: string; order?: Order }> {
-  try {
-    const order = await getOrderById(token, orderId);
-
-    if (!order) {
-      return { valid: false, reason: 'Order not found' };
-    }
-
-    if (order.status !== 'PENDIENTE') {
-      return {
-        valid: false,
-        reason: `Order status is ${order.status}, only PENDIENTE orders can be edited`,
-      };
-    }
-
-    return { valid: true, order };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // Si es 404, la orden no existe
-    if (errorMessage.includes('404') || errorMessage.includes('not found')) {
-      return { valid: false, reason: 'Order not found (404)' };
-    }
-
-    // Otro error (403, 500, etc.)
-    return { valid: false, reason: errorMessage || 'Unknown error' };
-  }
-}
-
 export async function getMyOrdersPaginated(
   token: string,
   options?: {

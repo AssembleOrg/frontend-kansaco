@@ -1,16 +1,13 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { AnimatePresence, motion } from 'framer-motion';
 import { ShoppingBag, ShoppingCart, LogIn, ArrowRight, Trash2 } from 'lucide-react';
-import { toast } from 'sonner';
 
 import { useCartStore } from '../../store/cartStore';
 import { useCart } from '../../hooks/useCart';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { updateOrder, validateOrderForEdit } from '@/lib/api';
 import { PRICES_ENABLED } from '@/lib/flags';
 
 import {
@@ -34,17 +31,13 @@ import { CartItemCard } from './CartItemCard';
 
 export const CartDrawer = () => {
   const { token } = useAuth();
-  const router = useRouter();
 
   const isCartOpen = useCartStore((s) => s.isCartOpen);
   const closeCart = useCartStore((s) => s.closeCart);
 
   const { cart, itemCount, isLoading, error, syncCart, clearCart, subtotal, formatPrice } = useCart();
 
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false);
-  const [isUpdatingOrder, setIsUpdatingOrder] = useState(false);
 
   const isAuthenticated = !!token;
   const productCount = cart?.items?.length ?? 0;
@@ -55,106 +48,7 @@ export const CartDrawer = () => {
     if (isCartOpen) syncCart();
   }, [isCartOpen, syncCart]);
 
-  useEffect(() => {
-    const validateEditMode = async () => {
-      const editMode = localStorage.getItem('editMode');
-      const orderId = localStorage.getItem('editingOrderId');
-
-      if (editMode === 'true' && orderId && token) {
-        const validation = await validateOrderForEdit(token, orderId);
-        if (!validation.valid) {
-          localStorage.removeItem('editMode');
-          localStorage.removeItem('editingOrderId');
-          localStorage.removeItem('editingOrderItems');
-          setIsEditMode(false);
-          setEditingOrderId(null);
-          toast.error('La orden que intentabas editar ya no está disponible');
-          return;
-        }
-        setIsEditMode(true);
-        setEditingOrderId(orderId);
-      } else {
-        setIsEditMode(false);
-        setEditingOrderId(null);
-      }
-    };
-    validateEditMode();
-  }, [cart, token]);
-
   const handleProceedToCheckout = () => closeCart();
-
-  const handleUpdateOrder = async () => {
-    if (!editingOrderId || !token) {
-      toast.error('No se puede actualizar la orden');
-      return;
-    }
-    try {
-      setIsUpdatingOrder(true);
-      toast.loading('Actualizando orden...');
-
-      const orderItems = (cart?.items || []).map((it) => {
-        const price = it.product.price;
-        const unitPrice =
-          typeof price === 'number' ? price : parseFloat(String(price || '0'));
-        return {
-          productId: it.product.id,
-          productName: it.product.name,
-          quantity: it.quantity,
-          unitPrice,
-          presentation: it.presentation || '',
-        };
-      });
-
-      if (orderItems.length === 0) {
-        toast.dismiss();
-        toast.error('Debes tener al menos 1 producto en el carrito');
-        return;
-      }
-
-      await updateOrder(token, editingOrderId, { items: orderItems });
-
-      localStorage.removeItem('editMode');
-      localStorage.removeItem('editingOrderId');
-      localStorage.removeItem('editingOrderItems');
-      clearCart();
-
-      toast.dismiss();
-      toast.success('Orden actualizada correctamente');
-      closeCart();
-      setTimeout(() => router.push('/mis-pedidos'), 500);
-    } catch (e) {
-      const msg = e instanceof Error ? e.message : String(e);
-      toast.dismiss();
-      if (msg.includes('404') || msg.includes('not found')) {
-        localStorage.removeItem('editMode');
-        localStorage.removeItem('editingOrderId');
-        localStorage.removeItem('editingOrderItems');
-        clearCart();
-        toast.error('Esta orden ya no existe. Serás redirigido a Mis Pedidos.', {
-          duration: 4000,
-        });
-        setTimeout(() => router.push('/mis-pedidos'), 2000);
-        return;
-      }
-      if (msg.includes('400') || msg.includes('PENDIENTE')) {
-        toast.error('Esta orden ya no puede ser editada (fue procesada o cancelada)', {
-          duration: 4000,
-        });
-        localStorage.removeItem('editMode');
-        localStorage.removeItem('editingOrderId');
-        localStorage.removeItem('editingOrderItems');
-        setTimeout(() => router.push('/mis-pedidos'), 2000);
-        return;
-      }
-      if (msg.includes('403') || msg.includes('permisos')) {
-        toast.error('No tienes permisos para editar esta orden');
-        return;
-      }
-      toast.error('Error al actualizar la orden. Por favor, intenta nuevamente.');
-    } finally {
-      setIsUpdatingOrder(false);
-    }
-  };
 
   const confirmEmptyCart = () => {
     setConfirmEmptyOpen(false);
@@ -168,7 +62,7 @@ export const CartDrawer = () => {
           <div className="flex items-center justify-between gap-3">
             <SheetTitle className="flex items-center gap-2 text-base font-semibold text-neutral-900">
               <ShoppingCart className="h-5 w-5 text-green-700" />
-              {isEditMode ? 'Editar pedido' : 'Tu carrito'}
+              Tu carrito
             </SheetTitle>
             {hasItems && (
               <span className="rounded-full bg-green-100 px-2.5 py-0.5 text-xs font-semibold text-green-800">
@@ -180,11 +74,6 @@ export const CartDrawer = () => {
             <SheetDescription className="text-xs text-neutral-500">
               {productCount} {productCount === 1 ? 'producto' : 'productos'} listos para pedir
             </SheetDescription>
-          )}
-          {isEditMode && editingOrderId && (
-            <div className="mt-2 rounded-md bg-amber-50 px-2.5 py-1.5 text-xs text-amber-800">
-              Editando pedido <span className="font-semibold">#{editingOrderId.slice(0, 8)}</span>
-            </div>
           )}
         </SheetHeader>
 
@@ -261,15 +150,7 @@ export const CartDrawer = () => {
             )}
 
             <div className="mt-3 flex flex-col gap-2">
-              {isEditMode ? (
-                <Button
-                  className="h-11 w-full bg-green-600 text-base font-semibold hover:bg-green-700"
-                  onClick={handleUpdateOrder}
-                  disabled={isUpdatingOrder}
-                >
-                  {isUpdatingOrder ? 'Actualizando...' : 'Actualizar Orden'}
-                </Button>
-              ) : canProceedToCheckout ? (
+              {canProceedToCheckout ? (
                 <Link href="/checkout" className="w-full">
                   <Button
                     className="h-11 w-full bg-green-600 text-base font-semibold hover:bg-green-700"

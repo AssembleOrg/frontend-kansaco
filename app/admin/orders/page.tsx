@@ -31,9 +31,15 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; bg: stri
 };
 
 export default function OrdersPage() {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  const isStaff = user?.rol === 'ADMIN' || user?.rol === 'ASISTENTE';
   const { orders, isLoading, error, pagination, updateStatus, updateNotes, refresh, goToPage } = useOrders();
-  const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
+  // Guardamos solo el id; el pedido se deriva de la lista en cada render, así el
+  // modal siempre ve los datos frescos tras editar (sin sync ni cerrar/reabrir).
+  const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
+  const selectedOrder = selectedOrderId
+    ? orders.find((o) => o.id === selectedOrderId) ?? null
+    : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -106,20 +112,31 @@ export default function OrdersPage() {
     }
   }, [orderToCancel, updateStatus, updateNotes, refresh]);
 
-  const handleDownloadPDF = useCallback(async (orderId: string) => {
+  const handleDownloadPDF = useCallback(async (order: Order) => {
     if (!token) return;
 
-    setDownloadingOrderId(orderId);
+    setDownloadingOrderId(order.id);
     try {
-      await downloadOrderPDF(token, orderId);
-      toast.success('PDF descargado correctamente');
+      // Primero promovemos a PROCESANDO (solo si está PENDIENTE) para que el
+      // estado ya actualizado salga impreso en el PDF que genera el backend.
+      const promoted = order.status === 'PENDIENTE';
+      if (promoted) {
+        await updateStatus(order.id, 'PROCESANDO');
+      }
+      await downloadOrderPDF(token, order.id);
+      toast.success(
+        promoted
+          ? 'Pedido marcado como Procesando y PDF descargado'
+          : 'PDF descargado correctamente'
+      );
+      if (promoted) refresh();
     } catch (err) {
       console.error('Error downloading PDF:', err);
       toast.error('Error al descargar el PDF');
     } finally {
       setDownloadingOrderId(null);
     }
-  }, [token]);
+  }, [token, updateStatus, refresh]);
 
   // Definir columnas para TanStack
   const columns = useMemo<ColumnDef<Order>[]>(
@@ -248,7 +265,7 @@ export default function OrdersPage() {
               )}
               <Button
                 onClick={() => {
-                  setSelectedOrder(order);
+                  setSelectedOrderId(order.id);
                   setIsModalOpen(true);
                 }}
                 variant="outline"
@@ -259,7 +276,7 @@ export default function OrdersPage() {
                 Ver
               </Button>
               <Button
-                onClick={() => handleDownloadPDF(order.id)}
+                onClick={() => handleDownloadPDF(order)}
                 variant="outline"
                 size="sm"
                 className="gap-1"
@@ -528,7 +545,7 @@ export default function OrdersPage() {
                   <div className="flex gap-2 pt-2">
                     <Button
                       onClick={() => {
-                        setSelectedOrder(order);
+                        setSelectedOrderId(order.id);
                         setIsModalOpen(true);
                       }}
                       variant="outline"
@@ -539,7 +556,7 @@ export default function OrdersPage() {
                       Ver
                     </Button>
                     <Button
-                      onClick={() => handleDownloadPDF(order.id)}
+                      onClick={() => handleDownloadPDF(order)}
                       variant="outline"
                       size="sm"
                       className="gap-1"
@@ -599,6 +616,7 @@ export default function OrdersPage() {
         open={isModalOpen}
         onOpenChange={setIsModalOpen}
         allowNotes
+        isStaff={isStaff}
         onOrderUpdated={refresh}
       />
 

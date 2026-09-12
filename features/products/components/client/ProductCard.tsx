@@ -9,7 +9,7 @@ import { useCart } from '@/features/cart/hooks/useCart';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { esCategoriaB2B } from '@/types/auth';
+import { puedeComprar } from '@/types/auth';
 import { PRICES_ENABLED } from '@/lib/flags';
 
 interface ProductCardProps {
@@ -23,7 +23,7 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-  const canBuy = esCategoriaB2B(user?.rol);
+  const canBuy = puedeComprar(user?.rol);
   const hasPrice =
     PRICES_ENABLED && typeof product.price === 'number' && product.price > 0;
 
