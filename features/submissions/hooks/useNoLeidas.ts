@@ -12,19 +12,21 @@ import { getSubmissionStats } from '@/lib/submissionsApi';
  * alcanza para que el número esté fresco sin agregar tráfico constante.
  */
 export function useNoLeidas(): { noLeidas: number; refresh: () => void } {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
   const pathname = usePathname();
   const [noLeidas, setNoLeidas] = useState(0);
+  // El endpoint de stats es sólo ADMIN: a la asistente no se lo pedimos.
+  const puedeConsultar = !!token && user?.rol === 'ADMIN';
 
   const refresh = useCallback(async () => {
-    if (!token) return;
+    if (!puedeConsultar || !token) return;
     try {
       const { noLeidas: count } = await getSubmissionStats(token);
       setNoLeidas(count ?? 0);
     } catch {
       // Silencioso: es un indicador accesorio, no debe romper el panel.
     }
-  }, [token]);
+  }, [token, puedeConsultar]);
 
   useEffect(() => {
     void refresh();

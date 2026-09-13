@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo, Suspense } from 'react';
 import { useSearchParams } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { getAdminUsers, changeUserRole, AdminUser } from '@/lib/api';
-import { UserRole, esCategoriaB2B } from '@/types/auth';
+import { getAdminUsers, changeUserRole, changeUserBloqueo, AdminUser } from '@/lib/api';
+import { UserRole, UserBloqueo, esCategoriaB2B, esStaff } from '@/types/auth';
 import { buildWhatsAppLink, buildMailtoLink } from '@/features/crm/utils';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { Button } from '@/components/ui/button';
@@ -27,8 +27,21 @@ const roleLabel = (rol: UserRole) =>
   ASSIGNABLE_ROLES.find((r) => r.value === rol)?.label ??
   (rol === 'ADMIN' ? 'Admin' : rol);
 
+// Freno de la cuenta: conserva la categoría, pero no puede comprar hasta que
+// la destraben. '' = operativa (null en el backend).
+const BLOQUEO_OPTIONS: { value: UserBloqueo | ''; label: string }[] = [
+  { value: '', label: 'Operativa' },
+  { value: 'COBRANZAS', label: 'Frenada · Cobranzas' },
+  { value: 'VENTAS', label: 'Frenada · Ventas' },
+];
+
+const bloqueoLabel = (bloqueo: UserBloqueo) =>
+  bloqueo === 'COBRANZAS' ? 'Cobranzas' : 'Ventas';
+
 function AdminUsersContent() {
   const { token, user: currentUser } = useAuth();
+  // La categoría (lista de precios) la cambia sólo el admin; el freno, admin y asistente.
+  const puedeCambiarCategoria = currentUser?.rol === 'ADMIN';
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -36,7 +49,7 @@ function AdminUsersContent() {
   const [query, setQuery] = useState('');
   // Filtros CRM-like.
   const searchParams = useSearchParams();
-  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'enabled'>('all');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'enabled' | 'blocked'>('all');
   const [roleFilter, setRoleFilter] = useState<'all' | UserRole>('all');
   // Provincia inicial desde el query param (?provincia=), p. ej. link desde Analytics.
   const [provinciaFilter, setProvinciaFilter] = useState<string>(
@@ -82,6 +95,24 @@ function AdminUsersContent() {
     }
   };
 
+  const handleChangeBloqueo = async (userId: string, bloqueo: UserBloqueo | null) => {
+    if (!token) return;
+    setSavingId(userId);
+    try {
+      const updated = await changeUserBloqueo(token, userId, bloqueo);
+      setUsers((prev) =>
+        prev.map((u) => (u.id === userId ? { ...u, bloqueo: updated.bloqueo ?? null } : u)),
+      );
+      toast.success(
+        bloqueo ? `Cuenta frenada (${bloqueoLabel(bloqueo).toLowerCase()})` : 'Cuenta destrabada',
+      );
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al cambiar el freno');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     return users.filter((u) => {
@@ -98,6 +129,7 @@ function AdminUsersContent() {
       if (statusFilter === 'enabled' && !esCategoriaB2B(u.rol)) return false;
       if (statusFilter === 'pending' && (esCategoriaB2B(u.rol) || isSystem))
         return false;
+      if (statusFilter === 'blocked' && !u.bloqueo) return false;
       // Filtro por categoría/rol
       if (roleFilter !== 'all' && u.rol !== roleFilter) return false;
       // Filtro por provincia
@@ -152,12 +184,14 @@ function AdminUsersContent() {
   const counts = useMemo(() => {
     let pending = 0;
     let enabled = 0;
+    let blocked = 0;
     for (const u of users) {
       const isSystem = u.rol === 'ADMIN' || u.rol === 'ASISTENTE';
       if (esCategoriaB2B(u.rol)) enabled++;
       else if (!isSystem) pending++;
+      if (u.bloqueo) blocked++;
     }
-    return { pending, enabled, total: users.length };
+    return { pending, enabled, blocked, total: users.length };
   }, [users]);
 
   return (
@@ -169,7 +203,8 @@ function AdminUsersContent() {
             Cuentas de usuario
           </h1>
           <p className="mt-1 text-sm text-neutral-500">
-            Asigná una categoría comercial para habilitar (aprobar) cada cuenta.
+            Categoría comercial (habilita la cuenta y define su lista de precios) y
+            freno por cobranzas o ventas.
           </p>
         </div>
         <Button variant="outline" size="sm" onClick={load} disabled={isLoading}>
@@ -206,6 +241,7 @@ function AdminUsersContent() {
                   { key: 'all', label: 'Todos' },
                   { key: 'pending', label: 'Pendientes' },
                   { key: 'enabled', label: 'Habilitados' },
+                  { key: 'blocked', label: 'Frenados' },
                 ] as const).map((opt) => (
                   <button
                     key={opt.key}
@@ -305,6 +341,12 @@ function AdminUsersContent() {
                 </span>
               </div>
               <div className="flex items-center justify-between py-0.5">
+                <span>Frenados</span>
+                <span className="font-semibold text-red-600 tabular-nums">
+                  {counts.blocked}
+                </span>
+              </div>
+              <div className="flex items-center justify-between py-0.5">
                 <span>Total</span>
                 <span className="font-semibold text-neutral-700 tabular-nums">
                   {counts.total}
@@ -345,6 +387,7 @@ function AdminUsersContent() {
                 <th className="px-4 py-3 font-semibold">Zona</th>
                 <th className="px-4 py-3 font-semibold">Estado</th>
                 <th className="px-4 py-3 font-semibold">Categoría / Rol</th>
+                <th className="px-4 py-3 font-semibold">Freno</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -352,6 +395,8 @@ function AdminUsersContent() {
                 const isAdmin = u.rol === 'ADMIN';
                 const isSelf = currentUser?.id === u.id;
                 const active = esCategoriaB2B(u.rol);
+                // Sólo se frenan cuentas de clientes (el backend también lo valida).
+                const puedeFrenar = !esStaff(u.rol) && !isSelf;
                 return (
                   <tr key={u.id}>
                     <td className="px-4 py-3">
@@ -401,6 +446,10 @@ function AdminUsersContent() {
                         <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
                           Admin
                         </span>
+                      ) : u.bloqueo ? (
+                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
+                          Frenada · {bloqueoLabel(u.bloqueo)}
+                        </span>
                       ) : active ? (
                         <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
                           Habilitado
@@ -412,7 +461,7 @@ function AdminUsersContent() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {isAdmin || isSelf ? (
+                      {isAdmin || isSelf || !puedeCambiarCategoria ? (
                         <span className="text-neutral-500">{roleLabel(u.rol)}</span>
                       ) : (
                         <div className="flex items-center gap-2">
@@ -436,12 +485,39 @@ function AdminUsersContent() {
                         </div>
                       )}
                     </td>
+                    <td className="px-4 py-3">
+                      {puedeFrenar ? (
+                        <select
+                          value={u.bloqueo ?? ''}
+                          disabled={savingId === u.id}
+                          onChange={(e) =>
+                            handleChangeBloqueo(
+                              u.id,
+                              (e.target.value || null) as UserBloqueo | null,
+                            )
+                          }
+                          className={`h-9 rounded-md border bg-white px-2 text-sm focus:outline-none focus:ring-1 disabled:opacity-50 ${
+                            u.bloqueo
+                              ? 'border-red-300 text-red-700 focus:border-red-500 focus:ring-red-500'
+                              : 'border-neutral-200 text-neutral-800 focus:border-green-500 focus:ring-green-500'
+                          }`}
+                        >
+                          {BLOQUEO_OPTIONS.map((opt) => (
+                            <option key={opt.value} value={opt.value}>
+                              {opt.label}
+                            </option>
+                          ))}
+                        </select>
+                      ) : (
+                        <span className="text-xs text-neutral-400">—</span>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={5} className="px-4 py-10 text-center text-neutral-400">
+                  <td colSpan={6} className="px-4 py-10 text-center text-neutral-400">
                     No se encontraron usuarios.
                   </td>
                 </tr>

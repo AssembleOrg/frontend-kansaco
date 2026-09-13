@@ -8,7 +8,7 @@ import { useCartStore } from '@/features/cart/store/cartStore';
 import { Button } from '@/components/ui/button';
 import { ShoppingCart } from 'lucide-react';
 import { Product } from '@/types/product';
-import { puedeComprar } from '@/types/auth';
+import { estaFrenado, puedeComprar } from '@/types/auth';
 import { AddToCartModal } from './AddToCartModal';
 
 interface AddToCartButtonProps {
@@ -32,7 +32,9 @@ export const AddToCartButton = ({
   const openCart = useCartStore((s) => s.openCart);
 
   const isAuthenticated = !!(token && user?.id);
-  const canBuy = puedeComprar(user?.rol);
+  // Frenado (cobranzas/ventas): tiene categoría pero no puede comprar.
+  const frenado = estaFrenado(user);
+  const canBuy = puedeComprar(user?.rol) && !frenado;
 
   // No renderizar si no hay producto
   if (!product) {
@@ -87,9 +89,11 @@ export const AddToCartButton = ({
           ? 'Agregando...'
           : !isAuthenticated
             ? 'Iniciar sesión para comprar'
-            : !canBuy
-              ? 'Cuenta pendiente de aprobación'
-              : 'Agregar al carrito'}
+            : frenado
+              ? 'Cuenta frenada'
+              : !canBuy
+                ? 'Cuenta pendiente de aprobación'
+                : 'Agregar al carrito'}
       </Button>
 
       <AddToCartModal

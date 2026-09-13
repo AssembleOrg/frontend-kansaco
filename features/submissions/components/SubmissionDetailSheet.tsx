@@ -7,6 +7,7 @@ import {
   Loader2,
   Mail,
   Phone,
+  Share2,
   Trash2,
 } from 'lucide-react';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
@@ -26,6 +27,7 @@ import { deleteSubmission, updateSubmission } from '@/lib/submissionsApi';
 import { formatDateTime, buildWhatsAppLink } from '@/features/crm/utils';
 import type { Submission } from '../types';
 import {
+  buildSubmissionShareText,
   payloadEntries,
   submissionTypeBadgeClass,
   submissionTypeLabel,
@@ -102,6 +104,38 @@ export function SubmissionDetailSheet({
     } finally {
       setIsTogglingRead(false);
     }
+  }
+
+  /**
+   * Comparte la ficha completa. En celular abre el compartir nativo (WhatsApp,
+   * Telegram, mail…). En PC `navigator.share` abre un diálogo del sistema poco
+   * útil, así que va directo a WhatsApp Web sin destinatario: el usuario elige
+   * el chat (un vendedor, por ejemplo).
+   */
+  async function compartir() {
+    if (!submission) return;
+    const text = buildSubmissionShareText(submission);
+    const esTouch = window.matchMedia('(hover: none) and (pointer: coarse)').matches;
+
+    if (esTouch && typeof navigator.share === 'function') {
+      try {
+        await navigator.share({
+          title: `Solicitud ${submissionTypeLabel(submission.tipo)} · ${submission.nombre}`,
+          text,
+        });
+        return;
+      } catch (err) {
+        // AbortError = cerró el diálogo sin elegir app; no es un error.
+        if (err instanceof DOMException && err.name === 'AbortError') return;
+        // Cualquier otro fallo cae al link de WhatsApp.
+      }
+    }
+
+    window.open(
+      `https://wa.me/?text=${encodeURIComponent(text)}`,
+      '_blank',
+      'noopener,noreferrer',
+    );
   }
 
   async function eliminar() {
@@ -263,18 +297,25 @@ export function SubmissionDetailSheet({
 
           {/* Acciones */}
           <div className="flex flex-wrap items-center justify-between gap-2 border-t border-neutral-200 pt-4">
-            <Button
-              variant={submission.leida ? 'outline' : 'default'}
-              onClick={toggleLeida}
-              disabled={isTogglingRead}
-            >
-              {isTogglingRead ? (
-                <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
-              ) : (
-                <Check className="mr-1.5 h-4 w-4" />
-              )}
-              {submission.leida ? 'Marcar como sin leer' : 'Marcar como atendida'}
-            </Button>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                variant={submission.leida ? 'outline' : 'default'}
+                onClick={toggleLeida}
+                disabled={isTogglingRead}
+              >
+                {isTogglingRead ? (
+                  <Loader2 className="mr-1.5 h-4 w-4 animate-spin" />
+                ) : (
+                  <Check className="mr-1.5 h-4 w-4" />
+                )}
+                {submission.leida ? 'Marcar como sin leer' : 'Marcar como atendida'}
+              </Button>
+
+              <Button variant="outline" onClick={compartir} title="Compartir la ficha por WhatsApp">
+                <Share2 className="mr-1.5 h-4 w-4" />
+                Compartir
+              </Button>
+            </div>
 
             <Button
               variant="ghost"

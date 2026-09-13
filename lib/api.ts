@@ -5,6 +5,8 @@ import {
   LoginApiResponse,
   RegisterPayload,
   RegisterApiResponse,
+  User,
+  UserBloqueo,
   UserRole,
 } from '@/types/auth';
 import {
@@ -2829,6 +2831,7 @@ export interface AdminUser {
   provincia?: string;
   codigoPostal?: string;
   rol: UserRole;
+  bloqueo?: UserBloqueo | null;
 }
 
 export async function getAdminUsers(token: string): Promise<AdminUser[]> {
@@ -2859,5 +2862,42 @@ export async function changeUserRole(
     cache: 'no-store',
   });
   const result = await handleResponse<{ status: string; data: AdminUser }>(response);
+  return result.data;
+}
+
+/** Frena (COBRANZAS | VENTAS) o destraba (null) una cuenta. ADMIN y ASISTENTE. */
+export async function changeUserBloqueo(
+  token: string,
+  userId: string,
+  bloqueo: UserBloqueo | null,
+): Promise<AdminUser> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/user/${userId}/bloqueo`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ bloqueo }),
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: AdminUser }>(response);
+  return result.data;
+}
+
+/**
+ * Perfil actual del usuario logueado. Sirve para refrescar lo que guardamos en
+ * la cookie al loguear (categoría, freno), que si no queda viejo hasta el
+ * próximo login.
+ */
+export async function getMyProfile(token: string): Promise<User> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/user/profile`, {
+    method: 'GET',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: User }>(response);
   return result.data;
 }

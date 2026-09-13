@@ -9,7 +9,7 @@ import { useCart } from '@/features/cart/hooks/useCart';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { puedeComprar } from '@/types/auth';
+import { estaFrenado, MENSAJE_BLOQUEO, puedeComprar } from '@/types/auth';
 import { PRICES_ENABLED } from '@/lib/flags';
 
 interface ProductCardProps {
@@ -23,9 +23,11 @@ export default function ProductCard({ product }: ProductCardProps) {
   const [isHovered, setIsHovered] = useState(false);
   const [isAddingToCart, setIsAddingToCart] = useState(false);
 
-  const canBuy = puedeComprar(user?.rol);
+  // Frenado (cobranzas/ventas): tiene categoría pero no puede comprar.
+  const frenado = estaFrenado(user);
+  const canBuy = puedeComprar(user?.rol) && !frenado;
   const hasPrice =
-    PRICES_ENABLED && typeof product.price === 'number' && product.price > 0;
+    PRICES_ENABLED && typeof product.price === 'number' && product.price > 0 && !frenado;
 
   const handleAddToCart = async () => {
     if (!token) {
@@ -101,6 +103,10 @@ export default function ProductCard({ product }: ProductCardProps) {
             >
               Iniciá sesión para ver precios
             </button>
+          ) : frenado && user?.bloqueo ? (
+            <p className="text-sm font-medium text-red-600">
+              {MENSAJE_BLOQUEO[user.bloqueo]}
+            </p>
           ) : !canBuy ? (
             <p className="text-sm font-medium text-amber-600">
               Cuenta pendiente de aprobación
