@@ -385,9 +385,13 @@ function AdminUsersContent() {
                 <th className="px-4 py-3 font-semibold">Usuario</th>
                 <th className="px-4 py-3 font-semibold">Contacto</th>
                 <th className="px-4 py-3 font-semibold">Zona</th>
-                <th className="px-4 py-3 font-semibold">Estado</th>
                 <th className="px-4 py-3 font-semibold">Categoría / Rol</th>
-                <th className="px-4 py-3 font-semibold">Freno</th>
+                <th
+                  className="px-4 py-3 font-semibold"
+                  title="Frenar = la cuenta no puede comprar (conserva su categoría y precios). Cobranzas / Ventas solo cambia el mensaje que ve el cliente."
+                >
+                  Estado / Freno
+                </th>
               </tr>
             </thead>
             <tbody className="divide-y divide-neutral-100">
@@ -442,25 +446,6 @@ function AdminUsersContent() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {isAdmin ? (
-                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
-                          Admin
-                        </span>
-                      ) : u.bloqueo ? (
-                        <span className="rounded-full bg-red-50 px-2 py-0.5 text-xs font-medium text-red-700">
-                          Frenada · {bloqueoLabel(u.bloqueo)}
-                        </span>
-                      ) : active ? (
-                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
-                          Habilitado
-                        </span>
-                      ) : (
-                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
-                          Pendiente
-                        </span>
-                      )}
-                    </td>
-                    <td className="px-4 py-3">
                       {isAdmin || isSelf || !puedeCambiarCategoria ? (
                         <span className="text-neutral-500">{roleLabel(u.rol)}</span>
                       ) : (
@@ -485,31 +470,45 @@ function AdminUsersContent() {
                         </div>
                       )}
                     </td>
+                    {/* Estado + Freno en una sola columna. Sólo la cuenta habilitada
+                        (B2B) muestra el select de freno; el resto muestra badge, así
+                        el estado no se repite en dos columnas. */}
                     <td className="px-4 py-3">
-                      {puedeFrenar ? (
+                      {isAdmin ? (
+                        <span className="rounded-full bg-neutral-100 px-2 py-0.5 text-xs font-medium text-neutral-600">
+                          Admin
+                        </span>
+                      ) : !active ? (
+                        <span className="rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-700">
+                          Pendiente
+                        </span>
+                      ) : puedeFrenar ? (
                         <select
                           value={u.bloqueo ?? ''}
                           disabled={savingId === u.id}
+                          title="Frenar = no puede comprar (conserva categoría y precios). Cobranzas / Ventas solo cambia el mensaje al cliente."
                           onChange={(e) =>
                             handleChangeBloqueo(
                               u.id,
                               (e.target.value || null) as UserBloqueo | null,
                             )
                           }
-                          className={`h-9 rounded-md border bg-white px-2 text-sm focus:outline-none focus:ring-1 disabled:opacity-50 ${
+                          className={`h-9 rounded-md border px-2 text-sm font-medium focus:outline-none focus:ring-1 disabled:opacity-50 ${
                             u.bloqueo
-                              ? 'border-red-300 text-red-700 focus:border-red-500 focus:ring-red-500'
-                              : 'border-neutral-200 text-neutral-800 focus:border-green-500 focus:ring-green-500'
+                              ? 'border-red-300 bg-red-50 text-red-700 focus:border-red-500 focus:ring-red-500'
+                              : 'border-green-300 bg-green-50 text-green-700 focus:border-green-500 focus:ring-green-500'
                           }`}
                         >
                           {BLOQUEO_OPTIONS.map((opt) => (
                             <option key={opt.value} value={opt.value}>
-                              {opt.label}
+                              {opt.value === '' ? 'Habilitado' : opt.label}
                             </option>
                           ))}
                         </select>
                       ) : (
-                        <span className="text-xs text-neutral-400">—</span>
+                        <span className="rounded-full bg-green-50 px-2 py-0.5 text-xs font-medium text-green-700">
+                          Habilitado
+                        </span>
                       )}
                     </td>
                   </tr>
@@ -517,7 +516,7 @@ function AdminUsersContent() {
               })}
               {filtered.length === 0 && (
                 <tr>
-                  <td colSpan={6} className="px-4 py-10 text-center text-neutral-400">
+                  <td colSpan={5} className="px-4 py-10 text-center text-neutral-400">
                     No se encontraron usuarios.
                   </td>
                 </tr>
