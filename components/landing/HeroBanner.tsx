@@ -419,21 +419,6 @@ const HeroBanner = () => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.8 }}
           >
-            {/* Premium Badge */}
-            <motion.div
-              className="mb-6 inline-flex items-center gap-2 rounded-full border border-[#16a245]/30 bg-[#16a245]/20 px-4 py-2 text-sm font-medium text-[#16a245] backdrop-blur-sm"
-              initial={{ opacity: 0, scale: 0.8 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ duration: 0.6, delay: 0.2 }}
-            >
-              <motion.div
-                className="h-2 w-2 rounded-full bg-[#16a245]"
-                animate={{ opacity: [0.5, 1, 0.5] }}
-                transition={{ duration: 2, repeat: Infinity }}
-              />
-              Ingeniería Premium
-            </motion.div>
-
             {/* Main Heading */}
             <h1 className="mb-6 text-4xl font-black leading-tight sm:text-5xl md:text-6xl lg:text-5xl xl:text-6xl 2xl:text-7xl">
               <span className="bg-gradient-to-r from-[#f7faf8] via-white to-[#e6f5eb] bg-clip-text text-transparent">
