@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
+import { esStaff } from '@/types/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   DropdownMenu,
@@ -59,7 +60,8 @@ const Navbar = () => {
 
   // Solo mostrar estado de autenticación después de la hidratación
   const isAuthenticated = isHydrated && isAuthReady && !!token;
-  const isAdmin = isAuthenticated && user?.rol === 'ADMIN';
+  // Acceso al panel: ADMIN y ASISTENTE.
+  const isStaff = isAuthenticated && esStaff(user?.rol);
 
   useEffect(() => {
     setIsHydrated(true);
@@ -406,7 +408,7 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
 
-            {isAdmin && (
+            {isStaff && (
               <Link
                 href="/admin/dashboard"
                 className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
@@ -448,7 +450,7 @@ const Navbar = () => {
                     align="end"
                     className="w-56 border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
                   >
-                    {isAdmin ? (
+                    {isStaff ? (
                       <>
                         <DropdownMenuItem
                           onClick={() => {
@@ -739,7 +741,7 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
 
-              {isAdmin && (
+              {isStaff && (
                 <Link
                   href="/admin/dashboard"
                   className="block py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
@@ -765,7 +767,7 @@ const Navbar = () => {
                     <p className="text-sm text-gray-300">
                       Hola, {user?.nombre || user?.email?.split('@')[0]}
                     </p>
-                    {isAdmin ? (
+                    {isStaff ? (
                       <>
                         <Link
                           href="/admin/dashboard"

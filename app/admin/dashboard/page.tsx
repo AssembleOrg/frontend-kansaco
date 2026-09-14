@@ -16,6 +16,8 @@ import {
   Inbox,
 } from 'lucide-react';
 import { useNoLeidas } from '@/features/submissions/hooks/useNoLeidas';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { canAccessAdminPath } from '@/features/admin/access';
 import { cn } from '@/lib/utils';
 
 type NavItem = {
@@ -50,6 +52,9 @@ const ITEMS: NavItem[] = [
 
 export default function AdminDashboard() {
   const { noLeidas } = useNoLeidas();
+  const { user } = useAuth();
+  // Sólo los accesos que el rol puede usar (la asistente ve menos).
+  const items = ITEMS.filter((item) => canAccessAdminPath(user?.rol, item.href));
 
   return (
     // Alto acotado al viewport descontando el AdminHeader y el padding del main
@@ -70,7 +75,7 @@ export default function AdminDashboard() {
         estiran para llenar el ancho en vez de dejar un hueco a la derecha.
       */}
       <div className="mt-3 flex min-h-0 flex-1 flex-wrap content-start gap-3 sm:mt-4 sm:gap-4">
-        {ITEMS.map((item) => {
+        {items.map((item) => {
           const Icon = item.icon;
           const badge =
             item.href === '/admin/solicitudes' && noLeidas > 0 ? noLeidas : null;

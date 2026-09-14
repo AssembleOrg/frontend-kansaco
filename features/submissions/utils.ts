@@ -1,4 +1,5 @@
-import type { SubmissionType } from './types';
+import { formatDateTime } from '@/features/crm/utils';
+import type { Submission, SubmissionType } from './types';
 
 /**
  * Presentación de las solicitudes en el panel.
@@ -68,6 +69,29 @@ export function payloadEntries(
       value: (payload[key] ?? '').trim(),
     }))
     .filter((entry) => entry.value.length > 0);
+}
+
+/**
+ * Ficha en texto plano para compartirla por WhatsApp u otra app (p. ej.
+ * pasársela a un vendedor). Sin formato de WhatsApp (asteriscos) para que se
+ * lea bien en cualquier destino. No incluye la nota interna: es del equipo y
+ * el destinatario puede ser cualquiera.
+ */
+export function buildSubmissionShareText(submission: Submission): string {
+  const lines = [
+    `Solicitud ${submissionTypeLabel(submission.tipo)} · web Kansaco`,
+    `Recibida: ${formatDateTime(submission.createdAt)}`,
+    '',
+    `Nombre: ${submission.nombre}`,
+    `Email: ${submission.email}`,
+  ];
+  if (submission.telefono) lines.push(`Teléfono: ${submission.telefono}`);
+  for (const { label, value } of payloadEntries(submission.tipo, submission.payload)) {
+    lines.push(`${label}: ${value}`);
+  }
+  const mensaje = submission.mensaje?.trim();
+  if (mensaje) lines.push('', 'Mensaje:', mensaje);
+  return lines.join('\n');
 }
 
 /** Tiempo relativo corto, para que se note de un vistazo qué recién entró. */

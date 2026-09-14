@@ -18,6 +18,8 @@ import {
   Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { canAccessAdminPath } from '@/features/admin/access';
 import { useNoLeidas } from '@/features/submissions/hooks/useNoLeidas';
 
 interface AdminSidebarProps {
@@ -78,7 +80,14 @@ const NAV_GROUPS: NavGroup[] = [
 
 export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
   const { noLeidas } = useNoLeidas();
+
+  // Sólo las secciones que el rol puede usar (la asistente ve menos).
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => canAccessAdminPath(user?.rol, item.href)),
+  })).filter((group) => group.items.length > 0);
 
   const handleNavigation = () => {
     onNavigate?.();
@@ -98,7 +107,7 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 lg:px-4 lg:py-5">
-        {NAV_GROUPS.map((group, gi) => (
+        {groups.map((group, gi) => (
           <div key={group.label} className={cn(gi > 0 && 'mt-5')}>
             <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wide text-green-700">
               {group.label}

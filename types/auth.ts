@@ -27,6 +27,25 @@ export const esCategoriaB2B = (rol: UserRole | null | undefined): boolean =>
 export const puedeComprar = (rol: UserRole | null | undefined): boolean =>
   esCategoriaB2B(rol) || rol === 'ADMIN' || rol === 'ASISTENTE';
 
+// Staff del panel: ADMIN y ASISTENTE. Qué secciones ve cada uno lo decide
+// `features/admin/access.ts`, espejo de los @Roles del backend.
+export const esStaff = (rol: UserRole | null | undefined): boolean =>
+  rol === 'ADMIN' || rol === 'ASISTENTE';
+
+/** Motivo por el que una cuenta está frenada. Espejo de `UserBloqueo` del backend. */
+export type UserBloqueo = 'COBRANZAS' | 'VENTAS';
+
+/** Texto que ve el cliente frenado. Mismo texto que devuelve el backend en el checkout. */
+export const MENSAJE_BLOQUEO: Record<UserBloqueo, string> = {
+  COBRANZAS: 'Su cuenta está frenada. Comuníquese con el área de cobranzas.',
+  VENTAS: 'Su cuenta está frenada. Comuníquese con ventas.',
+};
+
+/** Cuenta frenada: conserva su categoría pero no puede comprar. */
+export const estaFrenado = (
+  user: Pick<User, 'bloqueo'> | null | undefined,
+): boolean => !!user?.bloqueo;
+
 export interface Discount {
   id: number;
   porcentaje: number;
@@ -43,6 +62,8 @@ export interface User {
   codigoPostal?: string;
   telefono: string;
   rol: UserRole;
+  /** Opcional: las cookies de sesiones viejas no lo traen. */
+  bloqueo?: UserBloqueo | null;
   descuentosAplicados: Discount[];
 }
 

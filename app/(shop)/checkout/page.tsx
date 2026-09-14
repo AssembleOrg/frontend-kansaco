@@ -23,6 +23,7 @@ import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { sendOrderEmail } from '@/lib/api';
 import { SendOrderEmailData, BusinessInfo } from '@/types/order';
+import { estaFrenado, MENSAJE_BLOQUEO } from '@/types/auth';
 
 const SITUACIONES_AFIP = [
   'No Inscripto',
@@ -61,6 +62,9 @@ export default function CheckoutPage() {
   const [orderConfirmed, setOrderConfirmed] = useState(false);
 
   const isMayorista = user?.rol === 'CLIENTE_MAYORISTA';
+  // Cuenta frenada (cobranzas/ventas): el backend rechaza el pedido igual;
+  // acá evitamos que lo intente. El aviso lo muestra el BloqueoBanner.
+  const frenado = estaFrenado(user);
 
   // Reset scroll on mount so the fixed navbar (hide-on-scroll) reappears.
   useEffect(() => {
@@ -137,6 +141,11 @@ export default function CheckoutPage() {
       toast.error('Error de autenticación', {
         description: 'Debes iniciar sesión para completar tu pedido.',
       });
+      return;
+    }
+
+    if (frenado && user?.bloqueo) {
+      toast.error('Cuenta frenada', { description: MENSAJE_BLOQUEO[user.bloqueo] });
       return;
     }
 
@@ -447,7 +456,7 @@ export default function CheckoutPage() {
               <Button
                 type="submit"
                 className="h-12 w-full bg-green-600 text-base font-semibold hover:bg-green-700"
-                disabled={isSubmitting}
+                disabled={isSubmitting || frenado}
               >
                 {isSubmitting ? (
                   <>
@@ -513,7 +522,7 @@ export default function CheckoutPage() {
           type="submit"
           form="checkout-form"
           className="h-12 w-full bg-green-600 text-base font-semibold hover:bg-green-700"
-          disabled={isSubmitting}
+          disabled={isSubmitting || frenado}
         >
           {isSubmitting ? (
             <>
