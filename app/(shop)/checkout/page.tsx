@@ -21,9 +21,18 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { sendOrderEmail } from '@/lib/api';
-import { SendOrderEmailData, BusinessInfo } from '@/types/order';
+import { sendOrderEmail, getMyOrdersPaginated } from '@/lib/api';
+import {
+  SendOrderEmailData,
+  BusinessInfo,
+  ModalidadEnvio,
+  Direccion,
+  OrderShippingInfo,
+  PLANTA_RETIRO,
+} from '@/types/order';
 import { estaFrenado, MENSAJE_BLOQUEO } from '@/types/auth';
+import { AR_PROVINCES } from '@/lib/constants/provinces';
+import { normalizeText } from '@/lib/geo';
 
 const SITUACIONES_AFIP = [
   'No Inscripto',
@@ -31,6 +40,33 @@ const SITUACIONES_AFIP = [
   'Responsable Inscripto',
   'Persona Jurídica',
 ];
+
+const MODALIDAD_OPCIONES: { value: ModalidadEnvio; titulo: string; desc: string }[] = [
+  { value: 'RETIRO', titulo: 'Retiro en planta / local', desc: 'Retirás vos en la planta. Sin envío.' },
+  { value: 'FLETE', titulo: 'Flete / Transporte local', desc: 'Entrega a una dirección (zona local).' },
+  { value: 'EXPRESO', titulo: 'Expreso / Larga distancia', desc: 'Despacho a un expreso y entrega final.' },
+];
+
+// Dirección estructurada vacía, para inicializar el estado.
+const EMPTY_DIR: Direccion = { calle: '', localidad: '', provincia: '', codigoPostal: '' };
+
+/** Normaliza una dirección del form → objeto para enviar (undefined si vacía). */
+function toDireccion(d: Direccion): Direccion | undefined {
+  const calle = normalizeText(d.calle || '');
+  if (!calle) return undefined;
+  return {
+    calle,
+    localidad: d.localidad ? normalizeText(d.localidad) : undefined,
+    provincia: d.provincia || undefined,
+    codigoPostal: d.codigoPostal?.trim() || undefined,
+  };
+}
+
+/** Dirección estructurada → una línea, para el campo legacy contactInfo.address. */
+function dirToLinea(d?: Direccion): string {
+  if (!d) return '';
+  return [d.calle, d.localidad, d.provincia, d.codigoPostal].filter(Boolean).join(', ');
+}
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -49,8 +85,13 @@ export default function CheckoutPage() {
   );
   const [email, setEmail] = useState(user?.email || '');
   const [phone, setPhone] = useState(user?.telefono || '');
-  const [address, setAddress] = useState(user?.direccion || '');
   const [notes, setNotes] = useState('');
+
+  // Logística de envío (MÓDULO 3).
+  const [modalidad, setModalidad] = useState<ModalidadEnvio | ''>('');
+  const [entrega, setEntrega] = useState<Direccion>(EMPTY_DIR);
+  const [despacho, setDespacho] = useState<Direccion>(EMPTY_DIR);
+  const [transporte, setTransporte] = useState('');
 
   const [cuit, setCuit] = useState('');
   const [razonSocial, setRazonSocial] = useState('');
@@ -100,7 +141,6 @@ export default function CheckoutPage() {
       if (!fullName) setFullName(`${user.nombre} ${user.apellido}`.trim());
       if (!email) setEmail(user.email || '');
       if (!phone && user.telefono) setPhone(user.telefono);
-      if (!address && user.direccion) setAddress(user.direccion);
     }
   }, [
     token,
@@ -113,9 +153,32 @@ export default function CheckoutPage() {
     fullName,
     email,
     phone,
-    address,
     orderConfirmed,
   ]);
+
+  // Pre-cargar la modalidad/direcciones de la última orden del cliente
+  // ("cada cliente trabaja con su despacho"). El cliente confirma o edita.
+  // Se ejecuta una sola vez al montar; no pisa lo que el usuario ya tocó.
+  const [prefillDone, setPrefillDone] = useState(false);
+  useEffect(() => {
+    if (!token || prefillDone) return;
+    let cancelled = false;
+    getMyOrdersPaginated(token, { page: 1, limit: 1 })
+      .then((res) => {
+        if (cancelled) return;
+        setPrefillDone(true);
+        const last = res.data?.[0]?.shippingInfo;
+        if (!last) return;
+        setModalidad((m) => m || last.modalidad);
+        if (last.entrega) setEntrega((d) => (d.calle ? d : { ...EMPTY_DIR, ...last.entrega }));
+        if (last.despacho) setDespacho((d) => (d.calle ? d : { ...EMPTY_DIR, ...last.despacho }));
+        if (last.transporte) setTransporte((t) => t || last.transporte || '');
+      })
+      .catch(() => setPrefillDone(true)); // silencioso: si falla, form vacío
+    return () => {
+      cancelled = true;
+    };
+  }, [token, prefillDone]);
 
   const validateForm = (): boolean => {
     const e: Record<string, string> = {};
@@ -123,7 +186,17 @@ export default function CheckoutPage() {
     if (!email.trim()) e.email = 'Requerido';
     if (!phone.trim()) e.phone = 'Requerido';
     else if (!validatePhone(phone)) e.phone = 'Mínimo 8 dígitos';
-    if (!address.trim()) e.address = 'Requerido';
+
+    // Logística: modalidad obligatoria + campos según modalidad.
+    if (!modalidad) {
+      e.modalidad = 'Elegí una modalidad de envío';
+    } else if (modalidad === 'FLETE') {
+      if (!entrega.calle.trim()) e.entregaCalle = 'Requerido';
+    } else if (modalidad === 'EXPRESO') {
+      if (!despacho.calle.trim()) e.despachoCalle = 'Requerido';
+      if (!transporte.trim()) e.transporte = 'Requerido';
+      if (!entrega.calle.trim()) e.entregaCalle = 'Requerido';
+    }
 
     if (isMayorista) {
       if (!cuit) e.cuit = 'Requerido';
@@ -164,18 +237,38 @@ export default function CheckoutPage() {
 
     setIsSubmitting(true);
     try {
+      // Armar la logística según la modalidad elegida.
+      const entregaDir = toDireccion(entrega);
+      const despachoDir = toDireccion(despacho);
+      const shippingInfo: OrderShippingInfo = {
+        modalidad: modalidad as ModalidadEnvio,
+        ...(modalidad === 'FLETE' && { entrega: entregaDir }),
+        ...(modalidad === 'EXPRESO' && {
+          despacho: despachoDir,
+          entrega: entregaDir,
+          transporte: transporte.trim(),
+        }),
+      };
+      // Campo legacy `address`: la dirección relevante según modalidad, así el
+      // backend/PDF/mails y las órdenes viejas siguen teniendo algo coherente.
+      const addressLegacy =
+        modalidad === 'RETIRO'
+          ? PLANTA_RETIRO
+          : dirToLinea(entregaDir) || PLANTA_RETIRO;
+
       const orderEmailData: SendOrderEmailData = {
         customerType: isMayorista ? 'CLIENTE_MAYORISTA' : 'CLIENTE_MINORISTA',
         contactInfo: {
           fullName,
           email,
           phone,
-          address,
+          address: addressLegacy,
           // Zona tomada del perfil del usuario (snapshot en la orden).
           localidad: user?.localidad || undefined,
           provincia: user?.provincia || undefined,
           codigoPostal: user?.codigoPostal || undefined,
         },
+        shippingInfo,
         items: validItems.map((item) => ({
           productId: item.product.id,
           productName: item.product.name,
@@ -216,8 +309,11 @@ export default function CheckoutPage() {
       setFullName('');
       setEmail('');
       setPhone('');
-      setAddress('');
       setNotes('');
+      setModalidad('');
+      setEntrega(EMPTY_DIR);
+      setDespacho(EMPTY_DIR);
+      setTransporte('');
       setCuit('');
       setRazonSocial('');
       setSituacionAfip('');
@@ -369,18 +465,88 @@ export default function CheckoutPage() {
 
             <section className="rounded-xl border border-neutral-200 bg-white p-5 md:p-6">
               <h2 className="mb-4 text-lg font-semibold text-neutral-900">
-                Dirección de envío
+                Modalidad de envío <span className="text-red-500">*</span>
               </h2>
-              <Field id="address" label="Dirección" required error={errors.address}>
-                <Textarea
-                  id="address"
-                  value={address}
-                  onChange={(e) => setAddress(e.target.value)}
-                  placeholder="Calle, número, piso, departamento, localidad, provincia"
-                  rows={3}
-                  autoComplete="street-address"
-                />
-              </Field>
+
+              {/* Selector: 3 modalidades como radio-cards (patrón del repo). */}
+              <div className="grid gap-3">
+                {MODALIDAD_OPCIONES.map((opt) => (
+                  <label
+                    key={opt.value}
+                    className={`flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors ${
+                      modalidad === opt.value
+                        ? 'border-green-500 bg-green-50'
+                        : 'border-neutral-200 hover:bg-neutral-50'
+                    }`}
+                  >
+                    <input
+                      type="radio"
+                      name="modalidad"
+                      value={opt.value}
+                      checked={modalidad === opt.value}
+                      onChange={() => setModalidad(opt.value)}
+                      className="mt-1 h-4 w-4 accent-green-600"
+                    />
+                    <span>
+                      <span className="block text-sm font-medium text-neutral-900">
+                        {opt.titulo}
+                      </span>
+                      <span className="block text-xs text-neutral-500">{opt.desc}</span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+              {errors.modalidad && (
+                <p className="mt-2 text-xs text-red-500">{errors.modalidad}</p>
+              )}
+
+              {/* RETIRO: sin dirección, solo la planta. */}
+              {modalidad === 'RETIRO' && (
+                <div className="mt-4 rounded-lg bg-neutral-50 p-3 text-sm text-neutral-700">
+                  Retirás en: <strong>{PLANTA_RETIRO}</strong>
+                </div>
+              )}
+
+              {/* EXPRESO: dirección de despacho + empresa de transporte. */}
+              {modalidad === 'EXPRESO' && (
+                <div className="mt-5">
+                  <h3 className="mb-3 text-sm font-semibold text-neutral-800">
+                    Dirección de Despacho (depósito del expreso)
+                  </h3>
+                  <DireccionFields
+                    prefix="despacho"
+                    value={despacho}
+                    onChange={setDespacho}
+                    errors={errors}
+                  />
+                  <div className="mt-4">
+                    <Field id="transporte" label="Empresa de transporte" required error={errors.transporte}>
+                      <Input
+                        id="transporte"
+                        type="text"
+                        value={transporte}
+                        onChange={(e) => setTransporte(e.target.value)}
+                        placeholder="Ej: Andreani, Vía Cargo, Expreso local…"
+                      />
+                    </Field>
+                  </div>
+                </div>
+              )}
+
+              {/* FLETE y EXPRESO: dirección de entrega. */}
+              {(modalidad === 'FLETE' || modalidad === 'EXPRESO') && (
+                <div className="mt-5">
+                  <h3 className="mb-3 text-sm font-semibold text-neutral-800">
+                    {modalidad === 'EXPRESO' ? 'Dirección de Entrega Final' : 'Dirección de Entrega'}
+                  </h3>
+                  <DireccionFields
+                    prefix="entrega"
+                    value={entrega}
+                    onChange={setEntrega}
+                    errors={errors}
+                  />
+                </div>
+              )}
             </section>
 
             {isMayorista && (
@@ -568,6 +734,74 @@ function Field({
           {error}
         </p>
       )}
+    </div>
+  );
+}
+
+// Grupo de inputs para una dirección estructurada (calle/localidad/provincia/CP).
+// `prefix` se usa para las keys de error (ej. "entregaCalle", "despachoCalle").
+function DireccionFields({
+  prefix,
+  value,
+  onChange,
+  errors,
+}: {
+  prefix: 'entrega' | 'despacho';
+  value: Direccion;
+  onChange: (d: Direccion) => void;
+  errors: Record<string, string>;
+}) {
+  const set = (patch: Partial<Direccion>) => onChange({ ...value, ...patch });
+  const calleErrKey = `${prefix}Calle`;
+  return (
+    <div className="grid gap-4 sm:grid-cols-2">
+      <div className="sm:col-span-2">
+        <Field id={`${prefix}-calle`} label="Calle y número" required error={errors[calleErrKey]}>
+          <Input
+            id={`${prefix}-calle`}
+            type="text"
+            value={value.calle}
+            onChange={(e) => set({ calle: e.target.value })}
+            placeholder="Ej: Av. Mitre 1234, piso 2"
+            autoComplete="street-address"
+          />
+        </Field>
+      </div>
+      <Field id={`${prefix}-localidad`} label="Localidad">
+        <Input
+          id={`${prefix}-localidad`}
+          type="text"
+          value={value.localidad || ''}
+          onChange={(e) => set({ localidad: e.target.value })}
+          placeholder="Localidad"
+        />
+      </Field>
+      <Field id={`${prefix}-provincia`} label="Provincia">
+        <select
+          id={`${prefix}-provincia`}
+          value={value.provincia || ''}
+          onChange={(e) => set({ provincia: e.target.value })}
+          className="flex h-10 w-full rounded-md border border-neutral-200 bg-white px-3 py-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+        >
+          <option value="">Seleccioná…</option>
+          {AR_PROVINCES.map((p) => (
+            <option key={p} value={p}>
+              {p}
+            </option>
+          ))}
+        </select>
+      </Field>
+      <Field id={`${prefix}-cp`} label="Código Postal">
+        <Input
+          id={`${prefix}-cp`}
+          type="text"
+          inputMode="numeric"
+          value={value.codigoPostal || ''}
+          onChange={(e) => set({ codigoPostal: e.target.value })}
+          placeholder="CP"
+          autoComplete="postal-code"
+        />
+      </Field>
     </div>
   );
 }

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Order } from '@/types/order';
+import { Order, Direccion, MODALIDAD_LABEL } from '@/types/order';
 import {
   Dialog,
   DialogContent,
@@ -27,7 +27,14 @@ import {
   Info,
   Download,
   RefreshCw,
+  Truck,
 } from 'lucide-react';
+
+/** Dirección estructurada → línea legible para el CRM. */
+function formatDir(d?: Direccion): string {
+  if (!d) return '';
+  return [d.calle, d.localidad, d.provincia, d.codigoPostal].filter(Boolean).join(', ');
+}
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { OrderEditModal } from './OrderEditModal';
 import { OrderNoteModal } from './OrderNoteModal';
@@ -231,6 +238,63 @@ export function OrderDetailsModal({
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Logística de Envío (MÓDULO 3). Fallback: órdenes viejas sin shippingInfo. */}
+          <Separator />
+          <div className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <Truck className="h-4 w-4" />
+              Logística de Envío
+            </h3>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              {order.shippingInfo ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Modalidad</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {MODALIDAD_LABEL[order.shippingInfo.modalidad] ??
+                        order.shippingInfo.modalidad}
+                    </p>
+                  </div>
+                  {formatDir(order.shippingInfo.despacho) && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Dirección de Despacho
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {formatDir(order.shippingInfo.despacho)}
+                      </p>
+                    </div>
+                  )}
+                  {order.shippingInfo.transporte && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Empresa de Transporte
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {order.shippingInfo.transporte}
+                      </p>
+                    </div>
+                  )}
+                  {formatDir(order.shippingInfo.entrega) && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Dirección de Entrega
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {formatDir(order.shippingInfo.entrega)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  Sin modalidad registrada (pedido anterior a esta función).
+                  {order.contactInfo?.address ? ` Dirección: ${order.contactInfo.address}` : ''}
+                </p>
+              )}
             </div>
           </div>
 
