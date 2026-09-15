@@ -1,5 +1,4 @@
 import { Bot } from 'lucide-react';
-import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import LubriExpertoForm from '@/components/forms/LubriExpertoForm';
@@ -13,8 +12,6 @@ export const metadata = {
 export default function LubriExpertoPage() {
   return (
     <div className="min-h-screen bg-black">
-      <Navbar />
-
       {/* Hero */}
       <section className="relative overflow-hidden bg-gradient-to-b from-black via-gray-950 to-gray-900 pt-14 md:pt-20">
         <div className="absolute inset-0 opacity-10">

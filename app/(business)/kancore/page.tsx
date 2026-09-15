@@ -23,7 +23,6 @@ import {
 import { Button } from '@/components/ui/button';
 import { NeonBorders } from '@/components/landing/HeroBanner';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
-import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 
 const disenosVentajas = [
@@ -120,8 +119,6 @@ const presentaciones = [
 export default function KancorePage() {
   return (
     <div className="min-h-screen bg-black">
-      <Navbar />
-
       {/* Hero Section */}
       <section className="relative flex min-h-[70vh] items-center justify-center overflow-hidden pt-20">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-gray-950 to-black" />

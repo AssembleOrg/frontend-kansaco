@@ -23,7 +23,6 @@ import {
 } from 'lucide-react';
 import { NeonBorders } from '@/components/landing/HeroBanner';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
-import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import Link from 'next/link';
 
@@ -56,7 +55,6 @@ function TecnologiaLubricantesContent() {
 
   return (
     <div className="min-h-screen bg-black">
-      <Navbar />
       <div ref={containerRef} className="bg-black">
         {/* Hero Section - Oil Video Background */}
         <motion.section

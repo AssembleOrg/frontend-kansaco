@@ -9,6 +9,7 @@ import { Product } from '@/types/product';
 import { getProductBySlug, getProductImages, ProductImage, trackPublicEvent } from '@/lib/api';
 import { AddToCartButton } from '@/features/cart/components/client/AddToCartButton';
 import { useCart } from '@/features/cart/hooks/useCart';
+import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Loader2, ArrowLeft, Info, Droplet, Box, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -297,6 +298,7 @@ function ProductDetailPageContent() {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const { token } = useAuth();
 
   const params = useParams();
   const searchParams = useSearchParams();
@@ -335,7 +337,7 @@ function ProductDetailPageContent() {
       setIsLoading(true);
       setError(null);
       try {
-        const productData = await getProductBySlug(slug);
+        const productData = await getProductBySlug(slug, token);
         if (productData) {
           setProduct(productData);
           // Track product view (debounced per product, 30 min cooldown)
@@ -363,7 +365,7 @@ function ProductDetailPageContent() {
       }
     };
     fetchProduct();
-  }, [slug]);
+  }, [slug, token]);
 
   if (isLoading) {
     return (

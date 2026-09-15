@@ -13,7 +13,6 @@ import {
   Phone,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import MayoristaApplicationModal from '@/components/forms/MayoristaApplicationModal';
@@ -56,8 +55,6 @@ export default function MayoristaPage() {
   ];
   return (
     <div className="min-h-screen bg-black">
-      <Navbar />
-
       {/* Hero Section */}
       <section className="relative overflow-hidden bg-gradient-to-b from-black via-gray-950 to-gray-900 pt-20">
         <div className="absolute inset-0 opacity-10">

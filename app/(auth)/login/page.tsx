@@ -4,6 +4,7 @@ import { useState, useMemo, useCallback, Suspense, type FormEvent, type ChangeEv
 import { REGISTRATION_ENABLED } from '@/lib/flags';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store/authStore';
+import { esStaff, type UserRole } from '@/types/auth';
 import { LoginError } from '@/lib/api';
 import { getSafeRedirect } from '@/lib/safe-redirect';
 import { Button } from '@/components/ui/button';
@@ -161,12 +162,13 @@ function LoginContent() {
     setSubmitError(null);
 
     try {
-      await login({ email: normalizedEmail, password });
+      const result = await login({ email: normalizedEmail, password });
+      // El store devuelve { token, user } en el nivel superior.
+      const loggedUser = (result as { user?: { rol?: UserRole } })?.user;
 
-      const redirectUrl = getSafeRedirect(
-        searchParams.get('redirect'),
-        '/productos'
-      );
+      // Staff (ADMIN/ASISTENTE) sin redirect explícito → panel. El resto → productos.
+      const defaultUrl = esStaff(loggedUser?.rol) ? '/admin/dashboard' : '/productos';
+      const redirectUrl = getSafeRedirect(searchParams.get('redirect'), defaultUrl);
       router.push(redirectUrl);
     } catch (err) {
       setSubmitError(mapLoginError(err));

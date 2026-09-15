@@ -1,7 +1,6 @@
 // features/cart/hooks/useCart.ts
 import { useCallback, useMemo } from 'react';
 import { useCartStore } from '../store/cartStore';
-import { generateConsistentPrice } from '@/lib/utils';
 import { Product } from '@/types/product';
 
 const MINIMUM_PURCHASE = 50000;
@@ -39,15 +38,13 @@ export const useCart = () => {
     () =>
       (cart?.items || []).reduce((total, item) => {
         if (!item?.product) return total;
-        let price: number;
-        if (typeof item.product.price === 'string') {
-          const parsed = parseFloat(item.product.price);
-          price = !isNaN(parsed) && parsed > 0 ? parsed : generateConsistentPrice(item.product.id);
-        } else if (typeof item.product.price === 'number' && item.product.price > 0) {
-          price = item.product.price;
-        } else {
-          price = generateConsistentPrice(item.product.id);
-        }
+        // El precio ya viene calculado por el backend según el rol (o null si
+        // el usuario no ve precios). No se inventan precios en el cliente.
+        const raw =
+          typeof item.product.price === 'string'
+            ? parseFloat(item.product.price)
+            : item.product.price;
+        const price = typeof raw === 'number' && isFinite(raw) && raw > 0 ? raw : 0;
         return total + price * (item.quantity || 0);
       }, 0),
     [cart]
@@ -79,11 +76,11 @@ export const useCart = () => {
     [cart]
   );
 
+  // Precio ya resuelto por el backend según el rol. null / 0 => sin precio visible.
   const getProductPrice = useCallback((product: Product | null | undefined): number => {
     if (!product) return 0;
-    return product.price && product.price > 0
-      ? product.price
-      : generateConsistentPrice(product.id);
+    const raw = typeof product.price === 'string' ? parseFloat(product.price) : product.price;
+    return typeof raw === 'number' && isFinite(raw) && raw > 0 ? raw : 0;
   }, []);
 
   const hasReachedMinimumPurchase = subtotal >= MINIMUM_PURCHASE;

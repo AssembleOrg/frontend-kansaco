@@ -1,35 +1,21 @@
 // app/(shop)/productos/page.tsx
 'use client';
 
-import {
-  useState,
-  useEffect,
-  useMemo,
-  useCallback,
-  Suspense,
-  useRef,
-} from 'react';
+import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import {
-  getProducts,
-  getProductsPaginated,
-  validateOrderForEdit,
-} from '@/lib/api';
+import { getProducts, getProductsPaginated } from '@/lib/api';
 import { Product } from '@/types';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters from '@/features/products/components/client/ProductFilters';
-import Navbar from '@/components/landing/Navbar';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import { useCart } from '@/features/cart/hooks/useCart';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { getCategories, getPublicCategories } from '@/lib/api';
 import { Category } from '@/types/category';
-import { X, Info } from 'lucide-react';
-import { toast } from 'sonner';
+import { X } from 'lucide-react';
 // import { ChevronLeft, ChevronRight } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 20;
@@ -56,11 +42,7 @@ function ProductsContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { token } = useAuth();
-  const { addToCart, openCart, clearCart, itemCount } = useCart();
-
-  // Estados para modo edición
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [editingOrderId, setEditingOrderId] = useState<string | null>(null);
+  const { openCart } = useCart();
 
   const currentPage = Number(searchParams.get('page')) || 1;
   const currentCategoryFilter = searchParams.get('category');
@@ -184,8 +166,9 @@ function ProductsContent() {
             hasPrev: result.hasPrev,
           });
         } catch {
-          // Si falla el endpoint paginado (puede requerir auth), usar fallback
-          const fetchedProducts = await getProducts(null);
+          // Si falla el endpoint paginado (puede requerir auth), usar fallback.
+          // Pasamos el token para que el backend devuelva el precio del rol.
+          const fetchedProducts = await getProducts(token);
           // Filtrar localmente por visibilidad y categoría
           let filtered = fetchedProducts.filter((p) => p.isVisible);
 
@@ -242,129 +225,6 @@ function ProductsContent() {
       router.replace(newUrl, { scroll: false });
     }
   }, [openCartParam, openCart, router, searchParams]);
-
-  // Detectar modo edición y pre-cargar items al carrito
-  useEffect(() => {
-    const validateAndLoadEditMode = async () => {
-      const editMode = localStorage.getItem('editMode');
-      const orderId = localStorage.getItem('editingOrderId');
-      const orderItemsJson = localStorage.getItem('editingOrderItems');
-
-      if (editMode === 'true' && orderId && orderItemsJson && token) {
-        // ✅ VALIDAR que la orden existe y está PENDIENTE
-        const validation = await validateOrderForEdit(token, orderId);
-
-        if (!validation.valid) {
-          // ❌ Orden no válida → Limpiar localStorage y mostrar toast
-          localStorage.removeItem('editMode');
-          localStorage.removeItem('editingOrderId');
-          localStorage.removeItem('editingOrderItems');
-
-          toast.error(
-            validation.reason?.includes('not found')
-              ? 'La orden que intentabas editar ya no existe'
-              : 'Esta orden no puede ser editada (estado: ' +
-                  validation.order?.status +
-                  ')'
-          );
-
-          setIsEditMode(false);
-          setEditingOrderId(null);
-          return;
-        }
-
-        // ✅ Orden válida → Proceder con modo edición
-        setIsEditMode(true);
-        setEditingOrderId(orderId);
-
-        // Pre-cargar items de la orden al carrito
-        try {
-          const items = JSON.parse(orderItemsJson);
-
-          // Limpiar carrito actual primero
-          clearCart();
-
-          // Agregar cada item de la orden al carrito
-          items.forEach(
-            (
-              item: {
-                productId: number;
-                productName: string;
-                unitPrice: number;
-                quantity: number;
-                presentation?: string;
-              },
-            ) => {
-              // Construir objeto Product mínimo desde OrderItem
-              const product: Product = {
-                id: item.productId,
-                name: item.productName,
-                price: parseFloat(item.unitPrice?.toString() || '0'),
-                sku: '',
-                slug: '',
-                category: [],
-                description: '',
-                presentation: item.presentation || '',
-                aplication: '',
-                imageUrl: null,
-                wholeSaler: '',
-                stock: 0,
-                isVisible: true,
-                isFeatured: false,
-              };
-
-              addToCart(product, item.quantity, item.presentation);
-            }
-          );
-          toast.success(
-            `${items.length} producto${items.length !== 1 ? 's' : ''} cargado${items.length !== 1 ? 's' : ''} al carrito`
-          );
-        } catch (error) {
-          console.error('❌ Error parsing stored items:', error);
-          toast.error('Error al cargar los productos de la orden');
-        }
-      }
-    };
-
-    validateAndLoadEditMode();
-  }, [token, addToCart, clearCart]);
-
-  const handleCancelEdit = useCallback(() => {
-    // Limpiar localStorage
-    localStorage.removeItem('editMode');
-    localStorage.removeItem('editingOrderId');
-    localStorage.removeItem('editingOrderItems');
-
-    // Limpiar carrito
-    clearCart();
-
-    // Resetear estados
-    setIsEditMode(false);
-    setEditingOrderId(null);
-
-    // Redirigir a mis pedidos
-    toast.info('Edición cancelada');
-    router.push('/mis-pedidos');
-  }, [clearCart, router]);
-
-  // Protección contra navegación accidental en edit mode
-  useEffect(() => {
-    if (!isEditMode) return;
-
-    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
-      // Solo advertir si hay items en el carrito
-      if (itemCount > 0) {
-        e.preventDefault();
-        e.returnValue = ''; // Chrome requiere esto
-      }
-    };
-
-    window.addEventListener('beforeunload', handleBeforeUnload);
-
-    return () => {
-      window.removeEventListener('beforeunload', handleBeforeUnload);
-    };
-  }, [isEditMode, itemCount]);
 
   // Filtrar por precio (filtro local ya que el backend no lo soporta directamente)
   const filteredProducts = useMemo(() => {
@@ -536,35 +396,6 @@ function ProductsContent() {
         Nuestros Productos
       </h1>
 
-      {/* Banner de modo edición */}
-      {isEditMode && (
-        <Alert className="mb-6 border-2 border-green-300 bg-green-50">
-          <Info className="h-5 w-5 text-green-600" />
-          <AlertDescription className="text-green-900">
-            <div className="flex items-start justify-between gap-4">
-              <div className="flex-1">
-                <p className="mb-1 font-semibold">
-                  Editando orden #{editingOrderId?.slice(0, 8)}
-                </p>
-                <p className="text-sm">
-                  Modifica los productos en el carrito y haz clic en{' '}
-                  <strong>&quot;Actualizar Orden&quot;</strong> para guardar los
-                  cambios.
-                </p>
-              </div>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCancelEdit}
-                className="border-green-300 text-green-700 hover:bg-green-100"
-              >
-                Cancelar edición
-              </Button>
-            </div>
-          </AlertDescription>
-        </Alert>
-      )}
-
       {/* Search Bar */}
       <div className="mb-6">
         <div className="mx-auto max-w-xl">
@@ -645,7 +476,6 @@ function ProductsContent() {
 export default function ProductosPage() {
   return (
     <div className="min-h-screen bg-black">
-      <Navbar />
       <main className="bg-white pt-20">
         <Suspense
           fallback={

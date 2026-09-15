@@ -11,7 +11,46 @@ export interface OrderContactInfo {
   email: string;
   phone: string;
   address: string;
+  localidad?: string;
+  provincia?: string;
+  codigoPostal?: string;
 }
+
+// ---- Logística de envío (MÓDULO 3) ----
+export type ModalidadEnvio = 'RETIRO' | 'FLETE' | 'EXPRESO';
+
+/** Dirección estructurada (evita typos de provincia; calle/localidad libres). */
+export interface Direccion {
+  calle: string; // calle + número
+  localidad?: string;
+  provincia?: string;
+  codigoPostal?: string;
+}
+
+/**
+ * Modalidad logística elegida en el checkout.
+ * - RETIRO: sin direcciones (planta única).
+ * - FLETE: `entrega` obligatoria.
+ * - EXPRESO: `despacho` (depósito del expreso) + `entrega` (destino final), y
+ *   `transporte` (empresa) obligatorios.
+ */
+export interface OrderShippingInfo {
+  modalidad: ModalidadEnvio;
+  entrega?: Direccion;
+  despacho?: Direccion;
+  transporte?: string;
+}
+
+/** Planta única de retiro. Si en el futuro hay más, esto pasa a una lista. */
+export const PLANTA_RETIRO =
+  'Kansaco Petroquímica S.A. — Magallanes 2031, Florencio Varela, Buenos Aires';
+
+/** Etiqueta legible de cada modalidad (CRM, PDF, mails). */
+export const MODALIDAD_LABEL: Record<ModalidadEnvio, string> = {
+  RETIRO: 'Retiro en planta',
+  FLETE: 'Flete / Transporte local',
+  EXPRESO: 'Expreso / Larga distancia',
+};
 
 // Estados de orden
 export type OrderStatus = 'PENDIENTE' | 'PROCESANDO' | 'ENVIADO' | 'COMPLETADO' | 'CANCELADO';
@@ -23,6 +62,7 @@ export interface Order {
   status: OrderStatus;
   contactInfo?: OrderContactInfo; // Opcional para compatibilidad con respuestas del backend
   businessInfo?: BusinessInfo;
+  shippingInfo?: OrderShippingInfo; // Opcional: órdenes previas al MÓDULO 3 no lo traen
   items?: OrderItem[]; // Opcional para compatibilidad con respuestas del backend
   totalAmount?: number | string; // Puede venir como string desde el backend
   notes?: string;
@@ -44,12 +84,8 @@ export interface SendOrderEmailData {
   customerType: CustomerType;
   contactInfo: OrderContactInfo;
   businessInfo?: BusinessInfo;
-  items: Array<{
-    productId: number;
-    productName: string;
-    quantity: number;
-    unitPrice?: number;
-  }>;
+  shippingInfo?: OrderShippingInfo;
+  items: OrderItem[];
   totalAmount?: number;
   notes?: string;
 }
@@ -74,6 +110,7 @@ export interface PaginatedOrdersResponse {
 export interface UpdateOrderDto {
   contactInfo?: OrderContactInfo;
   businessInfo?: BusinessInfo;
+  shippingInfo?: OrderShippingInfo;
   items?: OrderItem[];
   notes?: string;
 }

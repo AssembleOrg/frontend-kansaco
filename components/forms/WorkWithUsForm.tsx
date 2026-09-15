@@ -1,185 +1,164 @@
 'use client';
 
-import { useState, FormEvent } from 'react';
+import { useForm } from 'react-hook-form';
+import { zodResolver } from '@hookform/resolvers/zod';
 import { Send } from 'lucide-react';
-import { siteConfig } from '@/lib/site-config';
-
-const PUESTOS = [
-  'Ventas',
-  'Almacén / Depósito',
-  'Administración',
-  'Reparto / Logística',
-  'Producción',
-  'Otro',
-];
+import { FormField } from '@/components/forms/shared/FormField';
+import { PhoneField } from '@/components/forms/shared/PhoneField';
+import { FormSuccessPanel } from '@/components/forms/shared/FormSuccessPanel';
+import { HoneypotField } from '@/components/forms/shared/HoneypotField';
+import { SubmitButton } from '@/components/forms/shared/SubmitButton';
+import { controlClass } from '@/components/forms/shared/formStyles';
+import { usePublicSubmission } from '@/features/submissions/hooks/usePublicSubmission';
+import {
+  trabajoSchema,
+  type TrabajoFormValues,
+} from '@/features/submissions/schemas';
+import { PUESTO_OPTIONS } from '@/features/submissions/types';
 
 export default function WorkWithUsForm() {
-  const [nombre, setNombre] = useState('');
-  const [email, setEmail] = useState('');
-  const [telefono, setTelefono] = useState('');
-  const [puesto, setPuesto] = useState('');
-  const [mensaje, setMensaje] = useState('');
+  const { submit, submittedName, isSuccess } = usePublicSubmission();
 
-  const isMobile =
-    typeof window !== 'undefined' &&
-    /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+  const {
+    register,
+    control,
+    handleSubmit,
+    reset,
+    formState: { errors, isSubmitting },
+  } = useForm<TrabajoFormValues>({
+    resolver: zodResolver(trabajoSchema),
+    mode: 'onBlur',
+    reValidateMode: 'onChange',
+    defaultValues: {
+      nombre: '',
+      email: '',
+      telefono: '',
+      puesto: undefined,
+      mensaje: '',
+      website: '',
+    },
+  });
 
-  const handleSubmit = (e: FormEvent) => {
-    e.preventDefault();
+  const onSubmit = async (values: TrabajoFormValues) => {
+    const ok = await submit({
+      tipo: 'TRABAJO',
+      nombre: values.nombre,
+      email: values.email,
+      telefono: values.telefono || undefined,
+      mensaje: values.mensaje,
+      payload: { puesto: values.puesto },
+      website: values.website,
+    });
 
-    if (!nombre || !email || !puesto || !mensaje) {
-      alert('Por favor completa todos los campos obligatorios');
-      return;
-    }
-
-    const asunto = `Postulación Laboral - ${puesto} - ${nombre}`;
-
-    const cuerpo = `
-Postulación Laboral - Kansaco
-
-Nombre: ${nombre}
-Email: ${email}
-${telefono ? `Teléfono: ${telefono}` : ''}
-Puesto de interés: ${puesto}
-
-Presentación:
-${mensaje}
-
----
-Este email fue enviado desde el formulario "Trabajá con Nosotros" de Kansaco
-    `.trim();
-
-    const emailDestino = siteConfig.contact.email;
-
-    if (isMobile) {
-      const mailtoLink = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-      window.location.href = mailtoLink;
-    } else {
-      const gmailUrl = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodeURIComponent(emailDestino)}&su=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-      try {
-        window.open(gmailUrl, '_blank', 'noopener,noreferrer');
-      } catch {
-        const mailtoLink = `mailto:${emailDestino}?subject=${encodeURIComponent(asunto)}&body=${encodeURIComponent(cuerpo)}`;
-        window.location.href = mailtoLink;
-      }
-    }
+    if (ok) reset();
   };
 
+  if (isSuccess && submittedName) {
+    return (
+      <FormSuccessPanel
+        nombre={submittedName}
+        description="Guardamos tu postulación. Si tu perfil encaja con una búsqueda abierta, te contactamos y ahí te pedimos el CV."
+      />
+    );
+  }
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
-      <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <label
-            htmlFor="nombre"
-            className="mb-2 block text-sm font-medium text-gray-300"
-          >
-            Nombre completo <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="text"
-            id="nombre"
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-            placeholder="Tu nombre completo"
-            required
-          />
-        </div>
+    <form onSubmit={handleSubmit(onSubmit)} className="relative space-y-6" noValidate>
+      <HoneypotField registration={register('website')} />
 
-        <div>
-          <label
-            htmlFor="email"
-            className="mb-2 block text-sm font-medium text-gray-300"
-          >
-            Email <span className="text-red-500">*</span>
-          </label>
-          <input
-            type="email"
-            id="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-            placeholder="tu@email.com"
-            required
-          />
-        </div>
+      <div className="grid gap-6 md:grid-cols-2">
+        <FormField id="nombre" label="Nombre completo" required error={errors.nombre?.message}>
+          {(aria) => (
+            <input
+              {...register('nombre')}
+              {...aria}
+              type="text"
+              autoComplete="name"
+              disabled={isSubmitting}
+              className={controlClass(Boolean(errors.nombre))}
+              placeholder="Tu nombre completo"
+            />
+          )}
+        </FormField>
+
+        <FormField id="email" label="Email" required error={errors.email?.message}>
+          {(aria) => (
+            <input
+              {...register('email')}
+              {...aria}
+              type="email"
+              autoComplete="email"
+              disabled={isSubmitting}
+              className={controlClass(Boolean(errors.email))}
+              placeholder="tu@email.com"
+            />
+          )}
+        </FormField>
       </div>
 
       <div className="grid gap-6 md:grid-cols-2">
-        <div>
-          <label
-            htmlFor="telefono"
-            className="mb-2 block text-sm font-medium text-gray-300"
-          >
-            Teléfono <span className="text-gray-500">(opcional)</span>
-          </label>
-          <input
-            type="tel"
-            id="telefono"
-            value={telefono}
-            onChange={(e) => setTelefono(e.target.value)}
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-            placeholder="+54 11 XXXX-XXXX"
-          />
-        </div>
-
-        <div>
-          <label
-            htmlFor="puesto"
-            className="mb-2 block text-sm font-medium text-gray-300"
-          >
-            Puesto de interés <span className="text-red-500">*</span>
-          </label>
-          <select
-            id="puesto"
-            value={puesto}
-            onChange={(e) => setPuesto(e.target.value)}
-            className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-            required
-          >
-            <option value="">Selecciona un área</option>
-            {PUESTOS.map((p) => (
-              <option key={p} value={p}>
-                {p}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      <div>
-        <label
-          htmlFor="mensaje"
-          className="mb-2 block text-sm font-medium text-gray-300"
-        >
-          Presentación breve <span className="text-red-500">*</span>
-        </label>
-        <textarea
-          id="mensaje"
-          value={mensaje}
-          onChange={(e) => setMensaje(e.target.value)}
-          rows={5}
-          className="w-full rounded-lg border border-gray-700 bg-gray-800 px-4 py-3 text-white focus:border-[#16a245] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
-          placeholder="Contanos sobre tu experiencia, habilidades y por qué te gustaría sumarte al equipo..."
-          required
+        <PhoneField
+          control={control}
+          name="telefono"
+          id="telefono"
+          label="Teléfono (opcional)"
+          error={errors.telefono?.message}
+          disabled={isSubmitting}
         />
+
+        <FormField
+          id="puesto"
+          label="Puesto de interés"
+          required
+          error={errors.puesto?.message}
+        >
+          {(aria) => (
+            <select
+              {...register('puesto')}
+              {...aria}
+              disabled={isSubmitting}
+              defaultValue=""
+              className={controlClass(Boolean(errors.puesto))}
+            >
+              <option value="" disabled>
+                Seleccioná un área
+              </option>
+              {PUESTO_OPTIONS.map((p) => (
+                <option key={p} value={p}>
+                  {p}
+                </option>
+              ))}
+            </select>
+          )}
+        </FormField>
       </div>
 
-      <button
-        type="submit"
-        className="flex w-full items-center justify-center gap-2 rounded-lg bg-[#16a245] px-6 py-3 font-semibold text-white transition-all hover:bg-[#128a38] focus:outline-none focus:ring-2 focus:ring-[#16a245]/50"
+      <FormField
+        id="mensaje"
+        label="Presentación breve"
+        required
+        error={errors.mensaje?.message}
       >
-        <Send className="h-5 w-5" />
-        Enviar Postulación
-      </button>
+        {(aria) => (
+          <textarea
+            {...register('mensaje')}
+            {...aria}
+            rows={5}
+            disabled={isSubmitting}
+            className={controlClass(Boolean(errors.mensaje))}
+            placeholder="Contanos sobre tu experiencia, habilidades y por qué te gustaría sumarte al equipo..."
+          />
+        )}
+      </FormField>
 
-      <p className="text-center text-sm text-yellow-400">
-        Antes de enviar, adjuntá tu CV al correo que se abrirá.
-      </p>
+      <SubmitButton
+        isSubmitting={isSubmitting}
+        label="Enviar Postulación"
+        icon={Send}
+      />
+
       <p className="text-center text-xs text-gray-400">
-        Al hacer clic, se abrirá{' '}
-        {isMobile ? 'tu app de correo' : 'Gmail en una nueva pestaña'} con los
-        datos pre-llenados
+        Si querés adjuntar tu CV, te lo pedimos cuando te contactemos.
       </p>
     </form>
   );

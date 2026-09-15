@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import {
   Sheet,
   SheetContent,
@@ -10,7 +10,9 @@ import {
 } from '@/components/ui/sheet';
 import AdminSidebar from '@/features/admin/components/AdminSidebar';
 import AdminHeader from '@/features/admin/components/AdminHeader';
+import { canAccessAdminPath } from '@/features/admin/access';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { esStaff } from '@/types/auth';
 import { Loader2 } from 'lucide-react';
 
 export default function AdminLayout({
@@ -21,6 +23,12 @@ export default function AdminLayout({
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const { user, token, isAuthReady } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
+
+  // El panel es para el staff (ADMIN y ASISTENTE). La asistente sólo entra a
+  // las secciones que el backend le permite; si tipea otra URL, al dashboard.
+  const puedeEntrar = esStaff(user?.rol);
+  const puedeVerRuta = puedeEntrar && canAccessAdminPath(user?.rol, pathname);
 
   useEffect(() => {
     // Wait for auth to be ready
@@ -28,18 +36,21 @@ export default function AdminLayout({
       return;
     }
 
-    // Check if user is authenticated and is admin
     if (!token || !user) {
       router.push('/login?redirect=/admin/dashboard');
       return;
     }
 
-    if (user.rol !== 'ADMIN') {
-      // User is not admin, redirect to home
+    if (!puedeEntrar) {
+      // Un cliente no tiene nada que hacer acá: a la home.
       router.push('/');
       return;
     }
-  }, [user, token, isAuthReady, router]);
+
+    if (!puedeVerRuta) {
+      router.replace('/admin/dashboard');
+    }
+  }, [user, token, isAuthReady, router, puedeEntrar, puedeVerRuta]);
 
   // Show loading while checking auth
   if (!isAuthReady) {
@@ -54,7 +65,7 @@ export default function AdminLayout({
   }
 
   // Show loading while redirecting
-  if (!token || !user || user.rol !== 'ADMIN') {
+  if (!token || !user || !puedeVerRuta) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center space-y-4">

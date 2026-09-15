@@ -5,6 +5,9 @@ import {
   LoginApiResponse,
   RegisterPayload,
   RegisterApiResponse,
+  User,
+  UserBloqueo,
+  UserRole,
 } from '@/types/auth';
 import {
   SendOrderEmailData,
@@ -496,7 +499,10 @@ function getMockProducts(): Product[] {
   ];
 }
 
-export async function getProductBySlug(slug: string): Promise<Product | null> {
+export async function getProductBySlug(
+  slug: string,
+  token?: string | null,
+): Promise<Product | null> {
   if (!API_BASE_URL) {
     return null;
   }
@@ -507,9 +513,10 @@ export async function getProductBySlug(slug: string): Promise<Product | null> {
     const headers: HeadersInit = {
       Accept: 'application/json',
     };
-    // if (token) {
-    //   headers.Authorization = `Bearer ${token}`;
-    // }
+    // El token permite que el backend devuelva el precio de la lista del rol.
+    if (token) {
+      headers.Authorization = `Bearer ${token}`;
+    }
 
     const response = await fetch(url, {
       method: 'GET',
@@ -1317,42 +1324,6 @@ export async function getOrderById(
   }
 }
 
-/**
- * Valida si una orden existe y está disponible para edición
- * @returns objeto con valid, reason y order opcional
- */
-export async function validateOrderForEdit(
-  token: string,
-  orderId: string
-): Promise<{ valid: boolean; reason?: string; order?: Order }> {
-  try {
-    const order = await getOrderById(token, orderId);
-
-    if (!order) {
-      return { valid: false, reason: 'Order not found' };
-    }
-
-    if (order.status !== 'PENDIENTE') {
-      return {
-        valid: false,
-        reason: `Order status is ${order.status}, only PENDIENTE orders can be edited`,
-      };
-    }
-
-    return { valid: true, order };
-  } catch (error) {
-    const errorMessage = error instanceof Error ? error.message : String(error);
-
-    // Si es 404, la orden no existe
-    if (errorMessage.includes('404') || errorMessage.includes('not found')) {
-      return { valid: false, reason: 'Order not found (404)' };
-    }
-
-    // Otro error (403, 500, etc.)
-    return { valid: false, reason: errorMessage || 'Unknown error' };
-  }
-}
-
 export async function getMyOrdersPaginated(
   token: string,
   options?: {
@@ -1592,7 +1563,14 @@ export async function updateOrder(
 
     const result = await handleResponse<OrderApiResponse>(response);
     apiLogger.response('PATCH', url, response.status);
-    return result.data;
+
+    // Manejar doble-nested por si el backend envuelve la respuesta
+    // (mismo patrón que updateOrderStatus).
+    const order = result.data;
+    if (order && typeof order === 'object' && 'data' in order && !('id' in order)) {
+      return (order as { data: Order }).data;
+    }
+    return order;
   } catch (error) {
     apiLogger.error('PATCH', url, error);
     throw error;
@@ -2732,6 +2710,18 @@ export async function getAnalyticsUsers(
   return fetchAnalytics<PaginatedUsersResponse>(token, `users?${params.toString()}`);
 }
 
+export interface UsersByZoneItem {
+  provincia: string;
+  count: number; // compat: = total
+  total: number;
+  enabled: number;
+  pending: number;
+}
+
+export async function getUsersByZone(token: string): Promise<UsersByZoneItem[]> {
+  return fetchAnalytics<UsersByZoneItem[]>(token, 'users-by-zone');
+}
+
 export async function getProductRanking(
   token: string,
   options?: { order?: 'top' | 'bottom'; limit?: number; period?: string; dateFrom?: string; dateTo?: string },
@@ -2784,4 +2774,130 @@ export async function getUserActivity(
   userId: string,
 ): Promise<UserActivity> {
   return fetchAnalytics<UserActivity>(token, `user-activity?userId=${userId}`);
+}
+
+// ---------------------------------------------------------------------------
+// Pricing (listas de precios por rol) — sólo ADMIN
+// ---------------------------------------------------------------------------
+
+export interface RolePricing {
+  id: number;
+  rol: UserRole;
+  percentage: number;
+}
+
+export async function getRolePricing(token: string): Promise<RolePricing[]> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/pricing/roles`, {
+    method: 'GET',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: RolePricing[] }>(response);
+  return result.data;
+}
+
+export async function updateRolePricing(
+  token: string,
+  items: { rol: UserRole; percentage: number }[],
+): Promise<RolePricing[]> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/pricing/roles`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ items }),
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: RolePricing[] }>(response);
+  return result.data;
+}
+
+// ---------------------------------------------------------------------------
+// Usuarios (gestión de rol / aprobación) — sólo ADMIN
+// ---------------------------------------------------------------------------
+
+export interface AdminUser {
+  id: string;
+  email: string;
+  nombre: string;
+  apellido: string;
+  telefono?: string;
+  direccion?: string;
+  localidad?: string;
+  provincia?: string;
+  codigoPostal?: string;
+  rol: UserRole;
+  bloqueo?: UserBloqueo | null;
+}
+
+export async function getAdminUsers(token: string): Promise<AdminUser[]> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/user`, {
+    method: 'GET',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: AdminUser[] }>(response);
+  return result.data;
+}
+
+export async function changeUserRole(
+  token: string,
+  userId: string,
+  rol: UserRole,
+): Promise<AdminUser> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/user/${userId}/rol`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ rol }),
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: AdminUser }>(response);
+  return result.data;
+}
+
+/** Frena (COBRANZAS | VENTAS) o destraba (null) una cuenta. ADMIN y ASISTENTE. */
+export async function changeUserBloqueo(
+  token: string,
+  userId: string,
+  bloqueo: UserBloqueo | null,
+): Promise<AdminUser> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/user/${userId}/bloqueo`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ bloqueo }),
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: AdminUser }>(response);
+  return result.data;
+}
+
+/**
+ * Perfil actual del usuario logueado. Sirve para refrescar lo que guardamos en
+ * la cookie al loguear (categoría, freno), que si no queda viejo hasta el
+ * próximo login.
+ */
+export async function getMyProfile(token: string): Promise<User> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/user/profile`, {
+    method: 'GET',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: User }>(response);
+  return result.data;
 }

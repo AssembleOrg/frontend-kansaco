@@ -19,6 +19,7 @@ import {
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
+import { esStaff } from '@/types/auth';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   DropdownMenu,
@@ -59,10 +60,18 @@ const Navbar = () => {
 
   // Solo mostrar estado de autenticación después de la hidratación
   const isAuthenticated = isHydrated && isAuthReady && !!token;
-  const isAdmin = isAuthenticated && user?.rol === 'ADMIN';
+  // Acceso al panel: ADMIN y ASISTENTE.
+  const isStaff = isAuthenticated && esStaff(user?.rol);
 
   useEffect(() => {
     setIsHydrated(true);
+  }, []);
+
+  // Mostrar el navbar tras 1s y dejarlo fijo. isVisible solo se setea acá
+  // (una vez); el scroll ya no lo oculta, solo controla isScrolled (estilo).
+  useEffect(() => {
+    const timer = setTimeout(() => setIsVisible(true), 1000);
+    return () => clearTimeout(timer);
   }, []);
 
   useEffect(() => {
@@ -77,11 +86,12 @@ const Navbar = () => {
 
   useEffect(() => {
     // Coalescemos scrolls a 1 update por frame. Sin esto, cada pixel
-    // dispara dos setStates → re-render del Navbar entero (~14 useStates,
+    // dispara un setState → re-render del Navbar entero (~14 useStates,
     // framer-motion adentro). En mobile mata el FPS y bloquea el main
     // thread durante navegación.
+    // Solo controla isScrolled (estilo de fondo); isVisible ya no depende
+    // del scroll, para que el navbar quede fijo una vez que aparece.
     let rafId: number | null = null;
-    let lastVisible = false;
     let lastScrolled = false;
 
     const handleScroll = () => {
@@ -89,12 +99,7 @@ const Navbar = () => {
       rafId = requestAnimationFrame(() => {
         rafId = null;
         const scrollPosition = window.scrollY;
-        const nextVisible = scrollPosition > 100;
         const nextScrolled = scrollPosition > 20;
-        if (nextVisible !== lastVisible) {
-          lastVisible = nextVisible;
-          setIsVisible(nextVisible);
-        }
         if (nextScrolled !== lastScrolled) {
           lastScrolled = nextScrolled;
           setIsScrolled(nextScrolled);
@@ -403,7 +408,7 @@ const Navbar = () => {
               </AnimatePresence>
             </div>
 
-            {isAdmin && (
+            {isStaff && (
               <Link
                 href="/admin/dashboard"
                 className="font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
@@ -445,7 +450,7 @@ const Navbar = () => {
                     align="end"
                     className="w-56 border-gray-800/50 bg-black/95 shadow-xl backdrop-blur-md"
                   >
-                    {isAdmin ? (
+                    {isStaff ? (
                       <>
                         <DropdownMenuItem
                           onClick={() => {
@@ -736,7 +741,7 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
 
-              {isAdmin && (
+              {isStaff && (
                 <Link
                   href="/admin/dashboard"
                   className="block py-1.5 text-sm font-medium text-white transition-colors duration-200 hover:text-[#16a245]"
@@ -762,7 +767,7 @@ const Navbar = () => {
                     <p className="text-sm text-gray-300">
                       Hola, {user?.nombre || user?.email?.split('@')[0]}
                     </p>
-                    {isAdmin ? (
+                    {isStaff ? (
                       <>
                         <Link
                           href="/admin/dashboard"

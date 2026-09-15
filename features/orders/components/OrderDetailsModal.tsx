@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { Order } from '@/types/order';
+import { useState, useEffect } from 'react';
+import { Order, Direccion, MODALIDAD_LABEL } from '@/types/order';
 import {
   Dialog,
   DialogContent,
@@ -27,12 +27,20 @@ import {
   Info,
   Download,
   RefreshCw,
+  Truck,
 } from 'lucide-react';
+
+/** Dirección estructurada → línea legible para el CRM. */
+function formatDir(d?: Direccion): string {
+  if (!d) return '';
+  return [d.calle, d.localidad, d.provincia, d.codigoPostal].filter(Boolean).join(', ');
+}
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { OrderEditModal } from './OrderEditModal';
+import { OrderNoteModal } from './OrderNoteModal';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { siteConfig } from '@/lib/site-config';
-import { downloadOrderPDF } from '@/lib/api';
+import { downloadOrderPDF, updateOrder, updateOrderStatus } from '@/lib/api';
 import { toast } from 'sonner';
 
 interface OrderDetailsModalProps {
@@ -40,6 +48,10 @@ interface OrderDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOrderUpdated?: () => void;
+  /** Habilita el botón de notas del admin (editar notas en cualquier estado). */
+  allowNotes?: boolean;
+  /** Staff (ADMIN/ASISTENTE): habilita el atajo para volver a PENDIENTE y editar. */
+  isStaff?: boolean;
 }
 
 export function OrderDetailsModal({
@@ -47,14 +59,32 @@ export function OrderDetailsModal({
   open,
   onOpenChange,
   onOrderUpdated,
+  allowNotes = false,
+  isStaff = false,
 }: OrderDetailsModalProps) {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isNoteModalOpen, setIsNoteModalOpen] = useState(false);
+  const [isSavingNote, setIsSavingNote] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [isReverting, setIsReverting] = useState(false);
+  // Nota mostrada; se actualiza optimísticamente al guardar (null = usar la de la orden).
+  const [localNotes, setLocalNotes] = useState<string | null>(null);
+  // Estado mostrado; se actualiza optimísticamente al promover en la descarga (null = usar el de la orden).
+  const [localStatus, setLocalStatus] = useState<Order['status'] | null>(null);
   const { token } = useAuth();
+
+  // Al cambiar de orden, descartar los valores optimistas previos.
+  useEffect(() => {
+    setLocalNotes(null);
+    setLocalStatus(null);
+  }, [order?.id]);
 
   if (!order) return null;
 
-  const isPendiente = order.status === 'PENDIENTE';
+  const displayedNotes = localNotes !== null ? localNotes : order.notes;
+  const displayedStatus = localStatus ?? order.status;
+
+  const isPendiente = displayedStatus === 'PENDIENTE';
 
   const handleDownloadPDF = async () => {
     if (!token) {
@@ -64,13 +94,67 @@ export function OrderDetailsModal({
 
     setIsDownloading(true);
     try {
+      // Primero promovemos a PROCESANDO (solo si está PENDIENTE) para que el
+      // estado ya actualizado salga impreso en el PDF que genera el backend.
+      const promoted = displayedStatus === 'PENDIENTE';
+      if (promoted) {
+        await updateOrderStatus(token, order.id, 'PROCESANDO');
+        setLocalStatus('PROCESANDO');
+      }
       await downloadOrderPDF(token, order.id);
-      toast.success('PDF descargado correctamente');
+      toast.success(
+        promoted
+          ? 'Pedido marcado como Procesando y PDF descargado'
+          : 'PDF descargado correctamente'
+      );
+      // Refrescar la tabla padre para reflejar el nuevo estado.
+      if (promoted) onOrderUpdated?.();
     } catch (error) {
       console.error('Error descargando PDF:', error);
       toast.error('Error al descargar el PDF');
     } finally {
       setIsDownloading(false);
+    }
+  };
+
+  // El backend solo permite editar items en PENDIENTE. Para editar un pedido en
+  // preparación, el staff lo vuelve a PENDIENTE (los estados son libres).
+  const canRevertToPendiente =
+    isStaff && (displayedStatus === 'PROCESANDO' || displayedStatus === 'ENVIADO');
+
+  const handleRevertToPendiente = async () => {
+    if (!token) {
+      toast.error('No estás autenticado');
+      return;
+    }
+    setIsReverting(true);
+    try {
+      await updateOrderStatus(token, order.id, 'PENDIENTE');
+      setLocalStatus('PENDIENTE');
+      toast.success('Pedido devuelto a Pendiente. Ya podés editarlo.');
+      onOrderUpdated?.();
+    } catch (error) {
+      console.error('Error al volver a Pendiente:', error);
+      toast.error('No se pudo cambiar el estado');
+    } finally {
+      setIsReverting(false);
+    }
+  };
+
+  const handleSaveNote = async (finalNotes: string) => {
+    if (!token || !order) return;
+    setIsSavingNote(true);
+    try {
+      await updateOrder(token, order.id, { notes: finalNotes });
+      setLocalNotes(finalNotes);
+      toast.success('Nota guardada correctamente');
+      setIsNoteModalOpen(false);
+      onOrderUpdated?.();
+    } catch (error) {
+      console.error('Error guardando la nota:', error);
+      toast.error('Error al guardar la nota');
+    } finally {
+      setIsSavingNote(false);
     }
   };
 
@@ -115,8 +199,8 @@ export function OrderDetailsModal({
               <Package className="h-5 w-5" />
               Detalles del Pedido
             </span>
-            <Badge variant={getStatusBadgeVariant(order.status)}>
-              {getStatusLabel(order.status)}
+            <Badge variant={getStatusBadgeVariant(displayedStatus)}>
+              {getStatusLabel(displayedStatus)}
             </Badge>
           </DialogTitle>
           <DialogDescription>
@@ -154,6 +238,63 @@ export function OrderDetailsModal({
                   </div>
                 )}
               </div>
+            </div>
+          </div>
+
+          {/* Logística de Envío (MÓDULO 3). Fallback: órdenes viejas sin shippingInfo. */}
+          <Separator />
+          <div className="space-y-3">
+            <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+              <Truck className="h-4 w-4" />
+              Logística de Envío
+            </h3>
+            <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+              {order.shippingInfo ? (
+                <div className="grid gap-3 sm:grid-cols-2">
+                  <div>
+                    <p className="text-xs font-medium text-gray-500">Modalidad</p>
+                    <p className="text-sm font-semibold text-gray-900">
+                      {MODALIDAD_LABEL[order.shippingInfo.modalidad] ??
+                        order.shippingInfo.modalidad}
+                    </p>
+                  </div>
+                  {formatDir(order.shippingInfo.despacho) && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Dirección de Despacho
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {formatDir(order.shippingInfo.despacho)}
+                      </p>
+                    </div>
+                  )}
+                  {order.shippingInfo.transporte && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Empresa de Transporte
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {order.shippingInfo.transporte}
+                      </p>
+                    </div>
+                  )}
+                  {formatDir(order.shippingInfo.entrega) && (
+                    <div>
+                      <p className="text-xs font-medium text-gray-500">
+                        Dirección de Entrega
+                      </p>
+                      <p className="text-sm font-medium text-gray-900 break-words">
+                        {formatDir(order.shippingInfo.entrega)}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <p className="text-sm text-gray-500">
+                  Sin modalidad registrada (pedido anterior a esta función).
+                  {order.contactInfo?.address ? ` Dirección: ${order.contactInfo.address}` : ''}
+                </p>
+              )}
             </div>
           </div>
 
@@ -195,6 +336,30 @@ export function OrderDetailsModal({
                             {order.contactInfo.address}
                           </p>
                         </div>
+                        {order.contactInfo.localidad && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500">Localidad</p>
+                            <p className="text-sm font-medium text-gray-900 break-words">
+                              {order.contactInfo.localidad}
+                            </p>
+                          </div>
+                        )}
+                        {order.contactInfo.provincia && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500">Provincia</p>
+                            <p className="text-sm font-medium text-gray-900 break-words">
+                              {order.contactInfo.provincia}
+                            </p>
+                          </div>
+                        )}
+                        {order.contactInfo.codigoPostal && (
+                          <div>
+                            <p className="text-xs font-medium text-gray-500">Código Postal</p>
+                            <p className="text-sm font-medium text-gray-900">
+                              {order.contactInfo.codigoPostal}
+                            </p>
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -284,19 +449,36 @@ export function OrderDetailsModal({
           )}
 
           {/* Notas */}
-          {order.notes && (
+          {(displayedNotes || allowNotes) && (
             <>
               <Separator />
               <div className="space-y-3">
-                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                  <FileText className="h-4 w-4" />
-                  Notas
-                </h3>
-                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                  <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                    {order.notes}
-                  </p>
+                <div className="flex items-center justify-between">
+                  <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                    <FileText className="h-4 w-4" />
+                    Notas
+                  </h3>
+                  {allowNotes && (
+                    <Button
+                      onClick={() => setIsNoteModalOpen(true)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-1"
+                    >
+                      <Edit className="h-3.5 w-3.5" />
+                      {displayedNotes ? 'Editar' : 'Agregar'}
+                    </Button>
+                  )}
                 </div>
+                {displayedNotes ? (
+                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
+                      {displayedNotes}
+                    </p>
+                  </div>
+                ) : (
+                  <p className="text-sm text-gray-400">Sin notas.</p>
+                )}
               </div>
             </>
           )}
@@ -351,11 +533,38 @@ export function OrderDetailsModal({
               <Edit className="mr-2 h-4 w-4" />
               Editar Orden
             </Button>
+          ) : canRevertToPendiente ? (
+            // Staff: atajo para editar un pedido en preparación devolviéndolo a Pendiente.
+            <Alert>
+              <Info className="h-4 w-4" />
+              <AlertDescription>
+                Este pedido está en <strong>{getStatusLabel(displayedStatus)}</strong>. Para editar
+                sus productos, primero volvé a <strong>Pendiente</strong>.
+                <Button
+                  onClick={handleRevertToPendiente}
+                  disabled={isReverting}
+                  variant="outline"
+                  className="mt-3 w-full border-2 border-gray-300 text-gray-700 hover:border-green-600 hover:text-green-700 hover:bg-green-50 font-semibold transition-colors"
+                >
+                  {isReverting ? (
+                    <>
+                      <RefreshCw className="mr-2 h-4 w-4 animate-spin" />
+                      Cambiando estado...
+                    </>
+                  ) : (
+                    <>
+                      <Edit className="mr-2 h-4 w-4" />
+                      Volver a Pendiente para editar
+                    </>
+                  )}
+                </Button>
+              </AlertDescription>
+            </Alert>
           ) : (
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Esta orden ha sido <strong>{getStatusLabel(order.status)}</strong> y no puede modificarse.
+                Esta orden ha sido <strong>{getStatusLabel(displayedStatus)}</strong> y no puede modificarse.
                 Si necesitas ayuda, contacta con nosotros:
                 <div className="mt-2 space-y-1">
                   <div>
@@ -389,6 +598,18 @@ export function OrderDetailsModal({
               onOrderUpdated();
             }
           }}
+        />
+      )}
+
+      {/* Modal de Notas (solo admin) */}
+      {allowNotes && (
+        <OrderNoteModal
+          open={isNoteModalOpen}
+          onOpenChange={setIsNoteModalOpen}
+          mode="note"
+          initialNotes={displayedNotes}
+          isSubmitting={isSavingNote}
+          onConfirm={handleSaveNote}
         />
       )}
     </Dialog>

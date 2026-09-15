@@ -33,7 +33,13 @@ export default function MayoristaApplicationModal({ open, onOpenChange }: Props)
           </ResponsiveDialogDescription>
         </ResponsiveDialogHeader>
         <div className="mt-4">
-          <MayoristaApplicationForm onSubmitSuccess={() => onOpenChange(false)} />
+          {/*
+            El modal no se cierra al enviar: el formulario muestra la
+            confirmación adentro y el visitante la cierra con el botón. Antes se
+            cerraba en el submit, dando sensación de éxito incluso cuando el
+            envío nunca se completaba.
+          */}
+          <MayoristaApplicationForm onClose={() => onOpenChange(false)} />
         </div>
       </ResponsiveDialogContent>
     </ResponsiveDialog>

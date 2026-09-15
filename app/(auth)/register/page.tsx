@@ -3,6 +3,8 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import { REGISTRATION_ENABLED } from '@/lib/flags';
+import { AR_PROVINCES } from '@/lib/constants/provinces';
+import { normalizeText } from '@/lib/geo';
 import { useRouter } from 'next/navigation';
 import { registerUser } from '@/lib/api';
 import { Button } from '@/components/ui/button';
@@ -53,6 +55,9 @@ export default function RegisterPage() {
   const [confirmPassword, setConfirmPassword] = useState('');
   const [telefono, setTelefono] = useState<string | undefined>(undefined);
   const [direccion, setDireccion] = useState('');
+  const [localidad, setLocalidad] = useState('');
+  const [provincia, setProvincia] = useState('');
+  const [codigoPostal, setCodigoPostal] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
@@ -94,6 +99,24 @@ export default function RegisterPage() {
       return;
     }
 
+    // Zona requerida (alimenta el analytics y la logística).
+    if (!provincia) {
+      setError('Seleccioná tu provincia.');
+      return;
+    }
+    if (!localidad.trim()) {
+      setError('Ingresá tu localidad.');
+      return;
+    }
+    if (!direccion.trim()) {
+      setError('Ingresá tu dirección.');
+      return;
+    }
+    if (!codigoPostal.trim()) {
+      setError('Ingresá tu código postal.');
+      return;
+    }
+
     setIsRegistering(true);
 
     const telefonoWhatsapp = telefono.replace(/\D/g, '');
@@ -105,7 +128,10 @@ export default function RegisterPage() {
         nombre,
         apellido,
         telefono: telefonoWhatsapp,
-        direccion: direccion || undefined,
+        direccion: normalizeText(direccion),
+        localidad: normalizeText(localidad),
+        provincia, // valor canónico del select
+        codigoPostal: codigoPostal.trim(),
         rol: 'CLIENTE_MINORISTA' as const,
       };
       await registerUser(payload);
@@ -120,6 +146,9 @@ export default function RegisterPage() {
       setApellido('');
       setTelefono(undefined);
       setDireccion('');
+      setLocalidad('');
+      setProvincia('');
+      setCodigoPostal('');
 
       setTimeout(() => {
         router.push('/login');
@@ -292,7 +321,7 @@ export default function RegisterPage() {
               {/* Dirección */}
               <div className="space-y-2">
                 <Label htmlFor="direccion" className="text-gray-300 font-medium">
-                  Dirección (Opcional)
+                  Dirección
                 </Label>
                 <div className="relative">
                   <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
@@ -302,6 +331,66 @@ export default function RegisterPage() {
                     placeholder="Tu dirección"
                     value={direccion}
                     onChange={(e) => setDireccion(e.target.value)}
+                    disabled={isRegistering}
+                    className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
+                  />
+                </div>
+              </div>
+
+              {/* Provincia */}
+              <div className="space-y-2">
+                <Label htmlFor="provincia" className="text-gray-300 font-medium">
+                  Provincia
+                </Label>
+                <select
+                  id="provincia"
+                  value={provincia}
+                  onChange={(e) => setProvincia(e.target.value)}
+                  disabled={isRegistering}
+                  className="h-10 w-full rounded-md border border-gray-700 bg-gray-800 px-3 text-sm text-white focus:border-[#16a245] focus:outline-none focus:ring-1 focus:ring-[#16a245]/30 disabled:opacity-50"
+                >
+                  <option value="">Seleccioná tu provincia</option>
+                  {AR_PROVINCES.map((p) => (
+                    <option key={p} value={p}>
+                      {p}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Localidad */}
+              <div className="space-y-2">
+                <Label htmlFor="localidad" className="text-gray-300 font-medium">
+                  Localidad
+                </Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="localidad"
+                    type="text"
+                    placeholder="Tu localidad"
+                    value={localidad}
+                    onChange={(e) => setLocalidad(e.target.value)}
+                    disabled={isRegistering}
+                    className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
+                  />
+                </div>
+              </div>
+
+              {/* Código Postal */}
+              <div className="space-y-2">
+                <Label htmlFor="codigoPostal" className="text-gray-300 font-medium">
+                  Código Postal
+                </Label>
+                <div className="relative">
+                  <UserIcon className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <Input
+                    id="codigoPostal"
+                    type="text"
+                    inputMode="numeric"
+                    placeholder="Tu código postal"
+                    value={codigoPostal}
+                    onChange={(e) => setCodigoPostal(e.target.value)}
                     disabled={isRegistering}
                     className="pl-10 bg-gray-800 border-gray-700 text-white placeholder:text-gray-500 focus:border-[#16a245] focus:ring-[#16a245]/30"
                   />

@@ -5,7 +5,9 @@ import Image from 'next/image';
 import Link from 'next/link';
 import { CartItem } from '@/types';
 import { useCartStore } from '../../store/cartStore';
+import { useCart } from '../../hooks/useCart';
 import { Button } from '@/components/ui/button';
+import { PRICES_ENABLED } from '@/lib/flags';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import {
   Dialog,
@@ -25,8 +27,10 @@ const DEBOUNCE_MS = 350;
 export const CartItemCard = ({ item }: CartItemCardProps) => {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeFromCart = useCartStore((s) => s.removeFromCart);
+  const { formatPrice, getProductPrice } = useCart();
 
   const { product, quantity, presentation } = item;
+  const unitPrice = getProductPrice(product);
 
   // Optimistic local quantity. Synced from props but updated instantly on +/-.
   const [localQty, setLocalQty] = useState<number>(quantity);
@@ -166,6 +170,17 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
                 <Plus size={14} />
               </Button>
             </div>
+
+            {PRICES_ENABLED && unitPrice > 0 && (
+              <div className="text-right">
+                <span className="block text-sm font-semibold tabular-nums text-neutral-800">
+                  {formatPrice(unitPrice * localQty)}
+                </span>
+                <span className="block text-[11px] text-neutral-400">
+                  {formatPrice(unitPrice)} c/u
+                </span>
+              </div>
+            )}
           </div>
         </div>
       </div>

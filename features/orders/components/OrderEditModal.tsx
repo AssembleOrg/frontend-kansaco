@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { Order, UpdateOrderDto, OrderItem } from '@/types/order';
 import { Product } from '@/types';
-import { updateOrder, validateOrderForEdit } from '@/lib/api';
+import { updateOrder, getProductsPaginated } from '@/lib/api';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { toast } from 'sonner';
 import {
@@ -19,7 +19,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
-import { Loader2, Plus, Minus, Trash2, Package } from 'lucide-react';
+import { Loader2, Plus, Minus, Trash2, Package, Search } from 'lucide-react';
 
 interface OrderEditModalProps {
   order: Order;
@@ -36,6 +36,11 @@ export function OrderEditModal({
 }: OrderEditModalProps) {
   const { token } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Buscador de productos inline (para agregar sin salir del modal).
+  const [search, setSearch] = useState('');
+  const [results, setResults] = useState<Product[]>([]);
+  const [isSearching, setIsSearching] = useState(false);
 
   // Datos básicos
   const [fullName, setFullName] = useState('');
@@ -75,6 +80,32 @@ export function OrderEditModal({
       }
     }
   }, [order, isOpen, isMayorista]);
+
+  // Buscar productos por nombre (debounce 300ms). Vacío => sin resultados.
+  useEffect(() => {
+    const term = search.trim();
+    if (!term) {
+      setResults([]);
+      setIsSearching(false);
+      return;
+    }
+    setIsSearching(true);
+    const t = setTimeout(async () => {
+      try {
+        const res = await getProductsPaginated(token, {
+          name: term,
+          limit: 8,
+          isVisible: true,
+        });
+        setResults(res.data || []);
+      } catch {
+        setResults([]);
+      } finally {
+        setIsSearching(false);
+      }
+    }, 300);
+    return () => clearTimeout(t);
+  }, [search, token]);
 
   const validateCUIT = (cuitValue: string): boolean => {
     const cuitRegex = /^\d{2}-\d{8}-\d{1}$/;
@@ -256,7 +287,7 @@ export function OrderEditModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
+      <DialogContent className="max-w-2xl lg:max-w-4xl max-h-[90vh] overflow-y-auto overflow-x-hidden">
         <DialogHeader>
           <DialogTitle>Editar Orden</DialogTitle>
           <DialogDescription>
@@ -383,45 +414,54 @@ export function OrderEditModal({
           {/* Productos del Pedido */}
           <div className="space-y-4">
             <Separator />
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-              <h3 className="text-lg font-semibold">Productos del Pedido</h3>
-              <Button
-                type="button"
-                onClick={async () => {
-                  // ✅ VALIDAR que la orden sigue siendo editable
-                  if (token) {
-                    const validation = await validateOrderForEdit(token, order.id);
+            <h3 className="text-lg font-semibold">Productos del Pedido</h3>
 
-                    if (!validation.valid) {
-                      toast.error(
-                        validation.reason?.includes('not found')
-                          ? 'Esta orden ya no existe'
-                          : `Esta orden no puede ser editada (estado: ${order.status})`
-                      );
-                      onClose();
-                      onSuccess(); // Refresh parent
-                      return;
-                    }
-                  }
+            {/* Buscador inline para agregar productos sin salir del modal */}
+            <div className="space-y-2">
+              <div className="relative">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-gray-400" />
+                <Input
+                  type="text"
+                  placeholder="Buscar producto por nombre para agregar..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  disabled={isSubmitting}
+                  className="pl-9"
+                />
+                {isSearching && (
+                  <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-gray-400" />
+                )}
+              </div>
 
-                  localStorage.setItem('editingOrderId', order.id);
-                  localStorage.setItem('editMode', 'true');
-
-                  // Guardar items actuales de la orden (estado local del modal)
-                  localStorage.setItem('editingOrderItems', JSON.stringify(orderItems));
-
-                  // Cerrar modal antes de redirigir
-                  onClose();
-
-                  // Redirigir a productos
-                  window.location.href = '/productos';
-                }}
-                disabled={isSubmitting}
-                className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white shadow-md hover:shadow-lg transition-all duration-200 font-semibold"
-              >
-                <Plus className="h-5 w-5" />
-                Agregar Productos
-              </Button>
+              {search.trim() && (
+                <div className="max-h-52 overflow-y-auto rounded-lg border border-gray-200">
+                  {!isSearching && results.length === 0 ? (
+                    <p className="px-3 py-4 text-center text-sm text-gray-400">
+                      No se encontraron productos.
+                    </p>
+                  ) : (
+                    results.map((product) => (
+                      <button
+                        key={product.id}
+                        type="button"
+                        onClick={() => handleAddProduct(product)}
+                        disabled={isSubmitting}
+                        className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-green-50 disabled:opacity-50"
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="line-clamp-2 text-sm font-medium text-gray-900">
+                            {product.name}
+                          </p>
+                          {product.presentation && (
+                            <p className="text-xs text-gray-500">{product.presentation}</p>
+                          )}
+                        </div>
+                        <Plus className="h-4 w-4 shrink-0 text-green-600" />
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
             </div>
 
             {orderItems.length === 0 ? (
@@ -429,7 +469,7 @@ export function OrderEditModal({
                 <Package className="mx-auto h-12 w-12 text-gray-400 mb-2" />
                 <p className="text-gray-500 font-medium">No hay productos en el pedido</p>
                 <p className="text-sm text-gray-400 mt-1">
-                  Haz click en &quot;Agregar Producto&quot; para añadir items
+                  Usá el buscador de arriba para añadir productos
                 </p>
               </div>
             ) : (
@@ -437,10 +477,10 @@ export function OrderEditModal({
                 {orderItems.map((item, index) => (
                   <div
                     key={`${item.productId}-${index}`}
-                    className="flex items-center gap-3 border border-gray-200 rounded-lg p-3 bg-white"
+                    className="flex w-full min-w-0 flex-nowrap items-center gap-3 border border-gray-200 rounded-lg p-3 bg-white"
                   >
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-gray-900 truncate">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900 line-clamp-2 break-words">
                         {item.productName}
                       </p>
                       <div className="flex flex-wrap gap-2 text-sm text-gray-500 mt-1">
@@ -452,7 +492,7 @@ export function OrderEditModal({
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2">
+                    <div className="flex shrink-0 items-center gap-2">
                       <div className="flex items-center gap-1">
                         <Button
                           type="button"
@@ -485,18 +525,18 @@ export function OrderEditModal({
                           <Plus className="h-3 w-3" />
                         </Button>
                       </div>
-                    </div>
 
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="icon"
-                      className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
-                      onClick={() => handleRemoveItem(index)}
-                      disabled={isSubmitting}
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        className="text-red-600 hover:text-red-700 hover:bg-red-50 h-8 w-8"
+                        onClick={() => handleRemoveItem(index)}
+                        disabled={isSubmitting}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 ))}
 

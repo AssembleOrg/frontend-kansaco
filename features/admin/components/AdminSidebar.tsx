@@ -13,8 +13,14 @@ import {
   Users,
   UserCog,
   Settings,
+  Percent,
+  UserCheck,
+  Inbox,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useAuth } from '@/features/auth/hooks/useAuth';
+import { canAccessAdminPath } from '@/features/admin/access';
+import { useNoLeidas } from '@/features/submissions/hooks/useNoLeidas';
 
 interface AdminSidebarProps {
   onNavigate?: () => void;
@@ -39,6 +45,7 @@ const NAV_GROUPS: NavGroup[] = [
       { label: 'Productos', href: '/admin/products', icon: Package },
       { label: 'Categorías', href: '/admin/categories', icon: Tag },
       { label: 'Imágenes', href: '/admin/images', icon: Image },
+      { label: 'Listas de precios', href: '/admin/pricing', icon: Percent },
     ],
   },
   {
@@ -46,6 +53,18 @@ const NAV_GROUPS: NavGroup[] = [
     items: [
       { label: 'Órdenes', href: '/admin/orders', icon: ShoppingCart },
       { label: 'Analytics', href: '/admin/analytics', icon: BarChart3 },
+    ],
+  },
+  {
+    label: 'Usuarios',
+    items: [
+      { label: 'Cuentas', href: '/admin/users', icon: UserCheck },
+    ],
+  },
+  {
+    label: 'Web',
+    items: [
+      { label: 'Solicitudes', href: '/admin/solicitudes', icon: Inbox },
     ],
   },
   {
@@ -61,6 +80,14 @@ const NAV_GROUPS: NavGroup[] = [
 
 export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps) {
   const pathname = usePathname();
+  const { user } = useAuth();
+  const { noLeidas } = useNoLeidas();
+
+  // Sólo las secciones que el rol puede usar (la asistente ve menos).
+  const groups = NAV_GROUPS.map((group) => ({
+    ...group,
+    items: group.items.filter((item) => canAccessAdminPath(user?.rol, item.href)),
+  })).filter((group) => group.items.length > 0);
 
   const handleNavigation = () => {
     onNavigate?.();
@@ -80,7 +107,7 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
       </div>
 
       <nav className="flex-1 overflow-y-auto px-3 py-4 lg:px-4 lg:py-5">
-        {NAV_GROUPS.map((group, gi) => (
+        {groups.map((group, gi) => (
           <div key={group.label} className={cn(gi > 0 && 'mt-5')}>
             <p className="mb-1.5 px-3 text-[11px] font-semibold uppercase tracking-wide text-green-700">
               {group.label}
@@ -103,6 +130,14 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
                     >
                       <Icon className="h-[18px] w-[18px] shrink-0" />
                       <span className="truncate">{item.label}</span>
+                      {item.href === '/admin/solicitudes' && noLeidas > 0 && (
+                        <span
+                          aria-label={`${noLeidas} solicitudes sin leer`}
+                          className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-green-600 px-1.5 text-[11px] font-semibold text-white"
+                        >
+                          {noLeidas > 99 ? '99+' : noLeidas}
+                        </span>
+                      )}
                     </Link>
                   </li>
                 );
