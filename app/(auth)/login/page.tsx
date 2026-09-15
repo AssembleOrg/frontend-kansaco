@@ -6,6 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { esStaff, type UserRole } from '@/types/auth';
 import { LoginError } from '@/lib/api';
+import { getSafeRedirect } from '@/lib/safe-redirect';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -49,12 +50,6 @@ type SubmitError = {
   title: string;
   message: string;
   code: LoginError['code'] | 'UNKNOWN';
-};
-
-const isSafeRedirect = (value: string | null): value is string => {
-  if (!value) return false;
-  // Only allow internal paths; reject protocol/protocol-relative/back-paths.
-  return value.startsWith('/') && !value.startsWith('//') && !value.includes('..');
 };
 
 const mapLoginError = (err: unknown): SubmitError => {
@@ -171,10 +166,9 @@ function LoginContent() {
       // El store devuelve { token, user } en el nivel superior.
       const loggedUser = (result as { user?: { rol?: UserRole } })?.user;
 
-      const requested = searchParams.get('redirect');
       // Staff (ADMIN/ASISTENTE) sin redirect explícito → panel. El resto → productos.
       const defaultUrl = esStaff(loggedUser?.rol) ? '/admin/dashboard' : '/productos';
-      const redirectUrl = isSafeRedirect(requested) ? requested : defaultUrl;
+      const redirectUrl = getSafeRedirect(searchParams.get('redirect'), defaultUrl);
       router.push(redirectUrl);
     } catch (err) {
       setSubmitError(mapLoginError(err));
