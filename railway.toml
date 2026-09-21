@@ -1,9 +1,13 @@
 [build]
 builder = "nixpacks"
-buildCommand = "pnpm run build"
+# output: 'standalone' (next.config.ts) no copia public/ ni .next/static:
+# hay que llevarlos a mano al bundle standalone.
+buildCommand = "pnpm run build && cp -r public .next/standalone/ && cp -r .next/static .next/standalone/.next/"
 
 [deploy]
-startCommand = "pnpm run start"
+# node directo (sin wrapper pnpm, ~100MB menos) sobre el bundle standalone,
+# que carga sólo los módulos trazados en vez de todo node_modules.
+startCommand = "node .next/standalone/server.js"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"

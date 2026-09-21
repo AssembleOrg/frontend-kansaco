@@ -1,6 +1,7 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+  output: 'standalone',
   images: {
     // Las imágenes ya se guardan optimizadas (WebP q85, ~110 KB) en el CDN de
     // DigitalOcean. Re-optimizarlas con el optimizador de Next (sharp) sólo
