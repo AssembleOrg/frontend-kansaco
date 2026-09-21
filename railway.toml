@@ -7,7 +7,10 @@ buildCommand = "pnpm run build && cp -r public .next/standalone/ && cp -r .next/
 [deploy]
 # node directo (sin wrapper pnpm, ~100MB menos) sobre el bundle standalone,
 # que carga sólo los módulos trazados en vez de todo node_modules.
-startCommand = "node .next/standalone/server.js"
+# HOSTNAME=0.0.0.0: el server standalone escucha en $HOSTNAME, que Railway
+# setea al id del contenedor → el healthcheck no llega. `env` para no
+# depender de que Railway ejecute el comando dentro de un shell.
+startCommand = "env HOSTNAME=0.0.0.0 node .next/standalone/server.js"
 healthcheckPath = "/"
 healthcheckTimeout = 300
 restartPolicyType = "on_failure"
