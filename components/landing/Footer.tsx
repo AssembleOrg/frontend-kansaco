@@ -195,7 +195,7 @@ const Footer = () => {
               <div className="text-center text-sm text-gray-400">
                 Desarrollado por{' '}
                 <a
-                  href={siteConfig.developer.whatsapp}
+                  href={siteConfig.developer.url}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="font-semibold text-yellow-400 transition-colors duration-200 hover:text-yellow-300"

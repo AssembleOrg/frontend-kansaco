@@ -45,6 +45,7 @@ export const siteConfig = {
   // Desarrollador
   developer: {
     name: 'Pistech',
+    url: 'https://pistech.com.ar',
     whatsapp: 'https://wa.me/5491138207230',
   },
 
