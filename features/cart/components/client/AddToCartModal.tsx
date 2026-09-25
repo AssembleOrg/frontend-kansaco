@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -13,7 +13,9 @@ import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
 import { Product } from '@/types/product';
-import { ShoppingCart } from 'lucide-react';
+import { Minus, Package, Plus, ShoppingCart } from 'lucide-react';
+import { useBultos } from '@/features/cart/hooks/useBultos';
+import { describirBultos, pasoBulto, splitPresentations, tieneSueltas } from '@/lib/bultos';
 
 interface AddToCartModalProps {
   product: Product;
@@ -28,43 +30,33 @@ export const AddToCartModal = ({
   onOpenChange,
   onConfirm,
 }: AddToCartModalProps) => {
+  const presentations = useMemo(
+    () => splitPresentations(product.presentation),
+    [product.presentation]
+  );
+  const [selectedPresentation, setSelectedPresentation] = useState<string>(
+    presentations[0] ?? ''
+  );
   const [quantity, setQuantity] = useState(1);
-  const [selectedPresentation, setSelectedPresentation] = useState<string>('');
 
-  // Parsear las presentaciones del producto
-  const presentations = product.presentation
-    ? product.presentation
-        .split(',')
-        .map((pres) => pres.trim())
-        .filter((pres) => pres.length > 0)
-    : [];
+  const bultosPorPres = useBultos([product.id], open)[product.id];
+  const bultos = bultosPorPres?.[selectedPresentation] ?? [];
+  const paso = pasoBulto(bultos);
+  const desglose = describirBultos(quantity, bultos);
 
-  // Establecer la primera presentación como predeterminada cuando se abre el modal
+  // Al abrir o cambiar de presentación: arrancar en 1 bulto (o 1 unidad si no tiene).
   useEffect(() => {
-    if (open && presentations.length > 0 && !selectedPresentation) {
-      setSelectedPresentation(presentations[0]);
-    }
-  }, [open, presentations, selectedPresentation]);
+    if (open) setQuantity(paso);
+  }, [open, selectedPresentation, paso]);
 
-  // Resetear cuando se cierra el modal
+  // Al cerrar: volver a la primera presentación.
   useEffect(() => {
-    if (!open) {
-      setQuantity(1);
-      if (presentations.length > 0) {
-        setSelectedPresentation(presentations[0]);
-      } else {
-        setSelectedPresentation('');
-      }
-    }
+    if (!open) setSelectedPresentation(presentations[0] ?? '');
   }, [open, presentations]);
 
   const handleConfirm = () => {
-    if (quantity <= 0) {
-      return;
-    }
-    if (presentations.length > 0 && !selectedPresentation) {
-      return;
-    }
+    if (quantity <= 0) return;
+    if (presentations.length > 0 && !selectedPresentation) return;
     onConfirm(quantity, selectedPresentation);
     onOpenChange(false);
   };
@@ -87,24 +79,11 @@ export const AddToCartModal = ({
             Agregar al carrito
           </DialogTitle>
           <DialogDescription>
-            Selecciona la cantidad y presentación para {product.name}
+            Selecciona la presentación y cantidad para {product.name}
           </DialogDescription>
         </DialogHeader>
 
         <div className="grid gap-4 py-4">
-          {/* Selector de cantidad */}
-          <div className="grid gap-2">
-            <Label htmlFor="quantity">Cantidad</Label>
-            <Input
-              id="quantity"
-              type="number"
-              min="1"
-              value={quantity}
-              onChange={(e) => handleQuantityChange(e.target.value)}
-              className="w-full"
-            />
-          </div>
-
           {/* Selector de presentación */}
           {presentations.length > 0 && (
             <div className="grid gap-2">
@@ -115,8 +94,8 @@ export const AddToCartModal = ({
                 onChange={(e) => setSelectedPresentation(e.target.value)}
                 className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 hover:border-gray-400"
               >
-                {presentations.map((pres, index) => (
-                  <option key={index} value={pres}>
+                {presentations.map((pres) => (
+                  <option key={pres} value={pres}>
                     {pres}
                   </option>
                 ))}
@@ -129,6 +108,71 @@ export const AddToCartModal = ({
               Este producto no tiene presentaciones disponibles.
             </p>
           )}
+
+          {/* Cantidad (siempre en unidades; los bultos suman de a bulto) */}
+          <div className="grid gap-2">
+            <Label htmlFor="quantity">
+              Cantidad {bultos.length > 0 && <span className="font-normal text-gray-500">(unidades)</span>}
+            </Label>
+            <div className="flex items-center gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label={`Restar ${paso}`}
+                onClick={() => setQuantity((q) => Math.max(paso, q - paso))}
+                disabled={quantity <= paso}
+              >
+                <Minus className="h-4 w-4" />
+              </Button>
+              <Input
+                id="quantity"
+                type="number"
+                min="1"
+                inputMode="numeric"
+                value={quantity}
+                onChange={(e) => handleQuantityChange(e.target.value)}
+                className="w-full text-center"
+              />
+              <Button
+                type="button"
+                variant="outline"
+                size="icon"
+                aria-label={`Sumar ${paso}`}
+                onClick={() => setQuantity((q) => q + paso)}
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            </div>
+
+            {bultos.length > 0 && (
+              <>
+                <div className="flex flex-wrap gap-2">
+                  {bultos.map((b) => (
+                    <Button
+                      key={b.nombre}
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setQuantity((q) => q + b.unidades)}
+                    >
+                      <Package className="mr-1 h-3.5 w-3.5" />+ {b.nombre}
+                    </Button>
+                  ))}
+                </div>
+                <p
+                  className={`text-sm ${
+                    tieneSueltas(quantity, bultos) ? 'text-amber-700' : 'text-green-700'
+                  }`}
+                  aria-live="polite"
+                >
+                  {quantity} u. = {desglose}
+                  {tieneSueltas(quantity, bultos) &&
+                    '. Se vende por bulto cerrado: te vamos a contactar para ajustar.'}
+                </p>
+              </>
+            )}
+          </div>
         </div>
 
         <DialogFooter>
@@ -151,4 +195,3 @@ export const AddToCartModal = ({
     </Dialog>
   );
 };
-

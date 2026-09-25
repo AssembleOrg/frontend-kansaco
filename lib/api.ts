@@ -24,6 +24,7 @@ import type {
 } from '@/types/category';
 import { logger, apiLogger } from './logger';
 import { getApiBaseUrl } from './api-base-url';
+import type { BultoInfo, BultosPorProducto } from './bultos';
 
 const API_BASE_URL = getApiBaseUrl();
 
@@ -998,7 +999,8 @@ export async function removeProductFromCart(
   cartId: number,
   productId: number,
   token: string | null,
-  quantity?: number
+  quantity?: number,
+  presentation?: string | null
 ): Promise<CartApiResponse | null> {
   if (!API_BASE_URL) {
     return null;
@@ -1009,7 +1011,12 @@ export async function removeProductFromCart(
   }
 
   try {
-    const qs = quantity && quantity > 0 ? `?quantity=${quantity}` : '';
+    // presentation: borra la fila exacta (el mismo producto puede estar en
+    // varias presentaciones). '' = fila sin presentación.
+    const params = new URLSearchParams();
+    if (quantity && quantity > 0) params.set('quantity', String(quantity));
+    if (presentation !== undefined) params.set('presentation', presentation ?? '');
+    const qs = params.toString() ? `?${params}` : '';
     const response = await fetch(
       `${API_BASE_URL}/cart/${cartId}/delete/product/${productId}${qs}`,
       {
@@ -2901,3 +2908,89 @@ export async function getMyProfile(token: string): Promise<User> {
   const result = await handleResponse<{ status: string; data: User }>(response);
   return result.data;
 }
+
+// ---------------------------------------------------------------------------
+// Bultos (Caja x 24, Pallet x 48…) — lectura pública, gestión ADMIN/ASISTENTE
+// ---------------------------------------------------------------------------
+
+export interface BultoAdmin {
+  id: number;
+  nombre: string;
+  unidades: number;
+  asignados: number;
+}
+
+export interface PresentacionConBultos {
+  productId: number;
+  productName: string;
+  sku: string;
+  isVisible: boolean;
+  presentation: string;
+  bultos: BultoInfo[];
+}
+
+export interface BultoItemRef {
+  productId: number;
+  presentation: string;
+}
+
+async function bultoFetch<T>(
+  path: string,
+  token: string | null,
+  init: { method?: string; body?: unknown } = {},
+): Promise<T> {
+  if (!API_BASE_URL) throw new Error('API URL not configured.');
+  const response = await fetch(`${API_BASE_URL}/bulto${path}`, {
+    method: init.method ?? 'GET',
+    headers: {
+      Accept: 'application/json',
+      ...(init.body !== undefined ? { 'Content-Type': 'application/json' } : {}),
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    },
+    body: init.body !== undefined ? JSON.stringify(init.body) : undefined,
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: T }>(response);
+  return result.data;
+}
+
+/** Público: bultos por producto y presentación. */
+export async function getBultosForProducts(productIds: number[]): Promise<BultosPorProducto> {
+  const ids = [...new Set(productIds)].filter((id) => id > 0);
+  if (ids.length === 0 || !API_BASE_URL) return {};
+  return bultoFetch<BultosPorProducto>(`/products?ids=${ids.join(',')}`, null);
+}
+
+export const getBultos = (token: string) => bultoFetch<BultoAdmin[]>('', token);
+
+export const getPresentacionesConBultos = (token: string) =>
+  bultoFetch<PresentacionConBultos[]>('/presentaciones', token);
+
+export const createBulto = (token: string, data: { nombre: string; unidades: number }) =>
+  bultoFetch<BultoAdmin>('', token, { method: 'POST', body: data });
+
+export const updateBulto = (
+  token: string,
+  id: number,
+  data: { nombre?: string; unidades?: number },
+) => bultoFetch<BultoAdmin>(`/${id}`, token, { method: 'PATCH', body: data });
+
+export const deleteBulto = (token: string, id: number, force = false) =>
+  bultoFetch<{ desasignados: number }>(`/${id}${force ? '?force=true' : ''}`, token, {
+    method: 'DELETE',
+  });
+
+export interface AssignPreview {
+  dryRun: boolean;
+  agregar?: BultoItemRef[];
+  agregados?: number;
+  quitar?: BultoItemRef[];
+  quitados?: number;
+  yaTenian?: number;
+}
+
+export const assignBulto = (token: string, id: number, items: BultoItemRef[], dryRun: boolean) =>
+  bultoFetch<AssignPreview>(`/${id}/assign`, token, { method: 'POST', body: { items, dryRun } });
+
+export const unassignBulto = (token: string, id: number, items: BultoItemRef[], dryRun: boolean) =>
+  bultoFetch<AssignPreview>(`/${id}/unassign`, token, { method: 'POST', body: { items, dryRun } });

@@ -28,6 +28,7 @@ import {
   DialogTitle,
 } from '@/components/ui/dialog';
 import { CartItemCard } from './CartItemCard';
+import { useBultos } from '@/features/cart/hooks/useBultos';
 
 export const CartDrawer = () => {
   const { token } = useAuth();
@@ -38,6 +39,8 @@ export const CartDrawer = () => {
   const { cart, itemCount, isLoading, error, syncCart, clearCart, subtotal, formatPrice } = useCart();
 
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false);
+  // Un solo pedido de bultos para todo el carrito (no uno por tarjeta).
+  const bultos = useBultos((cart?.items || []).map((i) => i.product.id), isCartOpen);
 
   const isAuthenticated = !!token;
   const productCount = cart?.items?.length ?? 0;
@@ -105,7 +108,10 @@ export const CartDrawer = () => {
                     exit={{ opacity: 0, x: 24, transition: { duration: 0.2 } }}
                     transition={{ duration: 0.2 }}
                   >
-                    <CartItemCard item={item} />
+                    <CartItemCard
+                      item={item}
+                      bultos={bultos[item.product.id]?.[item.presentation ?? '']}
+                    />
                   </motion.li>
                 ))}
               </AnimatePresence>

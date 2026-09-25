@@ -20,6 +20,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Plus, Minus, Trash2, Package, Search } from 'lucide-react';
+import { useBultos } from '@/features/cart/hooks/useBultos';
+import { describirBultos, pasoBulto, splitPresentations, tieneSueltas } from '@/lib/bultos';
 
 interface OrderEditModalProps {
   order: Order;
@@ -57,6 +59,11 @@ export function OrderEditModal({
 
   // Productos de la orden
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  // Bultos de los productos del pedido y de la búsqueda (para desglose y paso al agregar).
+  const bultos = useBultos([
+    ...orderItems.map((i) => i.productId),
+    ...results.map((p) => p.id),
+  ]);
 
   const isMayorista = order.customerType === 'CLIENTE_MAYORISTA';
 
@@ -151,16 +158,24 @@ export function OrderEditModal({
     setOrderItems(orderItems.filter((_, i) => i !== index));
   };
 
-  const handleAddProduct = (product: Product) => {
-    // Verificar si el producto ya está en la orden
+  // Una opción por presentación: el mismo producto puede ir en varias.
+  const searchOptions = results.flatMap((product) => {
+    const pres = splitPresentations(product.presentation);
+    return (pres.length ? pres : ['']).map((presentation) => ({ product, presentation }));
+  });
+
+  const handleAddProduct = (product: Product, presentation: string) => {
+    const paso = pasoBulto(bultos[product.id]?.[presentation]);
+    // Verificar si el producto + presentación ya está en la orden
     const existingItemIndex = orderItems.findIndex(
-      (item) => item.productId === product.id
+      (item) =>
+        item.productId === product.id && (item.presentation ?? '') === presentation
     );
 
     if (existingItemIndex !== -1) {
-      // Si ya existe, incrementar la cantidad
+      // Si ya existe, sumar un bulto (o una unidad si no tiene bultos)
       const updated = [...orderItems];
-      updated[existingItemIndex].quantity += 1;
+      updated[existingItemIndex].quantity += paso;
       setOrderItems(updated);
       toast.success('Cantidad actualizada', {
         description: `Se incrementó la cantidad de ${product.name}`,
@@ -173,8 +188,8 @@ export function OrderEditModal({
         {
           productId: product.id,
           productName: product.name,
-          quantity: 1,
-          presentation: product.presentation || undefined,
+          quantity: paso,
+          presentation: presentation || undefined,
           unitPrice: product.price || undefined,
         },
       ]);
@@ -440,11 +455,11 @@ export function OrderEditModal({
                       No se encontraron productos.
                     </p>
                   ) : (
-                    results.map((product) => (
+                    searchOptions.map(({ product, presentation }) => (
                       <button
-                        key={product.id}
+                        key={`${product.id}-${presentation}`}
                         type="button"
-                        onClick={() => handleAddProduct(product)}
+                        onClick={() => handleAddProduct(product, presentation)}
                         disabled={isSubmitting}
                         className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-green-50 disabled:opacity-50"
                       >
@@ -452,8 +467,13 @@ export function OrderEditModal({
                           <p className="line-clamp-2 text-sm font-medium text-gray-900">
                             {product.name}
                           </p>
-                          {product.presentation && (
-                            <p className="text-xs text-gray-500">{product.presentation}</p>
+                          {presentation && (
+                            <p className="text-xs text-gray-500">
+                              {presentation}
+                              {bultos[product.id]?.[presentation]?.length
+                                ? ` · ${bultos[product.id][presentation].map((b) => b.nombre).join(' / ')}`
+                                : ''}
+                            </p>
                           )}
                         </div>
                         <Plus className="h-4 w-4 shrink-0 text-green-600" />
@@ -490,6 +510,22 @@ export function OrderEditModal({
                           </span>
                         )}
                       </div>
+                      {(() => {
+                        // Copia del pedido si la tiene; si no, bultos vigentes.
+                        const b = item.bultos ?? bultos[item.productId]?.[item.presentation ?? ''];
+                        const desc = describirBultos(item.quantity, b);
+                        if (!desc) return null;
+                        return (
+                          <p
+                            className={`mt-1 text-xs ${
+                              tieneSueltas(item.quantity, b) ? 'text-amber-700' : 'text-gray-500'
+                            }`}
+                          >
+                            {tieneSueltas(item.quantity, b) && '⚠ No es bulto completo: '}
+                            {desc}
+                          </p>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">

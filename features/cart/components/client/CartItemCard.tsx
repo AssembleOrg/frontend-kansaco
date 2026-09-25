@@ -9,6 +9,7 @@ import { useCart } from '../../hooks/useCart';
 import { Button } from '@/components/ui/button';
 import { PRICES_ENABLED } from '@/lib/flags';
 import { Minus, Plus, Trash2 } from 'lucide-react';
+import { BultoInfo, describirBultos, pasoBulto, tieneSueltas } from '@/lib/bultos';
 import {
   Dialog,
   DialogContent,
@@ -20,11 +21,13 @@ import {
 
 interface CartItemCardProps {
   item: CartItem;
+  /** Bultos de esta presentación (si tiene): el +/- avanza de a bulto. */
+  bultos?: BultoInfo[];
 }
 
 const DEBOUNCE_MS = 350;
 
-export const CartItemCard = ({ item }: CartItemCardProps) => {
+export const CartItemCard = ({ item, bultos }: CartItemCardProps) => {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeFromCart = useCartStore((s) => s.removeFromCart);
   const { formatPrice, getProductPrice } = useCart();
@@ -65,18 +68,20 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
     }, DEBOUNCE_MS);
   };
 
+  const paso = pasoBulto(bultos);
+
   const handleIncrease = () => {
-    const next = localQty + 1;
+    const next = localQty + paso;
     setLocalQty(next);
     flush(next);
   };
 
   const handleDecrease = () => {
-    if (localQty <= 1) {
+    if (localQty <= paso) {
       setConfirmOpen(true);
       return;
     }
-    const next = localQty - 1;
+    const next = localQty - paso;
     setLocalQty(next);
     flush(next);
   };
@@ -136,6 +141,16 @@ export const CartItemCard = ({ item }: CartItemCardProps) => {
               </span>
             )}
           </div>
+
+          {bultos && bultos.length > 0 && (
+            <p
+              className={`mt-1 text-[11px] ${
+                tieneSueltas(localQty, bultos) ? 'text-amber-700' : 'text-neutral-500'
+              }`}
+            >
+              {describirBultos(localQty, bultos)}
+            </p>
+          )}
 
           <div className="mt-auto flex items-center justify-between pt-2">
             <div

@@ -8,8 +8,18 @@ import { Product } from '@/types/product';
 import { Badge } from '@/components/ui/badge';
 import { AddToCartButton } from '@/features/cart/components/client/AddToCartButton';
 import { useCart } from '@/features/cart/hooks/useCart';
+import { BultoInfo, splitPresentations } from '@/lib/bultos';
 
-export default function ProductCard({ product }: { product: Product }) {
+const MAX_PRES = 3;
+
+export default function ProductCard({
+  product,
+  bultos,
+}: {
+  product: Product;
+  /** Bultos por presentación de este producto (si tiene). */
+  bultos?: Record<string, BultoInfo[]>;
+}) {
   const { formatPrice, getProductPrice } = useCart();
   const searchParams = useSearchParams();
   
@@ -76,6 +86,32 @@ export default function ProductCard({ product }: { product: Product }) {
         {product.sku && (
           <p className="mb-1 text-xs text-gray-500">SKU: {product.sku}</p>
         )}
+
+        {/* Presentaciones, con el bulto en que se venden */}
+        {(() => {
+          const pres = splitPresentations(product.presentation);
+          if (pres.length === 0) return null;
+          return (
+            <ul className="mb-3 flex flex-wrap gap-1.5" aria-label="Presentaciones">
+              {pres.slice(0, MAX_PRES).map((p) => (
+                <li
+                  key={p}
+                  className="inline-flex items-center gap-1 rounded-md border border-gray-200 bg-gray-50 px-1.5 py-0.5 text-[11px] text-gray-700"
+                >
+                  {p}
+                  {bultos?.[p]?.map((b) => (
+                    <span key={b.nombre} className="rounded bg-green-100 px-1 font-medium text-green-800">
+                      {b.nombre}
+                    </span>
+                  ))}
+                </li>
+              ))}
+              {pres.length > MAX_PRES && (
+                <li className="px-1 text-[11px] text-gray-500">+{pres.length - MAX_PRES} más</li>
+              )}
+            </ul>
+          );
+        })()}
 
         {/* Aplicación del producto */}
         {product.aplication && (

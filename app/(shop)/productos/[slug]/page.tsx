@@ -10,6 +10,8 @@ import { getProductBySlug, getProductImages, ProductImage, trackPublicEvent } fr
 import { AddToCartButton } from '@/features/cart/components/client/AddToCartButton';
 import { useCart } from '@/features/cart/hooks/useCart';
 import { useAuth } from '@/features/auth/hooks/useAuth';
+import { useBultos } from '@/features/cart/hooks/useBultos';
+import { splitPresentations } from '@/lib/bultos';
 import { Loader2, ArrowLeft, Info, Droplet, Box, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
@@ -20,6 +22,7 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoadingImages, setIsLoadingImages] = useState(true);
+  const bultos = useBultos([product.id])[product.id];
 
   getProductPrice(product); // Price calculation for future use
 
@@ -250,32 +253,38 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
                 </div>
               )}
 
-              {product.presentation && (() => {
-                const presentations = product.presentation
-                  .split(',')
-                  .map((pres) => pres.trim())
-                  .filter((pres) => pres.length > 0);
-                
+              {(() => {
+                // Informativo: la presentación y la cantidad se eligen al agregar al carrito.
+                const presentations = splitPresentations(product.presentation);
                 return presentations.length > 0 ? (
                   <div>
                     <div className="mb-2 flex items-center space-x-2">
                       <Box className="h-5 w-5 text-gray-500" />
                       <h2 className="text-lg font-semibold text-gray-900">
-                        Presentación
+                        Presentaciones
                       </h2>
                     </div>
-                    <div className="max-w-md">
-                      <select
-                        className="w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm transition-colors focus:border-green-500 focus:outline-none focus:ring-2 focus:ring-green-500/20 hover:border-gray-400"
-                        defaultValue={presentations[0]}
-                      >
-                        {presentations.map((option, optIndex) => (
-                          <option key={optIndex} value={option}>
-                            {option}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
+                    <ul className="max-w-md divide-y divide-gray-100 rounded-md border border-gray-200">
+                      {presentations.map((pres) => {
+                        const bs = bultos?.[pres] ?? [];
+                        return (
+                          <li key={pres} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
+                            <span className="text-gray-800">{pres}</span>
+                            <span className="flex flex-wrap justify-end gap-1 text-xs">
+                              {bs.length === 0 ? (
+                                <span className="text-gray-400">por unidad</span>
+                              ) : (
+                                bs.map((b) => (
+                                  <span key={b.nombre} className="rounded bg-green-100 px-1.5 py-0.5 font-medium text-green-800">
+                                    {b.nombre} ({b.unidades} u.)
+                                  </span>
+                                ))
+                              )}
+                            </span>
+                          </li>
+                        );
+                      })}
+                    </ul>
                   </div>
                 ) : null;
               })()}

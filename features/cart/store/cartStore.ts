@@ -255,7 +255,8 @@ export const useCartStore = create<CartState>()(
                     currentCart.id,
                     productId,
                     authState.token,
-                    Math.abs(delta)
+                    Math.abs(delta),
+                    existing.presentation ?? null
                   );
 
             if (ctrl.signal.aborted) return;
@@ -314,7 +315,8 @@ export const useCartStore = create<CartState>()(
               currentCart.id,
               productId,
               authState.token,
-              existing.quantity // remove ALL units of this item
+              existing.quantity, // remove ALL units of this item
+              existing.presentation ?? null // la fila exacta, no la primera del producto
             );
             if (ctrl.signal.aborted) return;
 

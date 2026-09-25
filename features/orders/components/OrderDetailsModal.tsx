@@ -42,6 +42,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { siteConfig } from '@/lib/site-config';
 import { downloadOrderPDF, updateOrder, updateOrderStatus } from '@/lib/api';
 import { toast } from 'sonner';
+import { describirBultos, tieneSueltas } from '@/lib/bultos';
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -439,6 +440,18 @@ export function OrderDetailsModal({
                               </span>
                             )}
                           </div>
+                          {describirBultos(item.quantity, item.bultos) && (
+                            <p
+                              className={`mt-1 text-xs ${
+                                tieneSueltas(item.quantity, item.bultos)
+                                  ? 'text-amber-700'
+                                  : 'text-gray-500'
+                              }`}
+                            >
+                              {tieneSueltas(item.quantity, item.bultos) && '⚠ No es bulto completo: '}
+                              {describirBultos(item.quantity, item.bultos)}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>

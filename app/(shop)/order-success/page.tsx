@@ -37,6 +37,7 @@ import { Order } from '@/types/order';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getOrderById } from '@/lib/api';
 import { toast } from 'sonner';
+import { describirBultos, tieneSueltas } from '@/lib/bultos';
 
 function OrderSuccessContent() {
   const { token } = useAuth();
@@ -272,9 +273,23 @@ function OrderSuccessContent() {
                 </h3>
                 <ul className="space-y-2">
                   {orderData.items.map((item, index) => (
-                    <li key={index} className="flex justify-between text-sm">
-                      <span className="text-gray-600">{item.productName}</span>
-                      <span className="font-medium text-gray-900">
+                    <li key={index} className="flex justify-between gap-3 text-sm">
+                      <span className="min-w-0">
+                        <span className="block text-gray-600">{item.productName}</span>
+                        {item.presentation && (
+                          <span className="block text-xs text-gray-500">{item.presentation}</span>
+                        )}
+                        {describirBultos(item.quantity, item.bultos) && (
+                          <span
+                            className={`block text-xs ${
+                              tieneSueltas(item.quantity, item.bultos) ? 'text-amber-700' : 'text-green-700'
+                            }`}
+                          >
+                            {describirBultos(item.quantity, item.bultos)}
+                          </span>
+                        )}
+                      </span>
+                      <span className="shrink-0 font-medium text-gray-900">
                         x{item.quantity}
                       </span>
                     </li>

@@ -14,6 +14,7 @@ import {
   UserCog,
   Settings,
   Percent,
+  Boxes,
   UserCheck,
   Inbox,
 } from 'lucide-react';
@@ -43,6 +44,7 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Catálogo',
     items: [
       { label: 'Productos', href: '/admin/products', icon: Package },
+      { label: 'Bultos', href: '/admin/bultos', icon: Boxes },
       { label: 'Categorías', href: '/admin/categories', icon: Tag },
       { label: 'Imágenes', href: '/admin/images', icon: Image },
       { label: 'Listas de precios', href: '/admin/pricing', icon: Percent },

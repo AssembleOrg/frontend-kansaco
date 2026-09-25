@@ -1,5 +1,6 @@
 'use client';
 
+import { describirBultos } from '@/lib/bultos';
 import { Order } from '@/types/order';
 import { X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -92,7 +93,13 @@ export default function OrderDetailModal({
                     </p>
                     <p className="text-sm text-gray-600">
                       Cantidad: {item.quantity}
+                      {item.presentation && ` · ${item.presentation}`}
                     </p>
+                    {describirBultos(item.quantity, item.bultos) && (
+                      <p className="text-xs text-gray-500">
+                        {describirBultos(item.quantity, item.bultos)}
+                      </p>
+                    )}
                   </div>
                 </div>
               ))}

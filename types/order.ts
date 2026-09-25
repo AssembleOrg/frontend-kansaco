@@ -4,6 +4,8 @@ export interface OrderItem {
   quantity: number;
   unitPrice?: number;
   presentation?: string;
+  /** Copia de los bultos al momento del pedido (la calcula el backend). */
+  bultos?: { nombre: string; unidades: number }[];
 }
 
 export interface OrderContactInfo {
