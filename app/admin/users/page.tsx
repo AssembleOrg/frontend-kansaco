@@ -20,6 +20,7 @@ const ASSIGNABLE_ROLES: { value: UserRole; label: string }[] = [
   { value: 'SUBMAYORISTA', label: 'Submayorista' },
   { value: 'REVENDEDOR', label: 'Revendedor' },
   { value: 'TALLER', label: 'Taller' },
+  { value: 'LUBRICENTRO', label: 'Lubricentro' },
   { value: 'ASISTENTE', label: 'Asistente' },
 ];
 

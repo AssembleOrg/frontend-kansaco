@@ -7,7 +7,8 @@ export type UserRole =
   | 'ASISTENTE'
   | 'SUBMAYORISTA'
   | 'REVENDEDOR'
-  | 'TALLER';
+  | 'TALLER'
+  | 'LUBRICENTRO';
 
 // Categorías comerciales B2B que operan (ven precios y pueden comprar).
 // CLIENTE_MINORISTA = usuario creado/pendiente sin categoría (Kansaco no vende minorista).
@@ -16,6 +17,7 @@ export const B2B_ROLES: readonly UserRole[] = [
   'SUBMAYORISTA',
   'REVENDEDOR',
   'TALLER',
+  'LUBRICENTRO',
 ];
 
 export const esCategoriaB2B = (rol: UserRole | null | undefined): boolean =>

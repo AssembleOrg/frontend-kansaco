@@ -23,6 +23,7 @@ const ROLE_LABELS: Partial<Record<UserRole, string>> = {
   SUBMAYORISTA: 'Submayorista',
   REVENDEDOR: 'Revendedor',
   TALLER: 'Taller',
+  LUBRICENTRO: 'Lubricentro',
 };
 
 const formatARS = (v: number) =>
