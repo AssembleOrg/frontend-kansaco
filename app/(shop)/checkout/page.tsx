@@ -35,6 +35,7 @@ import { AR_PROVINCES } from '@/lib/constants/provinces';
 import { normalizeText } from '@/lib/geo';
 import { useBultos } from '@/features/cart/hooks/useBultos';
 import { describirBultos, tieneSueltas } from '@/lib/bultos';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/constants/images';
 
 const SITUACIONES_AFIP = [
   'No Inscripto',
@@ -836,7 +837,7 @@ function OrderItemsList({ items }: { items: SummaryItem[] }) {
         >
           <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-neutral-100 bg-neutral-50">
             <Image
-              src={item.product.imageUrl || '/sauberatras.jpg'}
+              src={item.product.imageUrl || DEFAULT_PRODUCT_IMAGE}
               alt={item.product.name}
               fill
               sizes="48px"

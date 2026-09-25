@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button';
 import { PRICES_ENABLED } from '@/lib/flags';
 import { Minus, Plus, Trash2 } from 'lucide-react';
 import { BultoInfo, describirBultos, pasoBulto, tieneSueltas } from '@/lib/bultos';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/constants/images';
 import {
   Dialog,
   DialogContent,
@@ -105,7 +106,7 @@ export const CartItemCard = ({ item, bultos }: CartItemCardProps) => {
           className="relative h-20 w-20 flex-shrink-0 overflow-hidden rounded-lg border border-neutral-100 bg-neutral-50"
         >
           <Image
-            src={product.imageUrl || '/sauberatras.jpg'}
+            src={product.imageUrl || DEFAULT_PRODUCT_IMAGE}
             alt={product.name}
             fill
             sizes="80px"

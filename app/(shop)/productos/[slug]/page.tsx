@@ -16,6 +16,7 @@ import { Loader2, ArrowLeft, Info, Droplet, Box, ChevronLeft, ChevronRight } fro
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/constants/images';
 
 function ProductDetailView({ product, backUrl }: { product: Product; backUrl: string }) {
   const { getProductPrice } = useCart();
@@ -67,7 +68,7 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
     }
 
     // Fallback: imagen del producto o placeholder
-    return product.imageUrl || '/sauberatras.jpg';
+    return product.imageUrl || DEFAULT_PRODUCT_IMAGE;
   })();
 
   const handlePreviousImage = () => {

@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { AddToCartButton } from '@/features/cart/components/client/AddToCartButton';
 import { useCart } from '@/features/cart/hooks/useCart';
 import { BultoInfo, splitPresentations } from '@/lib/bultos';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/constants/images';
 
 const MAX_PRES = 3;
 
@@ -37,7 +38,7 @@ export default function ProductCard({
   
   const productDetailUrl = getProductDetailUrl();
 
-  const imageUrl = product.imageUrl || '/sauberatras.jpg';
+  const imageUrl = product.imageUrl || DEFAULT_PRODUCT_IMAGE;
   const imageAlt = product.name;
     // Preferir usar categories si está disponible, sino usar category
   const categoryNames = product.categories && product.categories.length > 0
