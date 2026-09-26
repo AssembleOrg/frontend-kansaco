@@ -29,7 +29,7 @@ import {
   deleteProduct,
   deleteProductImage,
   getBultos,
-  getBultosForProducts,
+  getAllBultosForProducts,
   getProductImages,
   getProductsPaginated,
   ImageListItem,
@@ -125,7 +125,7 @@ export default function ProductsPage() {
         if (!res.hasNext) break;
       }
       const [map, lista] = await Promise.all([
-        getBultosForProducts(all.map((p) => p.id)),
+        getAllBultosForProducts(token),
         getBultos(token),
       ]);
       setProducts(all);

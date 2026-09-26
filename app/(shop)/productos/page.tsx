@@ -116,8 +116,6 @@ function ProductsContent() {
     };
   }, [token]);
 
-  const bultos = useBultos(products.map((p) => p.id), products.length > 0);
-
   const openCartParam = searchParams.get('openCart');
   useEffect(() => {
     if (openCartParam === 'true') {
@@ -181,6 +179,8 @@ function ProductsContent() {
   const totalPages = Math.max(1, Math.ceil(sorted.length / ITEMS_PER_PAGE));
   const page = Math.min(currentPage, totalPages);
   const currentProducts = sorted.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
+  // Solo los bultos de la página visible: el pedido no crece con el catálogo.
+  const bultos = useBultos(currentProducts.map((p) => p.id), currentProducts.length > 0);
 
   const handlePageChange = (n: number) => {
     setParams({ page: String(n) }, true);

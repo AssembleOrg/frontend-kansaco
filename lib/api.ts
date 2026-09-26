@@ -2961,6 +2961,10 @@ export async function getBultosForProducts(productIds: number[]): Promise<Bultos
   return bultoFetch<BultosPorProducto>(`/products?ids=${ids.join(',')}`, null);
 }
 
+/** Staff: bultos de todo el catálogo en un pedido. */
+export const getAllBultosForProducts = (token: string) =>
+  bultoFetch<BultosPorProducto>('/asignaciones', token);
+
 export const getBultos = (token: string) => bultoFetch<BultoAdmin[]>('', token);
 
 export const getPresentacionesConBultos = (token: string) =>
