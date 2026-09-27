@@ -506,8 +506,8 @@ export function OrderEditModal({
 
             {isStaff &&
               (excepcional ? (
-                <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
-                  <p className="text-sm font-medium text-amber-900">Producto excepcional (a cotizar)</p>
+                <div className="space-y-2 rounded-lg border border-[#16a245]/30 bg-[#16a245]/5 p-3">
+                  <p className="text-sm font-medium text-[#0d7a32]">Producto excepcional (a cotizar)</p>
                   <Textarea
                     aria-label="Descripción / notas"
                     placeholder="Descripción / notas (ej. 3 bidones sueltos de Kansaco X)"
@@ -548,7 +548,13 @@ export function OrderEditModal({
                     <Button type="button" variant="ghost" size="sm" onClick={() => setExcepcional(null)}>
                       Cancelar
                     </Button>
-                    <Button type="button" size="sm" onClick={handleAddExcepcional} disabled={isSubmitting}>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAddExcepcional}
+                      disabled={isSubmitting}
+                      className="bg-[#16a245] text-white hover:bg-[#0d7a32]"
+                    >
                       Agregar
                     </Button>
                   </div>
@@ -558,8 +564,9 @@ export function OrderEditModal({
                   type="button"
                   variant="outline"
                   size="sm"
-                  onClick={() => setExcepcional({ desc: '', qty: '1', envase: '' })}
+                  onClick={() => setExcepcional({ desc: '', qty: '', envase: '' })}
                   disabled={isSubmitting}
+                  className="border-[#16a245]/40 bg-[#16a245]/10 text-[#0d7a32] hover:bg-[#16a245]/20 hover:text-[#0d7a32]"
                 >
                   <Plus className="mr-1 h-4 w-4" /> Agregar producto excepcional
                 </Button>
@@ -586,7 +593,7 @@ export function OrderEditModal({
                       </p>
                       <div className="flex flex-wrap gap-2 text-sm text-gray-500 mt-1">
                         {item.productId == null && (
-                          <span className="rounded bg-amber-100 px-1.5 text-xs font-medium text-amber-800">
+                          <span className="rounded-full border border-[#16a245]/30 bg-[#16a245]/10 px-2 py-0.5 text-xs font-medium text-[#0d7a32]">
                             Excepcional · a cotizar
                           </span>
                         )}

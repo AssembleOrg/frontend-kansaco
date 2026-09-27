@@ -435,7 +435,7 @@ export function OrderDetailsModal({
                               Cantidad: {item.quantity}
                             </span>
                             {item.productId == null && (
-                              <span className="rounded bg-amber-100 px-1.5 text-xs font-medium text-amber-800">
+                              <span className="rounded-full border border-[#16a245]/30 bg-[#16a245]/10 px-2 py-0.5 text-xs font-medium text-[#0d7a32]">
                                 Excepcional · a cotizar
                               </span>
                             )}
