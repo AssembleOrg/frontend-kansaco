@@ -80,6 +80,9 @@ const ENVASES: [string, RegExp][] = [
   ['Aerosol', /aerosol|aereosol/],
 ];
 
+/** Tipos de envase para el producto excepcional (se puede escribir otro). */
+export const TIPOS_ENVASE = ENVASES.map(([nombre]) => nombre);
+
 /** Tipo de envase a partir del texto libre ("Bidon de 4 litros" → "Bidón"). null si no se reconoce ("4L", "GRADO 2"). */
 export function tipoEnvase(presentation: string): string | null {
   const t = presentation.toLowerCase();

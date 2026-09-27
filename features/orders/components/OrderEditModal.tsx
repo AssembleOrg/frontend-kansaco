@@ -21,13 +21,15 @@ import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Plus, Minus, Trash2, Package, Search } from 'lucide-react';
 import { useBultos } from '@/features/cart/hooks/useBultos';
-import { describirBultos, pasoBulto, splitPresentations, tieneSueltas } from '@/lib/bultos';
+import { describirBultos, pasoBulto, splitPresentations, tieneSueltas, TIPOS_ENVASE } from '@/lib/bultos';
 
 interface OrderEditModalProps {
   order: Order;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /** Staff (ADMIN/ASISTENTE): puede agregar productos excepcionales. */
+  isStaff?: boolean;
 }
 
 export function OrderEditModal({
@@ -35,6 +37,7 @@ export function OrderEditModal({
   isOpen,
   onClose,
   onSuccess,
+  isStaff = false,
 }: OrderEditModalProps) {
   const { token } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -60,8 +63,10 @@ export function OrderEditModal({
   // Productos de la orden
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
   // Bultos de los productos del pedido y de la búsqueda (para desglose y paso al agregar).
+  // Producto excepcional (solo staff): descripción, cantidad y envase.
+  const [excepcional, setExcepcional] = useState<{ desc: string; qty: string; envase: string } | null>(null);
   const bultos = useBultos([
-    ...orderItems.map((i) => i.productId),
+    ...orderItems.flatMap((i) => (i.productId == null ? [] : [i.productId])),
     ...results.map((p) => p.id),
   ]);
 
@@ -156,6 +161,21 @@ export function OrderEditModal({
       return;
     }
     setOrderItems(orderItems.filter((_, i) => i !== index));
+  };
+
+  const handleAddExcepcional = () => {
+    if (!excepcional) return;
+    const desc = excepcional.desc.trim();
+    const qty = parseInt(excepcional.qty);
+    if (!desc || !(qty >= 1)) {
+      toast.error('Completá la descripción y una cantidad mayor a 0');
+      return;
+    }
+    setOrderItems([
+      ...orderItems,
+      { productId: null, productName: desc, quantity: qty, presentation: excepcional.envase.trim() || undefined },
+    ]);
+    setExcepcional(null);
   };
 
   // Una opción por presentación: el mismo producto puede ir en varias.
@@ -484,6 +504,67 @@ export function OrderEditModal({
               )}
             </div>
 
+            {isStaff &&
+              (excepcional ? (
+                <div className="space-y-2 rounded-lg border border-amber-200 bg-amber-50 p-3">
+                  <p className="text-sm font-medium text-amber-900">Producto excepcional (a cotizar)</p>
+                  <Textarea
+                    aria-label="Descripción / notas"
+                    placeholder="Descripción / notas (ej. 3 bidones sueltos de Kansaco X)"
+                    value={excepcional.desc}
+                    onChange={(e) => setExcepcional({ ...excepcional, desc: e.target.value })}
+                    maxLength={500}
+                    rows={2}
+                    disabled={isSubmitting}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Input
+                      aria-label="Cantidad"
+                      type="number"
+                      min="1"
+                      placeholder="Cantidad"
+                      value={excepcional.qty}
+                      onChange={(e) => setExcepcional({ ...excepcional, qty: e.target.value })}
+                      className="w-28"
+                      disabled={isSubmitting}
+                    />
+                    <Input
+                      aria-label="Tipo de envase"
+                      list="tipos-envase"
+                      placeholder="Envase (elegí o escribí)"
+                      value={excepcional.envase}
+                      onChange={(e) => setExcepcional({ ...excepcional, envase: e.target.value })}
+                      maxLength={100}
+                      className="min-w-0 flex-1"
+                      disabled={isSubmitting}
+                    />
+                    <datalist id="tipos-envase">
+                      {TIPOS_ENVASE.map((t) => (
+                        <option key={t} value={t} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setExcepcional(null)}>
+                      Cancelar
+                    </Button>
+                    <Button type="button" size="sm" onClick={handleAddExcepcional} disabled={isSubmitting}>
+                      Agregar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExcepcional({ desc: '', qty: '1', envase: '' })}
+                  disabled={isSubmitting}
+                >
+                  <Plus className="mr-1 h-4 w-4" /> Agregar producto excepcional
+                </Button>
+              ))}
+
             {orderItems.length === 0 ? (
               <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg bg-gray-50">
                 <Package className="mx-auto h-12 w-12 text-gray-400 mb-2" />
@@ -496,7 +577,7 @@ export function OrderEditModal({
               <div className="space-y-2">
                 {orderItems.map((item, index) => (
                   <div
-                    key={`${item.productId}-${index}`}
+                    key={index}
                     className="flex w-full min-w-0 flex-nowrap items-center gap-3 border border-gray-200 rounded-lg p-3 bg-white"
                   >
                     <div className="min-w-0 flex-1">
@@ -504,6 +585,11 @@ export function OrderEditModal({
                         {item.productName}
                       </p>
                       <div className="flex flex-wrap gap-2 text-sm text-gray-500 mt-1">
+                        {item.productId == null && (
+                          <span className="rounded bg-amber-100 px-1.5 text-xs font-medium text-amber-800">
+                            Excepcional · a cotizar
+                          </span>
+                        )}
                         {item.presentation && (
                           <span className="flex items-center gap-1">
                             {item.presentation}
@@ -512,7 +598,10 @@ export function OrderEditModal({
                       </div>
                       {(() => {
                         // Copia del pedido si la tiene; si no, bultos vigentes.
-                        const b = item.bultos ?? bultos[item.productId]?.[item.presentation ?? ''];
+                        const b =
+                          item.productId == null
+                            ? undefined
+                            : item.bultos ?? bultos[item.productId]?.[item.presentation ?? ''];
                         const desc = describirBultos(item.quantity, b);
                         if (!desc) return null;
                         return (

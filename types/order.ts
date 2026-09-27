@@ -1,5 +1,6 @@
 export interface OrderItem {
-  productId: number;
+  /** null = producto excepcional (línea libre que carga el staff, sin precio ni bultos). */
+  productId: number | null;
   productName: string;
   quantity: number;
   unitPrice?: number;

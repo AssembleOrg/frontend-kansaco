@@ -434,6 +434,11 @@ export function OrderDetailsModal({
                               <Package className="h-3.5 w-3.5" />
                               Cantidad: {item.quantity}
                             </span>
+                            {item.productId == null && (
+                              <span className="rounded bg-amber-100 px-1.5 text-xs font-medium text-amber-800">
+                                Excepcional · a cotizar
+                              </span>
+                            )}
                             {item.presentation && (
                               <span className="flex items-center gap-1">
                                 Presentación: {item.presentation}
@@ -603,6 +608,7 @@ export function OrderDetailsModal({
       {isPendiente && (
         <OrderEditModal
           order={order}
+          isStaff={isStaff}
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={() => {

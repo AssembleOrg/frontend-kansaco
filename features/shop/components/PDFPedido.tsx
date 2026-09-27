@@ -343,6 +343,7 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
                   <Text style={styles.colQuantity}>{item.quantity}</Text>
                   <Text style={styles.colName}>
                     {item.productName}
+                    {item.productId == null && ' (excepcional, a cotizar)'}
                     {(item.presentation || describirBultos(item.quantity, item.bultos)) && (
                       <Text style={{ fontSize: 7, color: '#666' }}>
                         {'\n'}

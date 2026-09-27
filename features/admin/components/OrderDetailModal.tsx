@@ -94,6 +94,7 @@ export default function OrderDetailModal({
                     <p className="text-sm text-gray-600">
                       Cantidad: {item.quantity}
                       {item.presentation && ` · ${item.presentation}`}
+                      {item.productId == null && ' · Excepcional (a cotizar)'}
                     </p>
                     {describirBultos(item.quantity, item.bultos) && (
                       <p className="text-xs text-gray-500">
