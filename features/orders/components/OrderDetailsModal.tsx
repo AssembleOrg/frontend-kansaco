@@ -42,6 +42,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { siteConfig } from '@/lib/site-config';
 import { downloadOrderPDF, updateOrder, updateOrderStatus } from '@/lib/api';
 import { toast } from 'sonner';
+import { describirBultos, tieneSueltas } from '@/lib/bultos';
 
 interface OrderDetailsModalProps {
   order: Order | null;
@@ -433,12 +434,29 @@ export function OrderDetailsModal({
                               <Package className="h-3.5 w-3.5" />
                               Cantidad: {item.quantity}
                             </span>
+                            {item.productId == null && (
+                              <span className="rounded-full border border-[#16a245]/30 bg-[#16a245]/10 px-2 py-0.5 text-xs font-medium text-[#0d7a32]">
+                                Excepcional · a cotizar
+                              </span>
+                            )}
                             {item.presentation && (
                               <span className="flex items-center gap-1">
                                 Presentación: {item.presentation}
                               </span>
                             )}
                           </div>
+                          {describirBultos(item.quantity, item.bultos) && (
+                            <p
+                              className={`mt-1 text-xs ${
+                                tieneSueltas(item.quantity, item.bultos)
+                                  ? 'text-amber-700'
+                                  : 'text-gray-500'
+                              }`}
+                            >
+                              {tieneSueltas(item.quantity, item.bultos) && '⚠ No es bulto completo: '}
+                              {describirBultos(item.quantity, item.bultos)}
+                            </p>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -590,6 +608,7 @@ export function OrderDetailsModal({
       {isPendiente && (
         <OrderEditModal
           order={order}
+          isStaff={isStaff}
           isOpen={isEditModalOpen}
           onClose={() => setIsEditModalOpen(false)}
           onSuccess={() => {

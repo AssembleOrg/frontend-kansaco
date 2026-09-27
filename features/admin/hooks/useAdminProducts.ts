@@ -199,68 +199,6 @@ export function useAdminProducts(token: string | null) {
     [token, loadProducts, pagination.page, searchQuery, selectedCategory]
   );
 
-  // Actualizar precios en masa
-  const bulkUpdatePrices = useCallback(
-    async (
-      productIds: number[],
-      updateType: 'percentage' | 'fixed',
-      operator: 'increase' | 'decrease',
-      value: number
-    ) => {
-      setError(null);
-      try {
-        // Validar que el valor sea positivo
-        if (value <= 0) {
-          throw new Error('El valor debe ser mayor a 0');
-        }
-
-        // Actualizar localmente (sin backend, usamos mock)
-        setProducts((prev) =>
-          prev.map((product) => {
-            if (!productIds.includes(product.id)) {
-              return product;
-            }
-
-            const currentPrice = product.price ?? 0;
-            let newPrice = currentPrice;
-
-            if (updateType === 'percentage') {
-              const change = (currentPrice * value) / 100;
-              newPrice =
-                operator === 'increase'
-                  ? currentPrice + change
-                  : currentPrice - change;
-            } else {
-              const change = value;
-              newPrice =
-                operator === 'increase'
-                  ? currentPrice + change
-                  : currentPrice - change;
-            }
-
-            // No permitir precios negativos
-            newPrice = Math.max(0, newPrice);
-
-            return {
-              ...product,
-              price: newPrice,
-            };
-          })
-        );
-
-        // En el futuro, aquí iría la llamada al backend
-        // await bulkUpdateProductPrices(token, productIds, updateType, operator, value);
-      } catch (err) {
-        const errorMessage =
-          err instanceof Error ? err.message : 'Error updating prices';
-        setError(errorMessage);
-        console.error('Error bulk updating prices:', err);
-        throw err;
-      }
-    },
-    []
-  );
-
   return {
     products,
     isLoading,
@@ -275,6 +213,5 @@ export function useAdminProducts(token: string | null) {
     createNewProduct,
     editProduct,
     removeProduct,
-    bulkUpdatePrices,
   };
 }

@@ -33,6 +33,9 @@ import {
 import { estaFrenado, MENSAJE_BLOQUEO } from '@/types/auth';
 import { AR_PROVINCES } from '@/lib/constants/provinces';
 import { normalizeText } from '@/lib/geo';
+import { useBultos } from '@/features/cart/hooks/useBultos';
+import { describirBultos, tieneSueltas } from '@/lib/bultos';
+import { DEFAULT_PRODUCT_IMAGE } from '@/lib/constants/images';
 
 const SITUACIONES_AFIP = [
   'No Inscripto',
@@ -824,6 +827,7 @@ type SummaryItem = {
 };
 
 function OrderItemsList({ items }: { items: SummaryItem[] }) {
+  const bultos = useBultos(items.map((i) => i.product.id));
   return (
     <ul className="divide-y divide-neutral-100">
       {items.map((item) => (
@@ -833,7 +837,7 @@ function OrderItemsList({ items }: { items: SummaryItem[] }) {
         >
           <div className="relative h-12 w-12 flex-shrink-0 overflow-hidden rounded-md border border-neutral-100 bg-neutral-50">
             <Image
-              src={item.product.imageUrl || '/sauberatras.jpg'}
+              src={item.product.imageUrl || DEFAULT_PRODUCT_IMAGE}
               alt={item.product.name}
               fill
               sizes="48px"
@@ -856,10 +860,30 @@ function OrderItemsList({ items }: { items: SummaryItem[] }) {
                 </>
               )}
             </div>
+            <BultosLine
+              quantity={item.quantity}
+              bultos={bultos[item.product.id]?.[item.presentation ?? '']}
+            />
           </div>
           <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-green-600" />
         </li>
       ))}
     </ul>
+  );
+}
+
+function BultosLine({
+  quantity,
+  bultos,
+}: {
+  quantity: number;
+  bultos?: { nombre: string; unidades: number }[];
+}) {
+  const desc = describirBultos(quantity, bultos);
+  if (!desc) return null;
+  return (
+    <p className={`text-[11px] ${tieneSueltas(quantity, bultos) ? 'text-amber-700' : 'text-neutral-500'}`}>
+      {desc}
+    </p>
   );
 }

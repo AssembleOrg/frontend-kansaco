@@ -20,12 +20,16 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Separator } from '@/components/ui/separator';
 import { Loader2, Plus, Minus, Trash2, Package, Search } from 'lucide-react';
+import { useBultos } from '@/features/cart/hooks/useBultos';
+import { describirBultos, pasoBulto, splitPresentations, tieneSueltas, TIPOS_ENVASE } from '@/lib/bultos';
 
 interface OrderEditModalProps {
   order: Order;
   isOpen: boolean;
   onClose: () => void;
   onSuccess: () => void;
+  /** Staff (ADMIN/ASISTENTE): puede agregar productos excepcionales. */
+  isStaff?: boolean;
 }
 
 export function OrderEditModal({
@@ -33,6 +37,7 @@ export function OrderEditModal({
   isOpen,
   onClose,
   onSuccess,
+  isStaff = false,
 }: OrderEditModalProps) {
   const { token } = useAuth();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -57,6 +62,13 @@ export function OrderEditModal({
 
   // Productos de la orden
   const [orderItems, setOrderItems] = useState<OrderItem[]>([]);
+  // Bultos de los productos del pedido y de la búsqueda (para desglose y paso al agregar).
+  // Producto excepcional (solo staff): descripción, cantidad y envase.
+  const [excepcional, setExcepcional] = useState<{ desc: string; qty: string; envase: string } | null>(null);
+  const bultos = useBultos([
+    ...orderItems.flatMap((i) => (i.productId == null ? [] : [i.productId])),
+    ...results.map((p) => p.id),
+  ]);
 
   const isMayorista = order.customerType === 'CLIENTE_MAYORISTA';
 
@@ -151,16 +163,39 @@ export function OrderEditModal({
     setOrderItems(orderItems.filter((_, i) => i !== index));
   };
 
-  const handleAddProduct = (product: Product) => {
-    // Verificar si el producto ya está en la orden
+  const handleAddExcepcional = () => {
+    if (!excepcional) return;
+    const desc = excepcional.desc.trim();
+    const qty = parseInt(excepcional.qty);
+    if (!desc || !(qty >= 1)) {
+      toast.error('Completá la descripción y una cantidad mayor a 0');
+      return;
+    }
+    setOrderItems([
+      ...orderItems,
+      { productId: null, productName: desc, quantity: qty, presentation: excepcional.envase.trim() || undefined },
+    ]);
+    setExcepcional(null);
+  };
+
+  // Una opción por presentación: el mismo producto puede ir en varias.
+  const searchOptions = results.flatMap((product) => {
+    const pres = splitPresentations(product.presentation);
+    return (pres.length ? pres : ['']).map((presentation) => ({ product, presentation }));
+  });
+
+  const handleAddProduct = (product: Product, presentation: string) => {
+    const paso = pasoBulto(bultos[product.id]?.[presentation]);
+    // Verificar si el producto + presentación ya está en la orden
     const existingItemIndex = orderItems.findIndex(
-      (item) => item.productId === product.id
+      (item) =>
+        item.productId === product.id && (item.presentation ?? '') === presentation
     );
 
     if (existingItemIndex !== -1) {
-      // Si ya existe, incrementar la cantidad
+      // Si ya existe, sumar un bulto (o una unidad si no tiene bultos)
       const updated = [...orderItems];
-      updated[existingItemIndex].quantity += 1;
+      updated[existingItemIndex].quantity += paso;
       setOrderItems(updated);
       toast.success('Cantidad actualizada', {
         description: `Se incrementó la cantidad de ${product.name}`,
@@ -173,8 +208,8 @@ export function OrderEditModal({
         {
           productId: product.id,
           productName: product.name,
-          quantity: 1,
-          presentation: product.presentation || undefined,
+          quantity: paso,
+          presentation: presentation || undefined,
           unitPrice: product.price || undefined,
         },
       ]);
@@ -440,11 +475,11 @@ export function OrderEditModal({
                       No se encontraron productos.
                     </p>
                   ) : (
-                    results.map((product) => (
+                    searchOptions.map(({ product, presentation }) => (
                       <button
-                        key={product.id}
+                        key={`${product.id}-${presentation}`}
                         type="button"
-                        onClick={() => handleAddProduct(product)}
+                        onClick={() => handleAddProduct(product, presentation)}
                         disabled={isSubmitting}
                         className="flex w-full items-center gap-3 border-b border-gray-100 px-3 py-2 text-left last:border-b-0 hover:bg-green-50 disabled:opacity-50"
                       >
@@ -452,8 +487,13 @@ export function OrderEditModal({
                           <p className="line-clamp-2 text-sm font-medium text-gray-900">
                             {product.name}
                           </p>
-                          {product.presentation && (
-                            <p className="text-xs text-gray-500">{product.presentation}</p>
+                          {presentation && (
+                            <p className="text-xs text-gray-500">
+                              {presentation}
+                              {bultos[product.id]?.[presentation]?.length
+                                ? ` · ${bultos[product.id][presentation].map((b) => b.nombre).join(' / ')}`
+                                : ''}
+                            </p>
                           )}
                         </div>
                         <Plus className="h-4 w-4 shrink-0 text-green-600" />
@@ -463,6 +503,74 @@ export function OrderEditModal({
                 </div>
               )}
             </div>
+
+            {isStaff &&
+              (excepcional ? (
+                <div className="space-y-2 rounded-lg border border-[#16a245]/30 bg-[#16a245]/5 p-3">
+                  <p className="text-sm font-medium text-[#0d7a32]">Producto excepcional (a cotizar)</p>
+                  <Textarea
+                    aria-label="Descripción / notas"
+                    placeholder="Descripción / notas (ej. 3 bidones sueltos de Kansaco X)"
+                    value={excepcional.desc}
+                    onChange={(e) => setExcepcional({ ...excepcional, desc: e.target.value })}
+                    maxLength={500}
+                    rows={2}
+                    disabled={isSubmitting}
+                  />
+                  <div className="flex flex-wrap gap-2">
+                    <Input
+                      aria-label="Cantidad"
+                      type="number"
+                      min="1"
+                      placeholder="Cantidad"
+                      value={excepcional.qty}
+                      onChange={(e) => setExcepcional({ ...excepcional, qty: e.target.value })}
+                      className="w-28"
+                      disabled={isSubmitting}
+                    />
+                    <Input
+                      aria-label="Tipo de envase"
+                      list="tipos-envase"
+                      placeholder="Envase (elegí o escribí)"
+                      value={excepcional.envase}
+                      onChange={(e) => setExcepcional({ ...excepcional, envase: e.target.value })}
+                      maxLength={100}
+                      className="min-w-0 flex-1"
+                      disabled={isSubmitting}
+                    />
+                    <datalist id="tipos-envase">
+                      {TIPOS_ENVASE.map((t) => (
+                        <option key={t} value={t} />
+                      ))}
+                    </datalist>
+                  </div>
+                  <div className="flex justify-end gap-2">
+                    <Button type="button" variant="ghost" size="sm" onClick={() => setExcepcional(null)}>
+                      Cancelar
+                    </Button>
+                    <Button
+                      type="button"
+                      size="sm"
+                      onClick={handleAddExcepcional}
+                      disabled={isSubmitting}
+                      className="bg-[#16a245] text-white hover:bg-[#0d7a32]"
+                    >
+                      Agregar
+                    </Button>
+                  </div>
+                </div>
+              ) : (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setExcepcional({ desc: '', qty: '', envase: '' })}
+                  disabled={isSubmitting}
+                  className="border-[#16a245]/40 bg-[#16a245]/10 text-[#0d7a32] hover:bg-[#16a245]/20 hover:text-[#0d7a32]"
+                >
+                  <Plus className="mr-1 h-4 w-4" /> Agregar producto excepcional
+                </Button>
+              ))}
 
             {orderItems.length === 0 ? (
               <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg bg-gray-50">
@@ -476,7 +584,7 @@ export function OrderEditModal({
               <div className="space-y-2">
                 {orderItems.map((item, index) => (
                   <div
-                    key={`${item.productId}-${index}`}
+                    key={index}
                     className="flex w-full min-w-0 flex-nowrap items-center gap-3 border border-gray-200 rounded-lg p-3 bg-white"
                   >
                     <div className="min-w-0 flex-1">
@@ -484,12 +592,36 @@ export function OrderEditModal({
                         {item.productName}
                       </p>
                       <div className="flex flex-wrap gap-2 text-sm text-gray-500 mt-1">
+                        {item.productId == null && (
+                          <span className="rounded-full border border-[#16a245]/30 bg-[#16a245]/10 px-2 py-0.5 text-xs font-medium text-[#0d7a32]">
+                            Excepcional · a cotizar
+                          </span>
+                        )}
                         {item.presentation && (
                           <span className="flex items-center gap-1">
                             {item.presentation}
                           </span>
                         )}
                       </div>
+                      {(() => {
+                        // Copia del pedido si la tiene; si no, bultos vigentes.
+                        const b =
+                          item.productId == null
+                            ? undefined
+                            : item.bultos ?? bultos[item.productId]?.[item.presentation ?? ''];
+                        const desc = describirBultos(item.quantity, b);
+                        if (!desc) return null;
+                        return (
+                          <p
+                            className={`mt-1 text-xs ${
+                              tieneSueltas(item.quantity, b) ? 'text-amber-700' : 'text-gray-500'
+                            }`}
+                          >
+                            {tieneSueltas(item.quantity, b) && '⚠ No es bulto completo: '}
+                            {desc}
+                          </p>
+                        );
+                      })()}
                     </div>
 
                     <div className="flex shrink-0 items-center gap-2">

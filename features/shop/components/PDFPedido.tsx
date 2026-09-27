@@ -1,5 +1,6 @@
 'use client';
 
+import { describirBultos } from '@/lib/bultos';
 import React, { useState } from 'react';
 import {
   Document,
@@ -340,7 +341,18 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
               {order.items.map((item, index) => (
                 <View key={index} style={styles.tableRow}>
                   <Text style={styles.colQuantity}>{item.quantity}</Text>
-                  <Text style={styles.colName}>{item.productName}</Text>
+                  <Text style={styles.colName}>
+                    {item.productName}
+                    {item.productId == null && ' (excepcional, a cotizar)'}
+                    {(item.presentation || describirBultos(item.quantity, item.bultos)) && (
+                      <Text style={{ fontSize: 7, color: '#666' }}>
+                        {'\n'}
+                        {[item.presentation, describirBultos(item.quantity, item.bultos)]
+                          .filter(Boolean)
+                          .join(' · ')}
+                      </Text>
+                    )}
+                  </Text>
                 </View>
               ))}
             </View>

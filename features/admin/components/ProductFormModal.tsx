@@ -19,6 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import ImageSelectionModal from './ImageSelectionModal';
+import { ProductBultosEditor } from './ProductBultosEditor';
 import {
   ImageListItem,
   getProductImages,
@@ -689,6 +690,13 @@ export default function ProductFormModal({
                 value={formData.presentation}
                 onChange={handleInputChange}
                 placeholder="Ej: 1L, 5L, 20L"
+                disabled={isLoading}
+              />
+              <ProductBultosEditor
+                token={token}
+                productId={product?.id}
+                savedPresentation={product?.presentation ?? ''}
+                draftPresentation={formData.presentation}
                 disabled={isLoading}
               />
             </div>
