@@ -1,3 +1,5 @@
+import type { UserRole } from './auth';
+
 export interface OrderItem {
   /** null = producto excepcional (línea libre que carga el staff, sin precio ni bultos). */
   productId: number | null;
@@ -71,6 +73,8 @@ export interface Order {
   notes?: string;
   createdAt: string;
   updatedAt: string;
+  /** Último cambio real de estado (no se mueve al editar notas). */
+  statusChangedAt?: string;
 }
 
 // Tipos para envío de email de pedido
@@ -108,6 +112,23 @@ export interface PaginatedOrdersResponse {
   totalPages: number;
   hasNext: boolean;
   hasPrev: boolean;
+  /** Conteo por estado con los mismos filtros, ignorando el de estado. */
+  countsByStatus?: Record<OrderStatus, number>;
+}
+
+/** Filtros server-side de /order/all/paginated y /order/export. Fechas 'yyyy-MM-dd' (día AR). */
+export interface OrderFilters {
+  status?: OrderStatus[];
+  /** Si no se manda: con estado → fecha en que pasó a ese estado; sin estado → creación. */
+  dateField?: 'status' | 'created';
+  from?: string;
+  to?: string;
+  provincia?: string;
+  /** Categoría actual de la cuenta que hizo el pedido. */
+  categoria?: UserRole;
+  q?: string;
+  /** Por la fecha del rango. Default (sin mandar): más nuevos primero. */
+  orden?: 'asc' | 'desc';
 }
 
 export interface UpdateOrderDto {

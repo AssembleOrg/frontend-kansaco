@@ -1,11 +1,24 @@
-import { useCallback, useEffect, useState } from 'react';
-import { Order, OrderStatus, PaginatedOrdersResponse } from '@/types/order';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { Order, OrderFilters, OrderStatus, PaginatedOrdersResponse } from '@/types/order';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getAllOrdersPaginated, updateOrderStatus, updateOrder } from '@/lib/api';
+import { useVisiblePolling } from '@/hooks/useVisiblePolling';
+import { toast } from 'sonner';
 
-export function useOrders() {
+/** Avisa al badge del sidebar que cambió algún estado. */
+export const ORDERS_CHANGED = 'orders:changed';
+
+export function useOrders(filters: OrderFilters = {}) {
   const { token } = useAuth();
+  // Clave estable: el objeto de filtros se recrea en cada render del padre.
+  const filtersKey = JSON.stringify(filters);
+  const stableFilters = useMemo<OrderFilters>(() => JSON.parse(filtersKey), [filtersKey]);
   const [orders, setOrders] = useState<Order[]>([]);
+  // Descarta respuestas viejas si cambian los filtros mientras una request está en vuelo.
+  const lastRequest = useRef(0);
+  // Pendientes de la última carga: si sube en un refresco automático, avisamos.
+  const lastPending = useRef<number | null>(null);
+  const [countsByStatus, setCountsByStatus] = useState<PaginatedOrdersResponse['countsByStatus']>();
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [pagination, setPagination] = useState<{
@@ -23,17 +36,32 @@ export function useOrders() {
   });
 
   // Cargar órdenes desde la API con paginación
-  const fetchOrders = useCallback(async (page = 1, limit = 20) => {
+  // silent: refresco automático, sin "Cargando" ni borrar la lista si falla.
+  const fetchOrders = useCallback(async (page = 1, limit = 20, silent = false) => {
     if (!token) {
       setIsLoading(false);
       return;
     }
 
+    const requestId = ++lastRequest.current;
     try {
-      setIsLoading(true);
-      setError(null);
-      const response: PaginatedOrdersResponse = await getAllOrdersPaginated(token, { page, limit });
+      if (!silent) {
+        setIsLoading(true);
+        setError(null);
+      }
+      const response: PaginatedOrdersResponse = await getAllOrdersPaginated(token, { page, limit, ...stableFilters });
+      if (requestId !== lastRequest.current) return;
       setOrders(response.data || []);
+      setCountsByStatus(response.countsByStatus);
+      const pending = response.countsByStatus?.PENDIENTE;
+      if (pending !== undefined) {
+        if (silent && lastPending.current !== null && pending > lastPending.current) {
+          const n = pending - lastPending.current;
+          toast.success(n === 1 ? 'Llegó un pedido nuevo' : `Llegaron ${n} pedidos nuevos`);
+          window.dispatchEvent(new Event(ORDERS_CHANGED));
+        }
+        lastPending.current = pending;
+      }
       setPagination({
         page: response.page || 1,
         total: response.total || 0,
@@ -42,17 +70,23 @@ export function useOrders() {
         hasPrev: response.hasPrev || false,
       });
     } catch (err) {
+      if (requestId !== lastRequest.current || silent) return;
       console.error('Error loading orders:', err);
       setError(err instanceof Error ? err.message : 'Error loading orders');
       setOrders([]);
     } finally {
-      setIsLoading(false);
+      if (requestId === lastRequest.current && !silent) setIsLoading(false);
     }
-  }, [token]);
+  }, [token, stableFilters]);
 
+  // Filtros nuevos → vuelve a la página 1.
   useEffect(() => {
+    lastPending.current = null;
     fetchOrders(1, 20);
   }, [fetchOrders]);
+
+  // Pedidos nuevos sin tocar nada: cada 60 s con la pestaña visible (y al volver a ella).
+  useVisiblePolling(() => fetchOrders(pagination.page, 20, true), 60_000, !!token);
 
   // Obtener orden por ID
   const getOrder = useCallback((id: string): Order | undefined => {
@@ -72,6 +106,7 @@ export function useOrders() {
       setOrders(prev =>
         prev.map(order => order.id === id ? { ...order, ...updatedOrder, id } : order)
       );
+      window.dispatchEvent(new Event(ORDERS_CHANGED));
       return updatedOrder;
     } catch (err) {
       console.error('Error updating order status:', err);
@@ -115,6 +150,7 @@ export function useOrders() {
     isLoading,
     error,
     pagination,
+    countsByStatus,
     getOrder,
     updateStatus,
     updateNotes,

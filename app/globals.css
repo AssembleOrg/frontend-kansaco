@@ -6,86 +6,32 @@
 /* ============================================= */
 /* Date Range Picker Styles                      */
 /* ============================================= */
-.drp-root {
-  --rdp-accent-color: #10b981;
-  --rdp-accent-background-color: #ecfdf5;
-  --rdp-range_middle-background-color: #ecfdf5;
-  --rdp-range_middle-color: #065f46;
-  font-size: 14px;
+/* Tema del calendario: solo variables oficiales de react-day-picker.
+   El layout lo pone react-day-picker/style.css (no pasar `classNames`, las reemplaza). */
+.drp.rdp-root {
+  --rdp-accent-color: #16a34a; /* green-600, marca */
+  --rdp-accent-background-color: #dcfce7; /* green-100 */
+  --rdp-range_middle-color: #14532d;
+  --rdp-day-width: 40px;
+  --rdp-day-height: 40px;
+  --rdp-day_button-width: 38px;
+  --rdp-day_button-height: 38px;
+  --rdp-day_button-border-radius: 10px;
+  --rdp-months-gap: 1.5rem;
 }
 
-.drp-months {
-  display: flex;
-  gap: 2rem;
+@media (min-width: 768px) {
+  .drp.rdp-root {
+    --rdp-day-width: 44px;
+    --rdp-day-height: 44px;
+    --rdp-day_button-width: 42px;
+    --rdp-day_button-height: 42px;
+  }
 }
 
-.drp-caption {
-  font-weight: 600;
-  font-size: 0.875rem;
-  color: #111827;
+.drp .rdp-caption_label {
   text-transform: capitalize;
 }
-
-.drp-nav button {
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #6b7280;
-  transition: all 0.15s;
-}
-
-.drp-nav button:hover {
-  background-color: #f3f4f6;
-  color: #111827;
-}
-
-.drp-day {
-  width: 36px;
-  height: 36px;
-  border-radius: 8px;
-  font-size: 0.8125rem;
-  transition: all 0.1s;
-}
-
-.drp-day:hover:not(.drp-selected):not(.drp-range-middle) {
-  background-color: #f3f4f6;
-}
-
-.drp-today:not(.drp-selected):not(.drp-range-middle) {
-  font-weight: 700;
-  color: #10b981;
-  background-color: #ecfdf5;
-}
-
-.drp-selected {
-  background-color: #10b981 !important;
-  color: white !important;
-  font-weight: 600;
-}
-
-.drp-range-start {
-  border-top-right-radius: 0;
-  border-bottom-right-radius: 0;
-  background-color: #10b981 !important;
-  color: white !important;
-}
-
-.drp-range-end {
-  border-top-left-radius: 0;
-  border-bottom-left-radius: 0;
-  background-color: #10b981 !important;
-  color: white !important;
-}
-
-.drp-range-middle {
-  border-radius: 0;
-  background-color: #ecfdf5 !important;
-  color: #065f46 !important;
-}
-
 
 /* Mobile Optimization - Prevent horizontal overflow */
 html, body {

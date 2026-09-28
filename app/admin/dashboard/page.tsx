@@ -16,6 +16,7 @@ import {
   Inbox,
 } from 'lucide-react';
 import { useNoLeidas } from '@/features/submissions/hooks/useNoLeidas';
+import { usePendientes } from '@/features/admin/hooks/usePendientes';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { canAccessAdminPath } from '@/features/admin/access';
 import { cn } from '@/lib/utils';
@@ -52,6 +53,7 @@ const ITEMS: NavItem[] = [
 
 export default function AdminDashboard() {
   const { noLeidas } = useNoLeidas();
+  const pendientes = usePendientes();
   const { user } = useAuth();
   // Sólo los accesos que el rol puede usar (la asistente ve menos).
   const items = ITEMS.filter((item) => canAccessAdminPath(user?.rol, item.href));
@@ -77,13 +79,18 @@ export default function AdminDashboard() {
       <div className="mt-3 flex min-h-0 flex-1 flex-wrap content-start gap-3 sm:mt-4 sm:gap-4">
         {items.map((item) => {
           const Icon = item.icon;
-          const badge =
-            item.href === '/admin/solicitudes' && noLeidas > 0 ? noLeidas : null;
+          const count =
+            item.href === '/admin/solicitudes' ? noLeidas
+            : item.href === '/admin/orders' ? pendientes
+            : 0;
+          const badge = count > 0 ? count : null;
+          const href =
+            item.href === '/admin/orders' && badge ? '/admin/orders?status=PENDIENTE' : item.href;
 
           return (
             <Link
               key={item.href}
-              href={item.href}
+              href={href}
               title={item.desc}
               className={cn(
                 'group relative flex min-h-[104px] flex-1 basis-[calc(33.333%-8px)] flex-col items-center justify-center gap-2 rounded-xl border bg-white p-3 text-center shadow-[0_1px_2px_rgba(0,0,0,0.04)] transition-all',
@@ -95,7 +102,7 @@ export default function AdminDashboard() {
             >
               {badge !== null && (
                 <span
-                  aria-label={`${badge} sin leer`}
+                  aria-label={item.href === '/admin/orders' ? `${badge} pedidos pendientes` : `${badge} sin leer`}
                   className="absolute right-2 top-2 inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-green-600 px-1.5 text-[11px] font-semibold text-white"
                 >
                   {badge > 99 ? '99+' : badge}

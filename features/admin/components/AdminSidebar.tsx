@@ -22,6 +22,7 @@ import { cn } from '@/lib/utils';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { canAccessAdminPath } from '@/features/admin/access';
 import { useNoLeidas } from '@/features/submissions/hooks/useNoLeidas';
+import { usePendientes } from '@/features/admin/hooks/usePendientes';
 
 interface AdminSidebarProps {
   onNavigate?: () => void;
@@ -84,6 +85,12 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
   const pathname = usePathname();
   const { user } = useAuth();
   const { noLeidas } = useNoLeidas();
+  const pendientes = usePendientes();
+  // Contador por sección + a dónde lleva el link cuando hay algo pendiente.
+  const badges: Record<string, { n: number; label: string; href?: string }> = {
+    '/admin/solicitudes': { n: noLeidas, label: 'solicitudes sin leer' },
+    '/admin/orders': { n: pendientes, label: 'pedidos pendientes', href: '/admin/orders?status=PENDIENTE' },
+  };
 
   // Sólo las secciones que el rol puede usar (la asistente ve menos).
   const groups = NAV_GROUPS.map((group) => ({
@@ -118,10 +125,12 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
               {group.items.map((item) => {
                 const Icon = item.icon;
                 const isActive = pathname === item.href;
+                const badge = badges[item.href];
+                const hasBadge = !!badge && badge.n > 0;
                 return (
                   <li key={item.href}>
                     <Link
-                      href={item.href}
+                      href={hasBadge && badge.href ? badge.href : item.href}
                       onClick={handleNavigation}
                       className={cn(
                         'flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors',
@@ -132,12 +141,12 @@ export default function AdminSidebar({ onNavigate, isMobile }: AdminSidebarProps
                     >
                       <Icon className="h-[18px] w-[18px] shrink-0" />
                       <span className="truncate">{item.label}</span>
-                      {item.href === '/admin/solicitudes' && noLeidas > 0 && (
+                      {hasBadge && (
                         <span
-                          aria-label={`${noLeidas} solicitudes sin leer`}
+                          aria-label={`${badge.n} ${badge.label}`}
                           className="ml-auto inline-flex h-5 min-w-[20px] items-center justify-center rounded-full bg-green-600 px-1.5 text-[11px] font-semibold text-white"
                         >
-                          {noLeidas > 99 ? '99+' : noLeidas}
+                          {badge.n > 99 ? '99+' : badge.n}
                         </span>
                       )}
                     </Link>

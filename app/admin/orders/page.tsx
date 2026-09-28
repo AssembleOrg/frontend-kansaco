@@ -1,13 +1,24 @@
 'use client';
 
-import { useState, useMemo, useCallback } from 'react';
+import { useState, useMemo, useCallback, useEffect, Suspense } from 'react';
+import { usePathname, useRouter, useSearchParams } from 'next/navigation';
+import { format, parse } from 'date-fns';
 import { useOrders } from '@/features/admin/hooks/useOrders';
-import { Order, OrderStatus } from '@/types/order';
+import { Order, OrderFilters, OrderStatus } from '@/types/order';
+import { B2B_ROLES, CATEGORIA_LABEL, UserRole } from '@/types/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Download, Eye, Search, ArrowUpDown, RefreshCw, ChevronLeft, ChevronRight, FileText } from 'lucide-react';
+import { Download, Eye, Search, RefreshCw, ChevronLeft, ChevronRight, FileText, FileSpreadsheet, X, SlidersHorizontal } from 'lucide-react';
 import { formatDateForDisplay } from '@/lib/dateUtils';
-import { downloadOrderPDF } from '@/lib/api';
+import { downloadOrderPDF, downloadOrdersExport } from '@/lib/api';
+import { AR_PROVINCES } from '@/lib/constants/provinces';
+import { DateRangePicker } from '@/components/ui/date-range-picker';
+import {
+  ResponsiveDialog,
+  ResponsiveDialogContent,
+  ResponsiveDialogHeader,
+  ResponsiveDialogTitle,
+} from '@/components/ui/responsive-dialog';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { OrderDetailsModal } from '@/features/orders/components/OrderDetailsModal';
 import { OrderNoteModal } from '@/features/orders/components/OrderNoteModal';
@@ -16,8 +27,6 @@ import {
   ColumnDef,
   flexRender,
   getCoreRowModel,
-  getSortedRowModel,
-  SortingState,
   useReactTable,
 } from '@tanstack/react-table';
 
@@ -30,10 +39,129 @@ const statusConfig: Record<OrderStatus, { label: string; color: string; bg: stri
   CANCELADO: { label: 'Cancelado', color: 'text-red-700', bg: 'bg-red-100' },
 };
 
+const STATUSES = Object.keys(statusConfig) as OrderStatus[];
+
+// Categorías que se pueden filtrar: las comerciales + cuentas pendientes.
+const CATEGORIAS: UserRole[] = [...B2B_ROLES, 'CLIENTE_MINORISTA'];
+
+// Para la frase-resumen: "12 pedidos completados".
+const STATUS_PLURAL: Record<OrderStatus, string> = {
+  PENDIENTE: 'pendientes',
+  PROCESANDO: 'en proceso',
+  ENVIADO: 'enviados',
+  COMPLETADO: 'completados',
+  CANCELADO: 'cancelados',
+};
+
+const ddmm = (s: string) => s.split('-').reverse().join('/');
+
+/** Frase que explica qué se está viendo, p. ej. "42 pedidos completados entre el 01/08/2026 y el 31/08/2026". */
+function describeView(total: number, f: OrderFilters): string {
+  const estados = f.status?.length
+    ? ' ' + f.status.map((s) => STATUS_PLURAL[s]).join(' o ')
+    : '';
+  const hechos = f.status?.length ? 'que pasaron a ese estado' : 'hechos';
+  const fechas =
+    f.from && f.to
+      ? f.from === f.to
+        ? ` ${hechos} el ${ddmm(f.from)}`
+        : ` ${hechos} entre el ${ddmm(f.from)} y el ${ddmm(f.to)}`
+      : f.from
+        ? ` ${hechos} desde el ${ddmm(f.from)}`
+        : '';
+  const donde = f.provincia ? ` en ${f.provincia}` : '';
+  const quien = f.categoria ? ` de cuentas ${CATEGORIA_LABEL[f.categoria]}` : '';
+  return `${total} ${total === 1 ? 'pedido' : 'pedidos'}${estados}${fechas}${donde}${quien}`;
+}
+
+// 'yyyy-MM-dd' <-> Date local (día calendario; el backend lo interpreta en hora AR).
+const toYmd = (d?: Date) => (d ? format(d, 'yyyy-MM-dd') : undefined);
+const fromYmd = (s?: string) => {
+  if (!s) return undefined;
+  const d = parse(s, 'yyyy-MM-dd', new Date());
+  return isNaN(d.getTime()) ? undefined : d;
+};
+
 export default function OrdersPage() {
+  // useSearchParams exige un Suspense boundary en el build de Next.
+  return (
+    <Suspense fallback={<p className="py-12 text-center text-gray-500">Cargando órdenes...</p>}>
+      <OrdersPageContent />
+    </Suspense>
+  );
+}
+
+function OrdersPageContent() {
   const { token, user } = useAuth();
   const isStaff = user?.rol === 'ADMIN' || user?.rol === 'ASISTENTE';
-  const { orders, isLoading, error, pagination, updateStatus, updateNotes, refresh, goToPage } = useOrders();
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
+  // Filtros en la URL: se pueden compartir ("completados de agosto") y sobreviven un F5.
+  const filters = useMemo<OrderFilters>(() => {
+    const get = (k: string) => searchParams.get(k) || undefined;
+    const categoria = get('categoria') as UserRole | undefined;
+    return {
+      status: get('status')?.split(',').filter((s): s is OrderStatus => STATUSES.includes(s as OrderStatus)),
+      from: get('from'),
+      to: get('to'),
+      provincia: get('provincia'),
+      categoria: categoria && CATEGORIAS.includes(categoria) ? categoria : undefined,
+      q: get('q'),
+      orden: get('orden') === 'asc' ? 'asc' : undefined,
+    };
+  }, [searchParams]);
+  const hasFilters = Boolean(
+    filters.status?.length || filters.from || filters.to || filters.provincia || filters.categoria || filters.q
+  );
+
+  const setFilters = useCallback((patch: Record<string, string | undefined>) => {
+    const params = new URLSearchParams(searchParams.toString());
+    for (const [k, v] of Object.entries(patch)) {
+      if (v) params.set(k, v);
+      else params.delete(k);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+  }, [searchParams, router, pathname]);
+
+  const toggleStatus = (status: OrderStatus) => {
+    const current = filters.status ?? [];
+    const next = current.includes(status) ? current.filter((s) => s !== status) : [...current, status];
+    setFilters({ status: next.join(',') || undefined });
+  };
+
+  // Búsqueda con debounce: el input es local, la URL se actualiza a los 300 ms.
+  const [searchTerm, setSearchTerm] = useState(filters.q ?? '');
+  useEffect(() => {
+    const q = searchTerm.trim() || undefined;
+    if (q === filters.q) return;
+    const t = setTimeout(() => setFilters({ q }), 300);
+    return () => clearTimeout(t);
+  }, [searchTerm, filters.q, setFilters]);
+
+  const { orders, isLoading, error, pagination, countsByStatus, updateStatus, updateNotes, refresh, goToPage } = useOrders(filters);
+  const totalAllStatuses = countsByStatus
+    ? Object.values(countsByStatus).reduce((a, b) => a + b, 0)
+    : undefined;
+
+  // Filtros que viven en el panel (en celular, dentro del botón "Filtros").
+  const panelFilterCount = [filters.from, filters.provincia, filters.categoria].filter(Boolean).length;
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const [exporting, setExporting] = useState<'xlsx' | 'pdf' | null>(null);
+  const handleExport = async (fmt: 'xlsx' | 'pdf') => {
+    if (!token) return;
+    setExporting(fmt);
+    try {
+      await downloadOrdersExport(token, fmt, filters);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : 'Error al exportar');
+    } finally {
+      setExporting(null);
+    }
+  };
   // Guardamos solo el id; el pedido se deriva de la lista en cada render, así el
   // modal siempre ve los datos frescos tras editar (sin sync ni cerrar/reabrir).
   const [selectedOrderId, setSelectedOrderId] = useState<string | null>(null);
@@ -42,39 +170,9 @@ export default function OrdersPage() {
     : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [provinciaFilter, setProvinciaFilter] = useState<string>('all');
-  const [sorting, setSorting] = useState<SortingState>([]);
   // Orden pendiente de cancelar (abre el modal que pide el motivo).
   const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
   const [isCancelling, setIsCancelling] = useState(false);
-
-  // Filtrar órdenes por búsqueda + provincia
-  const filteredOrders = useMemo(() => {
-    if (!orders || !Array.isArray(orders)) return [];
-    return orders.filter((order) => {
-      if (provinciaFilter !== 'all' && order.contactInfo?.provincia !== provinciaFilter) {
-        return false;
-      }
-      const searchLower = searchTerm.toLowerCase();
-      return (
-        order.contactInfo?.fullName?.toLowerCase().includes(searchLower) ||
-        order.contactInfo?.email?.toLowerCase().includes(searchLower) ||
-        order.contactInfo?.phone?.includes(searchTerm) ||
-        order.id?.toLowerCase().includes(searchLower)
-      );
-    });
-  }, [orders, searchTerm, provinciaFilter]);
-
-  // Provincias presentes en los pedidos cargados (para el filtro).
-  const provincias = useMemo(() => {
-    const set = new Set<string>();
-    for (const o of orders) {
-      const p = o.contactInfo?.provincia?.trim();
-      if (p) set.add(p);
-    }
-    return Array.from(set).sort((a, b) => a.localeCompare(b));
-  }, [orders]);
 
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
     // Al cancelar, pedir el motivo antes de aplicar el cambio.
@@ -243,11 +341,21 @@ export default function OrdersPage() {
       },
       {
         id: 'fecha',
-        header: 'Fecha',
+        header: 'Creado',
         accessorFn: (order) => new Date(order.createdAt).getTime(),
         cell: ({ row }) => (
           <span className="text-sm text-gray-600">
             {formatDateForDisplay(row.original.createdAt, 'short')}
+          </span>
+        ),
+      },
+      {
+        id: 'estadoDesde',
+        header: 'Estado desde',
+        accessorFn: (order) => new Date(order.statusChangedAt ?? order.createdAt).getTime(),
+        cell: ({ row }) => (
+          <span className="text-sm text-gray-600">
+            {formatDateForDisplay(row.original.statusChangedAt ?? row.original.createdAt, 'short')}
           </span>
         ),
       },
@@ -291,7 +399,6 @@ export default function OrdersPage() {
             </div>
           );
         },
-        enableSorting: false,
       },
     ],
     [handleStatusChange, handleDownloadPDF, downloadingOrderId]
@@ -299,36 +406,11 @@ export default function OrdersPage() {
 
   // TanStack Table instance (sin paginación del frontend, usamos la del backend)
   const table = useReactTable({
-    data: filteredOrders,
+    data: orders,
     columns,
-    state: {
-      sorting,
-    },
-    onSortingChange: setSorting,
     getCoreRowModel: getCoreRowModel(),
-    getSortedRowModel: getSortedRowModel(),
     manualPagination: true,
   });
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center py-12">
-        <p className="text-gray-500">Cargando órdenes...</p>
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col items-center justify-center py-12 gap-4">
-        <p className="text-red-500">Error: {error}</p>
-        <Button onClick={refresh} variant="outline">
-          <RefreshCw className="h-4 w-4 mr-2" />
-          Reintentar
-        </Button>
-      </div>
-    );
-  }
 
   return (
     <div className="space-y-6">
@@ -346,50 +428,228 @@ export default function OrdersPage() {
         </Button>
       </div>
 
-      {/* Búsqueda + filtro por provincia */}
-      <div className="flex flex-col gap-3 sm:flex-row">
-        <div className="relative flex-1">
-          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
-          <Input
-            type="text"
-            placeholder="Buscar por nombre, email, teléfono o ID..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
+      {/* Filtros (server-side) */}
+      <div className="space-y-3 rounded-lg border border-green-100 border-t-4 border-t-green-600 bg-white p-3 shadow-sm sm:p-4">
+        {/* Estados con conteo. En celular: una sola fila con scroll horizontal. */}
+        <div className="-mx-3 flex gap-2 overflow-x-auto px-3 pb-1 sm:mx-0 sm:flex-wrap sm:px-0 sm:pb-0">
+          <button
+            type="button"
+            onClick={() => setFilters({ status: undefined })}
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+              !filters.status?.length ? 'border-green-600 bg-green-600 text-white' : 'border-gray-300 text-gray-700 hover:bg-green-50'
+            }`}
+          >
+            Todos{totalAllStatuses !== undefined && ` (${totalAllStatuses})`}
+          </button>
+          {STATUSES.map((s) => {
+            const active = filters.status?.includes(s);
+            const cfg = statusConfig[s];
+            return (
+              <button
+                key={s}
+                type="button"
+                aria-pressed={active}
+                onClick={() => toggleStatus(s)}
+                className={`shrink-0 rounded-full border px-3 py-1.5 text-sm font-medium transition-colors ${
+                  active ? `${cfg.bg} ${cfg.color} border-current` : 'border-gray-300 text-gray-700 hover:bg-green-50'
+                }`}
+              >
+                {cfg.label}
+                {countsByStatus && ` (${countsByStatus[s] ?? 0})`}
+              </button>
+            );
+          })}
         </div>
-        <select
-          value={provinciaFilter}
-          onChange={(e) => setProvinciaFilter(e.target.value)}
-          disabled={provincias.length === 0}
-          className="h-10 rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:cursor-not-allowed disabled:bg-gray-50 disabled:text-gray-400 sm:w-56"
-        >
-          {provincias.length === 0 ? (
-            <option value="all">Sin zonas aún</option>
-          ) : (
-            <>
-              <option value="all">Todas las provincias</option>
-              {provincias.map((p) => (
-                <option key={p} value={p}>
-                  {p}
-                </option>
-              ))}
-            </>
-          )}
-        </select>
+
+        <div className="flex gap-2 lg:gap-3">
+          <div className="relative min-w-0 flex-1">
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Input
+              type="text"
+              placeholder="Buscar cliente, CUIT, email..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Desktop: filtros a la vista */}
+          <DateRangePicker
+            className="hidden w-64 lg:block"
+            align="end"
+            value={{ from: fromYmd(filters.from), to: fromYmd(filters.to) }}
+            onChange={({ from, to }) => setFilters({ from: toYmd(from), to: toYmd(to) })}
+            placeholder="Todas las fechas"
+          />
+          <select
+            value={filters.provincia ?? ''}
+            onChange={(e) => setFilters({ provincia: e.target.value || undefined })}
+            aria-label="Provincia"
+            className={`hidden lg:block lg:w-48 h-10 rounded-md border px-3 text-sm ${filters.provincia ? 'border-green-500 bg-green-50 font-medium text-green-800' : 'border-gray-300 bg-white text-gray-700'} focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
+          >
+            <option value="">Todas las provincias</option>
+            {AR_PROVINCES.map((p) => (
+              <option key={p} value={p}>{p}</option>
+            ))}
+          </select>
+          <select
+            value={filters.categoria ?? ''}
+            onChange={(e) => setFilters({ categoria: e.target.value || undefined })}
+            aria-label="Categoría de la cuenta"
+            className={`hidden lg:block lg:w-44 h-10 rounded-md border px-3 text-sm ${filters.categoria ? 'border-green-500 bg-green-50 font-medium text-green-800' : 'border-gray-300 bg-white text-gray-700'} focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500`}
+          >
+            <option value="">Todas las categorías</option>
+            {CATEGORIAS.map((c) => (
+              <option key={c} value={c}>{CATEGORIA_LABEL[c]}</option>
+            ))}
+          </select>
+
+          {/* Celular/tablet: todo lo demás dentro de un botón */}
+          <Button
+            type="button"
+            variant="outline"
+            className={`h-10 shrink-0 gap-2 lg:hidden ${panelFilterCount > 0 ? 'border-green-500 bg-green-50 text-green-800' : ''}`}
+            onClick={() => setFiltersOpen(true)}
+          >
+            <SlidersHorizontal className="h-4 w-4" />
+            Filtros
+            {panelFilterCount > 0 && (
+              <span className="rounded-full bg-green-600 px-1.5 text-xs text-white">{panelFilterCount}</span>
+            )}
+          </Button>
+        </div>
+
+        {/* Qué estoy viendo + exportar */}
+        <div className="flex flex-wrap items-center gap-2">
+          <p className="mr-auto text-sm text-gray-700">
+            {isLoading && !countsByStatus ? 'Cargando…' : (() => {
+              const [n, ...rest] = describeView(pagination.total, filters).split(' ');
+              return (
+                <>
+                  <span className="font-semibold text-green-700">{n}</span> {rest.join(' ')}
+                </>
+              );
+            })()}
+            {hasFilters && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSearchTerm('');
+                  router.replace(pathname, { scroll: false });
+                }}
+                className="ml-2 inline-flex items-center text-sm text-gray-500 underline-offset-2 hover:text-red-600 hover:underline"
+              >
+                <X className="mr-0.5 h-3.5 w-3.5" />
+                Limpiar
+              </button>
+            )}
+          </p>
+          <select
+            value={filters.orden ?? 'desc'}
+            onChange={(e) => setFilters({ orden: e.target.value === 'asc' ? 'asc' : undefined })}
+            aria-label="Orden de la lista"
+            className={`h-8 rounded-md border px-2 text-sm focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 ${
+              filters.orden ? 'border-green-500 bg-green-50 font-medium text-green-800' : 'border-gray-300 bg-white text-gray-700'
+            }`}
+          >
+            <option value="desc">Más nuevos primero</option>
+            <option value="asc">Más viejos primero</option>
+          </select>
+          <Button
+            onClick={() => handleExport('xlsx')}
+            size="sm"
+            className="bg-green-600 text-white hover:bg-green-700"
+            disabled={!!exporting || pagination.total === 0}
+            title="Descargar estos pedidos en Excel (sin precios)"
+          >
+            {exporting === 'xlsx' ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <FileSpreadsheet className="h-4 w-4 mr-2" />}
+            Excel
+          </Button>
+          <Button
+            onClick={() => handleExport('pdf')}
+            variant="outline"
+            size="sm"
+            className="border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800"
+            disabled={!!exporting || pagination.total === 0}
+            title="Descargar un resumen en PDF (sin precios)"
+          >
+            {exporting === 'pdf' ? <RefreshCw className="h-4 w-4 mr-2 animate-spin" /> : <FileText className="h-4 w-4 mr-2" />}
+            PDF
+          </Button>
+        </div>
       </div>
 
+      {/* Panel de filtros (celular/tablet) */}
+      <ResponsiveDialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+        <ResponsiveDialogContent className="sm:max-w-md">
+          <ResponsiveDialogHeader>
+            <ResponsiveDialogTitle>Filtros</ResponsiveDialogTitle>
+          </ResponsiveDialogHeader>
+          <div className="space-y-5">
+            <div>
+              <p className="mb-2 text-sm font-medium text-gray-900">Fechas</p>
+              <DateRangePicker
+                inline
+                value={{ from: fromYmd(filters.from), to: fromYmd(filters.to) }}
+                onChange={({ from, to }) => setFilters({ from: toYmd(from), to: toYmd(to) })}
+              />
+            </div>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-gray-900">Provincia</span>
+              <select
+                value={filters.provincia ?? ''}
+                onChange={(e) => setFilters({ provincia: e.target.value || undefined })}
+                className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              >
+                <option value="">Todas las provincias</option>
+                {AR_PROVINCES.map((p) => (
+                  <option key={p} value={p}>{p}</option>
+                ))}
+              </select>
+            </label>
+            <label className="block">
+              <span className="mb-2 block text-sm font-medium text-gray-900">Categoría de la cuenta</span>
+              <select
+                value={filters.categoria ?? ''}
+                onChange={(e) => setFilters({ categoria: e.target.value || undefined })}
+                className="h-10 w-full rounded-md border border-gray-300 bg-white px-3 text-sm text-gray-700 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500"
+              >
+                <option value="">Todas las categorías</option>
+                {CATEGORIAS.map((c) => (
+                  <option key={c} value={c}>{CATEGORIA_LABEL[c]}</option>
+                ))}
+              </select>
+            </label>
+            <Button className="w-full bg-green-600 text-white hover:bg-green-700" onClick={() => setFiltersOpen(false)}>
+              {isLoading ? 'Buscando…' : `Ver ${pagination.total} ${pagination.total === 1 ? 'pedido' : 'pedidos'}`}
+            </Button>
+          </div>
+        </ResponsiveDialogContent>
+      </ResponsiveDialog>
+
       {/* Tabla de Órdenes */}
-      {filteredOrders.length === 0 ? (
+      {error ? (
+        <div className="flex flex-col items-center justify-center gap-4 rounded-lg border border-gray-200 bg-white py-12">
+          <p className="text-red-500">Error: {error}</p>
+          <Button onClick={refresh} variant="outline">
+            <RefreshCw className="h-4 w-4 mr-2" />
+            Reintentar
+          </Button>
+        </div>
+      ) : isLoading && orders.length === 0 ? (
+        <div className="flex items-center justify-center py-12">
+          <p className="text-gray-500">Cargando órdenes...</p>
+        </div>
+      ) : orders.length === 0 ? (
         <div className="rounded-lg border border-gray-200 bg-white p-8 text-center sm:p-12">
           <p className="text-sm text-gray-500 sm:text-base">
-            {orders.length === 0
-              ? 'No hay órdenes aún. Cuando los clientes completen su compra aparecerán aquí.'
-              : 'No se encontraron órdenes que coincidan con tu búsqueda.'}
+            {hasFilters
+              ? 'No hay pedidos que coincidan con los filtros.'
+              : 'No hay órdenes aún. Cuando los clientes completen su compra aparecerán aquí.'}
           </p>
         </div>
       ) : (
-        <>
+        <div className={isLoading ? 'opacity-60 transition-opacity' : undefined}>
           {/* Tabla Desktop */}
           <div className="hidden xl:block w-full max-w-full overflow-hidden rounded-lg border border-gray-200 bg-white shadow-sm">
             <div className="overflow-x-auto w-full">
@@ -397,35 +657,14 @@ export default function OrdersPage() {
                 <thead className="border-b border-gray-200 bg-gray-50">
                   {table.getHeaderGroups().map((headerGroup) => (
                     <tr key={headerGroup.id}>
-                      {headerGroup.headers.map((header) => {
-                        const isSortable = header.column.columnDef.enableSorting !== false;
-                        return (
-                          <th
-                            key={header.id}
-                            onClick={isSortable ? header.column.getToggleSortingHandler() : undefined}
-                            className={`px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-700 ${
-                              isSortable ? 'cursor-pointer hover:bg-gray-100' : ''
-                            }`}
-                          >
-                            <div className="flex items-center gap-2">
-                              {flexRender(header.column.columnDef.header, header.getContext())}
-                              {isSortable && header.column.getCanSort() && (
-                                <div className="flex items-center">
-                                  {header.column.getIsSorted() === 'asc' && (
-                                    <ArrowUpDown className="h-4 w-4 rotate-180 text-orange-600" />
-                                  )}
-                                  {header.column.getIsSorted() === 'desc' && (
-                                    <ArrowUpDown className="h-4 w-4 text-orange-600" />
-                                  )}
-                                  {!header.column.getIsSorted() && (
-                                    <ArrowUpDown className="h-4 w-4 text-gray-400" />
-                                  )}
-                                </div>
-                              )}
-                            </div>
-                          </th>
-                        );
-                      })}
+                      {headerGroup.headers.map((header) => (
+                        <th
+                          key={header.id}
+                          className="px-6 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-700"
+                        >
+                          {flexRender(header.column.columnDef.header, header.getContext())}
+                        </th>
+                      ))}
                     </tr>
                   ))}
                 </thead>
@@ -446,7 +685,7 @@ export default function OrdersPage() {
 
           {/* Cards Mobile */}
           <div className="xl:hidden w-full max-w-full space-y-3">
-            {filteredOrders.map((order) => {
+            {orders.map((order) => {
               const isMayorista = order.customerType === 'CLIENTE_MAYORISTA';
               const config = statusConfig[order.status];
 
@@ -503,9 +742,15 @@ export default function OrdersPage() {
                       </p>
                     </div>
                     <div>
-                      <p className="text-gray-500">Fecha</p>
+                      <p className="text-gray-500">Creado</p>
                       <p className="font-medium text-gray-900">
                         {formatDateForDisplay(order.createdAt, 'short')}
+                      </p>
+                    </div>
+                    <div>
+                      <p className="text-gray-500">Estado desde</p>
+                      <p className="font-medium text-gray-900">
+                        {formatDateForDisplay(order.statusChangedAt ?? order.createdAt, 'short')}
                       </p>
                     </div>
                   </div>
@@ -573,7 +818,7 @@ export default function OrdersPage() {
               );
             })}
           </div>
-        </>
+        </div>
       )}
 
       {/* Controles de Paginación */}

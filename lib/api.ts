@@ -15,6 +15,7 @@ import {
   Order,
   OrderStatus,
   PaginatedOrdersResponse,
+  OrderFilters,
   UpdateOrderDto,
 } from '@/types/order';
 import type {
@@ -1387,7 +1388,7 @@ export async function getAllOrdersPaginated(
   options?: {
     page?: number;
     limit?: number;
-  }
+  } & OrderFilters
 ): Promise<PaginatedOrdersResponse> {
   if (!API_BASE_URL) {
     throw new Error('API URL not configured.');
@@ -1397,7 +1398,7 @@ export async function getAllOrdersPaginated(
     throw new Error('Authentication required.');
   }
 
-  const params = new URLSearchParams();
+  const params = orderFilterParams(options);
   if (options?.page) params.append('page', options.page.toString());
   if (options?.limit) params.append('limit', options.limit.toString());
 
@@ -1477,19 +1478,75 @@ export async function downloadOrderPDF(
       }
     }
 
-    // Obtener el blob del PDF
-    const blob = await response.blob();
+    triggerDownload(await response.blob(), filename);
 
-    // Crear un enlace temporal y descargar
-    const url_blob = window.URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.href = url_blob;
-    link.download = filename;
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    window.URL.revokeObjectURL(url_blob);
+    apiLogger.response('GET', url, response.status);
+  } catch (error) {
+    apiLogger.error('GET', url, error);
+    throw error;
+  }
+}
 
+function triggerDownload(blob: Blob, filename: string) {
+  const url_blob = window.URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url_blob;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  window.URL.revokeObjectURL(url_blob);
+}
+
+function orderFilterParams(f?: OrderFilters): URLSearchParams {
+  const params = new URLSearchParams();
+  if (f?.status?.length) params.append('status', f.status.join(','));
+  if (f?.dateField) params.append('dateField', f.dateField);
+  if (f?.from) params.append('from', f.from);
+  if (f?.to) params.append('to', f.to);
+  if (f?.provincia) params.append('provincia', f.provincia);
+  if (f?.categoria) params.append('categoria', f.categoria);
+  if (f?.q) params.append('q', f.q);
+  if (f?.orden) params.append('orden', f.orden);
+  return params;
+}
+
+/** Cantidad de pedidos por estado (badge del sidebar). */
+export async function getOrderStats(
+  token: string
+): Promise<{ countsByStatus: Record<OrderStatus, number> }> {
+  const response = await fetch(`${API_BASE_URL}/order/stats`, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{
+    data?: { countsByStatus: Record<OrderStatus, number> };
+    countsByStatus?: Record<OrderStatus, number>;
+  }>(response);
+  return { countsByStatus: (result.data ?? result).countsByStatus ?? ({} as Record<OrderStatus, number>) };
+}
+
+/** Descarga los pedidos filtrados (sin precios) como Excel o PDF resumen. */
+export async function downloadOrdersExport(
+  token: string,
+  format: 'xlsx' | 'pdf',
+  filters: OrderFilters
+): Promise<void> {
+  const params = orderFilterParams(filters);
+  params.append('format', format);
+  const url = `${API_BASE_URL}/order/export?${params.toString()}`;
+  apiLogger.request('GET', url);
+  try {
+    const response = await fetch(url, {
+      headers: { Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    });
+    // handleResponse tira con el mensaje del backend (401, "acotá el rango", etc.)
+    if (!response.ok) await handleResponse(response);
+    const disposition = response.headers.get('Content-Disposition');
+    const filename =
+      disposition?.match(/filename="?([^";]+)"?/)?.[1] ?? `pedidos.${format}`;
+    triggerDownload(await response.blob(), filename);
     apiLogger.response('GET', url, response.status);
   } catch (error) {
     apiLogger.error('GET', url, error);

@@ -20,6 +20,18 @@ export const B2B_ROLES: readonly UserRole[] = [
   'LUBRICENTRO',
 ];
 
+/** Etiqueta de cada categoría de cuenta (CLIENTE_MINORISTA = pendiente, sin categoría). */
+export const CATEGORIA_LABEL: Record<UserRole, string> = {
+  CLIENTE_MINORISTA: 'Sin categoría',
+  CLIENTE_MAYORISTA: 'Mayorista',
+  SUBMAYORISTA: 'Submayorista',
+  REVENDEDOR: 'Revendedor',
+  TALLER: 'Taller',
+  LUBRICENTRO: 'Lubricentro',
+  ADMIN: 'Admin',
+  ASISTENTE: 'Asistente',
+};
+
 export const esCategoriaB2B = (rol: UserRole | null | undefined): boolean =>
   !!rol && B2B_ROLES.includes(rol);
 
