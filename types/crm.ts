@@ -15,6 +15,7 @@ export interface Lead {
   ciudad: string | null;
   tipo: LeadType;
   notasGenerales: string | null;
+  vendorId: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -27,6 +28,7 @@ export interface LeadCreateInput {
   ciudad?: string;
   tipo?: LeadType;
   notasGenerales?: string;
+  vendorId?: number | null;
 }
 
 export type LeadUpdateInput = Partial<LeadCreateInput>;

@@ -14,8 +14,8 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { createLead, updateLead } from '@/lib/crmApi';
-import type { Lead, LeadCreateInput, LeadType } from '@/types/crm';
+import { createLead, getVendors, updateLead } from '@/lib/crmApi';
+import type { Lead, LeadCreateInput, LeadType, Vendor } from '@/types/crm';
 
 interface LeadFormDialogProps {
   open: boolean;
@@ -32,6 +32,7 @@ const EMPTY: LeadCreateInput = {
   ciudad: '',
   tipo: 'MAYORISTA',
   notasGenerales: '',
+  vendorId: null,
 };
 
 export function LeadFormDialog({
@@ -43,6 +44,14 @@ export function LeadFormDialog({
   const { token } = useAuth();
   const [form, setForm] = useState<LeadCreateInput>(EMPTY);
   const [isSaving, setIsSaving] = useState(false);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+
+  useEffect(() => {
+    if (!open || !token) return;
+    getVendors(token, true)
+      .then(setVendors)
+      .catch(() => toast.error('Error cargando vendedores'));
+  }, [open, token]);
 
   useEffect(() => {
     if (open) {
@@ -54,6 +63,7 @@ export function LeadFormDialog({
         ciudad: initial?.ciudad ?? '',
         tipo: initial?.tipo ?? 'MAYORISTA',
         notasGenerales: initial?.notasGenerales ?? '',
+        vendorId: initial?.vendorId ?? null,
       });
     }
   }, [open, initial]);
@@ -75,6 +85,7 @@ export function LeadFormDialog({
         ciudad: form.ciudad?.trim() || undefined,
         tipo: form.tipo,
         notasGenerales: form.notasGenerales?.trim() || undefined,
+        vendorId: form.vendorId ?? null,
       };
       const saved = initial
         ? await updateLead(token, initial.id, cleaned)
@@ -142,6 +153,7 @@ export function LeadFormDialog({
               />
             </div>
           </div>
+          <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
           <div>
             <Label htmlFor="tipo">Tipo</Label>
             <select
@@ -155,6 +167,31 @@ export function LeadFormDialog({
               <option value="MAYORISTA">Mayorista</option>
               <option value="REVENDEDOR">Revendedor</option>
             </select>
+          </div>
+          <div>
+            <Label htmlFor="leadVendor">Vendedor</Label>
+            <select
+              id="leadVendor"
+              value={form.vendorId ?? ''}
+              onChange={(e) =>
+                setForm({
+                  ...form,
+                  vendorId: e.target.value === '' ? null : Number(e.target.value),
+                })
+              }
+              className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-sm"
+            >
+              <option value="">Sin asignar</option>
+              {vendors
+                .filter((v) => v.activo || v.id === form.vendorId)
+                .map((v) => (
+                  <option key={v.id} value={v.id}>
+                    {v.nombre}
+                    {v.activo ? '' : ' (inactivo)'}
+                  </option>
+                ))}
+            </select>
+          </div>
           </div>
           <div>
             <Label htmlFor="notas">Notas generales</Label>

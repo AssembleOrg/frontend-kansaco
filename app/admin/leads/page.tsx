@@ -7,8 +7,8 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { deleteLead, getLeads } from '@/lib/crmApi';
-import type { Lead, LeadType } from '@/types/crm';
+import { deleteLead, getLeads, getVendors } from '@/lib/crmApi';
+import type { Lead, LeadType, Vendor } from '@/types/crm';
 import { LeadFormDialog } from '@/features/crm/components/LeadFormDialog';
 import { formatDate, leadTypeBadgeClass, leadTypeLabel } from '@/features/crm/utils';
 import { cn } from '@/lib/utils';
@@ -23,8 +23,20 @@ export default function LeadsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [tipo, setTipo] = useState<LeadType | ''>('');
+  const [vendorFilter, setVendorFilter] = useState(''); // '' todos, '0' sin asignar
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editing, setEditing] = useState<Lead | null>(null);
+  const [vendors, setVendors] = useState<Vendor[]>([]);
+
+  useEffect(() => {
+    if (!token) return;
+    getVendors(token, true)
+      .then(setVendors)
+      .catch(() => toast.error('Error cargando vendedores'));
+  }, [token]);
+
+  const vendorName = (id: number | null) =>
+    vendors.find((v) => v.id === id)?.nombre ?? '—';
 
   const refresh = useCallback(async () => {
     if (!token) return;
@@ -33,6 +45,7 @@ export default function LeadsPage() {
       const data = await getLeads(token, {
         search: search || undefined,
         tipo: tipo || undefined,
+        vendorId: vendorFilter === '' ? undefined : Number(vendorFilter),
       });
       setLeads(data);
     } catch (err) {
@@ -40,7 +53,7 @@ export default function LeadsPage() {
     } finally {
       setIsLoading(false);
     }
-  }, [token, search, tipo]);
+  }, [token, search, tipo, vendorFilter]);
 
   useEffect(() => {
     void refresh();
@@ -69,8 +82,8 @@ export default function LeadsPage() {
   }
 
   const activeFiltersCount = useMemo(
-    () => (search ? 1 : 0) + (tipo ? 1 : 0),
-    [search, tipo]
+    () => (search ? 1 : 0) + (tipo ? 1 : 0) + (vendorFilter ? 1 : 0),
+    [search, tipo, vendorFilter]
   );
 
   return (
@@ -96,6 +109,7 @@ export default function LeadsPage() {
             ? () => {
                 setSearch('');
                 setTipo('');
+                setVendorFilter('');
               }
             : undefined
         }
@@ -125,6 +139,26 @@ export default function LeadsPage() {
             <option value="">Todos</option>
             <option value="MAYORISTA">Mayorista</option>
             <option value="REVENDEDOR">Revendedor</option>
+          </select>
+        </div>
+        <div>
+          <Label htmlFor="vendorFilter" className="text-xs">
+            Vendedor
+          </Label>
+          <select
+            id="vendorFilter"
+            value={vendorFilter}
+            onChange={(e) => setVendorFilter(e.target.value)}
+            className="mt-1 w-full rounded-md border border-gray-300 bg-white px-3 py-2 text-base sm:text-sm"
+          >
+            <option value="">Todos</option>
+            <option value="0">Sin asignar</option>
+            {vendors.map((v) => (
+              <option key={v.id} value={v.id}>
+                {v.nombre}
+                {v.activo ? '' : ' (inactivo)'}
+              </option>
+            ))}
           </select>
         </div>
       </FilterSheet>
@@ -170,6 +204,7 @@ export default function LeadsPage() {
                 <th className="px-4 py-2">Email</th>
                 <th className="px-4 py-2">Teléfono</th>
                 <th className="px-4 py-2">Zona</th>
+                <th className="px-4 py-2">Vendedor</th>
                 <th className="px-4 py-2">Creado</th>
                 <th className="px-4 py-2"></th>
               </tr>
@@ -199,6 +234,9 @@ export default function LeadsPage() {
                   <td className="px-4 py-2 text-gray-600">
                     {[lead.ciudad, lead.provincia].filter(Boolean).join(', ') ||
                       '—'}
+                  </td>
+                  <td className="px-4 py-2 text-gray-600">
+                    {vendorName(lead.vendorId)}
                   </td>
                   <td className="px-4 py-2 text-gray-500">
                     {formatDate(lead.createdAt)}

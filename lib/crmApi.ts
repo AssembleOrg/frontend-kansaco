@@ -134,6 +134,7 @@ export function getLeads(
     tipo?: string;
     ciudad?: string;
     provincia?: string;
+    vendorId?: number; // 0 = sin asignar
   } = {},
 ): Promise<Lead[]> {
   return jsonFetch<Lead[]>(
