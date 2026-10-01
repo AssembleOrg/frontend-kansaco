@@ -9,10 +9,6 @@ import {
   Image,
   Tag,
   BarChart3,
-  Briefcase,
-  Users,
-  UserCog,
-  Settings,
   Percent,
   Boxes,
   UserCheck,
@@ -68,15 +64,6 @@ const NAV_GROUPS: NavGroup[] = [
     label: 'Web',
     items: [
       { label: 'Solicitudes', href: '/admin/solicitudes', icon: Inbox },
-    ],
-  },
-  {
-    label: 'CRM',
-    items: [
-      { label: 'Negocios', href: '/admin/negocios', icon: Briefcase },
-      { label: 'Leads', href: '/admin/leads', icon: Users },
-      { label: 'Vendedores', href: '/admin/vendedores', icon: UserCog },
-      { label: 'Pipeline', href: '/admin/configuracion/pipeline', icon: Settings },
     ],
   },
 ];

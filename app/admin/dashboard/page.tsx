@@ -7,10 +7,6 @@ import {
   Tag,
   Image as ImageIcon,
   BarChart3,
-  Briefcase,
-  Users,
-  UserCog,
-  Settings,
   Percent,
   UserCheck,
   Inbox,
@@ -45,10 +41,6 @@ const ITEMS: NavItem[] = [
   { label: 'Imágenes', desc: 'Galería del catálogo', href: '/admin/images', icon: ImageIcon },
   { label: 'Precios', desc: 'Recargo % por categoría', href: '/admin/pricing', icon: Percent },
   { label: 'Cuentas', desc: 'Aprobar y asignar rol', href: '/admin/users', icon: UserCheck },
-  { label: 'Negocios', desc: 'Pipeline comercial', href: '/admin/negocios', icon: Briefcase },
-  { label: 'Leads', desc: 'Contactos del CRM', href: '/admin/leads', icon: Users },
-  { label: 'Vendedores', desc: 'Equipo comercial', href: '/admin/vendedores', icon: UserCog },
-  { label: 'Pipeline', desc: 'Etapas y motivos', href: '/admin/configuracion/pipeline', icon: Settings },
 ];
 
 export default function AdminDashboard() {

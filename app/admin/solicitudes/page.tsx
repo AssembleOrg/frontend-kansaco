@@ -112,6 +112,11 @@ export default function SolicitudesPage() {
         }
       />
 
+      <p className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+        Desde el 01/10/2026, las solicitudes <strong>Mayorista</strong> se cargan solas en el
+        CRM del ERP (Negocios → &quot;Iniciada&quot;). Las de Trabajo y Lubri Experto quedan solo acá.
+      </p>
+
       <FilterSheet
         activeCount={activeFiltersCount}
         onClear={
