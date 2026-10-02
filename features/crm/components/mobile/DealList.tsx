@@ -27,12 +27,11 @@ export function DealList({ column, onDealClick }: Props) {
 
   return (
     <div className="flex-1 overflow-y-auto overscroll-contain-y bg-white">
-      {column.deals.map((deal, index) => (
+      {column.deals.map((deal) => (
         <DealCardMobile
           key={deal.id}
           deal={deal}
           stageColor={column.color}
-          index={index}
           onClick={onDealClick}
         />
       ))}

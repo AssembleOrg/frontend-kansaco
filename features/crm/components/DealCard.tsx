@@ -12,27 +12,32 @@ import {
   formatRelativeTime,
   leadTypeBadgeClass,
   leadTypeLabel,
+  vendorColor,
 } from '@/features/crm/utils';
 import type { Deal } from '@/types/crm';
 import { cn } from '@/lib/utils';
 
 interface DealCardProps {
   deal: Deal;
-  index?: number;
   onClick: (dealId: number) => void;
 }
 
-function DealCardInner({ deal, index = 0, onClick }: DealCardProps) {
-  const isAlt = index % 2 === 1;
+function DealCardInner({ deal, onClick }: DealCardProps) {
+  const color = vendorColor(deal.vendor);
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({
       id: `deal-${deal.id}`,
       data: { dealId: deal.id, fromStageId: deal.stage.id },
     });
 
-  const style = transform
-    ? { transform: `translate3d(${transform.x}px, ${transform.y}px, 0)` }
-    : undefined;
+  // Borde + tinte con el color del vendedor: de quién es se ve sin leer.
+  const style = {
+    borderLeftColor: color,
+    backgroundColor: `color-mix(in srgb, ${color} 7%, white)`,
+    ...(transform && {
+      transform: `translate3d(${transform.x}px, ${transform.y}px, 0)`,
+    }),
+  };
 
   const ciudad = [deal.lead.ciudad, deal.lead.provincia]
     .filter(Boolean)
@@ -48,8 +53,7 @@ function DealCardInner({ deal, index = 0, onClick }: DealCardProps) {
       {...listeners}
       onClick={() => onClick(deal.id)}
       className={cn(
-        'group cursor-pointer rounded-lg border border-gray-200 p-3 shadow-sm transition-shadow hover:shadow-md',
-        isAlt ? 'bg-[#16a245]/[0.07]' : 'bg-white',
+        'group cursor-pointer rounded-lg border border-l-4 border-gray-200 p-3 shadow-sm transition-shadow hover:shadow-md',
         isDragging && 'opacity-50 shadow-lg',
       )}
     >
@@ -76,9 +80,18 @@ function DealCardInner({ deal, index = 0, onClick }: DealCardProps) {
           <span className="font-medium">Cierre:</span>{' '}
           {formatDate(deal.fechaCierre)}
         </p>
-        <p>
+        <p className="flex items-center gap-1">
           <span className="font-medium">Vendedor:</span>{' '}
-          {deal.vendor?.nombre ?? '—'}
+          {deal.vendor ? (
+            <span
+              className="truncate rounded-full px-2 py-0.5 text-[10px] font-bold text-white"
+              style={{ backgroundColor: color }}
+            >
+              {deal.vendor.nombre}
+            </span>
+          ) : (
+            '—'
+          )}
         </p>
         {ciudad && (
           <p className="flex items-center gap-1 truncate">

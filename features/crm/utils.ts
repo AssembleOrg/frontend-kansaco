@@ -1,4 +1,4 @@
-import type { Deal, LeadType } from '@/types/crm';
+import type { Deal, LeadType, Vendor } from '@/types/crm';
 import { toWhatsAppDigits } from '@/lib/phone';
 
 export function formatCurrency(value: string | number | null | undefined): string {
@@ -92,4 +92,24 @@ export function buildMailtoLink(email: string | null | undefined): string | null
 
 export function dealTitle(deal: Pick<Deal, 'lead'>): string {
   return deal.lead?.nombre ?? 'Sin nombre';
+}
+
+// Misma paleta que el ERP. ponytail: sin columna `color` acá (el CRM vive en el
+// ERP); ids secuenciales → los primeros 10 vendedores no repiten color.
+const VENDOR_COLORS = [
+  '#3D7DE2',
+  '#D14F19',
+  '#2E9E47',
+  '#7A4FD1',
+  '#B88A00',
+  '#0E9AA7',
+  '#C2307A',
+  '#1F5BB8',
+  '#A07000',
+  '#4A2B9A',
+];
+
+export function vendorColor(vendor: Pick<Vendor, 'id'> | null | undefined): string {
+  if (!vendor) return '#CBD5E1';
+  return VENDOR_COLORS[(Math.abs(vendor.id) + VENDOR_COLORS.length - 1) % VENDOR_COLORS.length];
 }

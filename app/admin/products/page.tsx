@@ -30,6 +30,7 @@ import {
   deleteProductImage,
   getBultos,
   getAllBultosForProducts,
+  getGamasPorPresentacion,
   getProductImages,
   getProductsPaginated,
   ImageListItem,
@@ -38,6 +39,7 @@ import {
   updateProduct,
 } from '@/lib/api';
 import { BultosPorProducto, pareceMenor20L, splitPresentations } from '@/lib/bultos';
+import { GAMAS } from '@/lib/gamas';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Checkbox } from '@/components/ui/checkbox';
@@ -89,6 +91,7 @@ export default function ProductsPage() {
   const [products, setProducts] = useState<Product[]>([]);
   const [bultosMap, setBultosMap] = useState<BultosPorProducto>({});
   const [bultos, setBultos] = useState<BultoAdmin[]>([]);
+  const [gamasMap, setGamasMap] = useState<Record<number, Record<string, string>>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -97,6 +100,8 @@ export default function ProductsPage() {
   const [estado, setEstado] = useState<Estado>('todos');
   const [categoria, setCategoria] = useState('all');
   const [filtroBulto, setFiltroBulto] = useState<FiltroBulto>('todos');
+  // 'todas' | código de gama (AMG…) | 'sin' (alguna presentación sin gama)
+  const [filtroGama, setFiltroGama] = useState('todas');
   const [orden, setOrden] = useState<Orden>('nombre');
 
   // Selección y acciones
@@ -124,13 +129,16 @@ export default function ProductsPage() {
         all.push(...res.data);
         if (!res.hasNext) break;
       }
-      const [map, lista] = await Promise.all([
+      const [map, lista, gamas] = await Promise.all([
         getAllBultosForProducts(token),
         getBultos(token),
+        // Sin la tabla de gamas el admin sigue funcionando (filtro vacío).
+        getGamasPorPresentacion(token).catch(() => ({})),
       ]);
       setProducts(all);
       setBultosMap(map);
       setBultos(lista);
+      setGamasMap(gamas);
       setSelected((cur) => new Set([...cur].filter((id) => all.some((p) => p.id === id))));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar productos');
@@ -172,6 +180,16 @@ export default function ProductsPage() {
     [presDe]
   );
 
+  const pasaGama = useCallback(
+    (p: Product) => {
+      if (filtroGama === 'todas') return true;
+      const porPres = gamasMap[p.id] ?? {};
+      if (filtroGama === 'sin') return splitPresentations(p.presentation).some((x) => !porPres[x]);
+      return Object.values(porPres).includes(filtroGama);
+    },
+    [filtroGama, gamasMap]
+  );
+
   // Todos los filtros menos el de estado: sirve para los contadores de estado.
   const baseFiltrada = useMemo(() => {
     const qn = q.trim().toLowerCase();
@@ -183,9 +201,10 @@ export default function ProductsPage() {
           p.slug?.toLowerCase().includes(qn) ||
           p.presentation?.toLowerCase().includes(qn)) &&
         (categoria === 'all' || categoriasDe(p).includes(categoria)) &&
-        pasaBulto(p, filtroBulto)
+        pasaBulto(p, filtroBulto) &&
+        pasaGama(p)
     );
-  }, [products, q, categoria, filtroBulto, pasaBulto]);
+  }, [products, q, categoria, filtroBulto, pasaBulto, pasaGama]);
 
   const visibles = useMemo(() => {
     const test = ESTADOS.find((e) => e.value === estado)!.test;
@@ -201,12 +220,13 @@ export default function ProductsPage() {
 
   const cuentaBulto = (f: FiltroBulto) => products.filter((p) => pasaBulto(p, f)).length;
 
-  const hayFiltros = q !== '' || estado !== 'todos' || categoria !== 'all' || filtroBulto !== 'todos';
+  const hayFiltros = q !== '' || estado !== 'todos' || categoria !== 'all' || filtroBulto !== 'todos' || filtroGama !== 'todas';
   const limpiar = () => {
     setQ('');
     setEstado('todos');
     setCategoria('all');
     setFiltroBulto('todos');
+    setFiltroGama('todas');
   };
 
   const seleccionados = products.filter((p) => selected.has(p.id));
@@ -540,6 +560,24 @@ export default function ProductsPage() {
             </select>
           </div>
 
+          <div className="rounded-xl border border-neutral-200 bg-white p-2">
+            <p className="px-2 py-1 text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Gama</p>
+            <select
+              aria-label="Gama"
+              value={filtroGama}
+              onChange={(e) => setFiltroGama(e.target.value)}
+              className="w-full rounded-md border border-neutral-200 bg-white px-2 py-1.5 text-sm"
+            >
+              <option value="todas">Todas</option>
+              {GAMAS.map((g) => (
+                <option key={g} value={g}>
+                  {g}
+                </option>
+              ))}
+              <option value="sin">Con presentaciones sin gama</option>
+            </select>
+          </div>
+
           {hayFiltros && (
             <Button variant="ghost" size="sm" className="w-full text-neutral-600" onClick={limpiar}>
               <X className="mr-1 h-4 w-4" /> Limpiar filtros
@@ -738,6 +776,11 @@ export default function ProductsPage() {
                             title={bs.length === 0 && pareceMenor20L(pres) ? 'Pendiente: < 20 L sin bulto' : undefined}
                           >
                             {pres}
+                            {gamasMap[p.id]?.[pres] && (
+                              <span className="rounded bg-blue-50 px-1 text-blue-800" title="Gama">
+                                {gamasMap[p.id][pres]}
+                              </span>
+                            )}
                             {bs.map((b) => (
                               <span key={b.id} className="rounded bg-green-100 px-1 text-green-800">
                                 {b.nombre}

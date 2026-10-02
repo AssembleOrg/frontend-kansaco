@@ -3018,6 +3018,21 @@ export async function getBultosForProducts(productIds: number[]): Promise<Bultos
   return bultoFetch<BultosPorProducto>(`/products?ids=${ids.join(',')}`, null);
 }
 
+/** Público: gamas de Tango de cada producto { productId: ['AMG', 'AAG'] }. */
+export const getGamasPorProducto = () => bultoFetch<Record<number, string[]>>('/gamas', null);
+
+/** Staff: { productId: { presentación: gama } } de todo el catálogo. */
+export const getGamasPorPresentacion = (token: string) =>
+  bultoFetch<Record<number, Record<string, string>>>('/gamas/presentaciones', token);
+
+/** Staff: fija o quita (gama null) la gama de una presentación. */
+export const setGamaPresentacion = (
+  token: string,
+  productId: number,
+  presentation: string,
+  gama: string | null,
+) => bultoFetch<unknown>('/gamas', token, { method: 'PUT', body: { productId, presentation, gama } });
+
 /** Staff: bultos de todo el catálogo en un pedido. */
 export const getAllBultosForProducts = (token: string) =>
   bultoFetch<BultosPorProducto>('/asignaciones', token);

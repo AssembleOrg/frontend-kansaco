@@ -25,7 +25,13 @@ export function KanbanColumn({ column, onDealClick }: KanbanColumnProps) {
         isOver ? 'border-green-400 bg-green-50' : 'border-gray-200',
       )}
     >
-      <header className="flex items-center justify-between rounded-t-lg border-b border-gray-200 bg-white px-3 py-2">
+      <header
+        className="flex items-center justify-between rounded-t-lg border-b border-t-4 border-b-gray-200 px-3 py-2"
+        style={{
+          borderTopColor: column.color,
+          backgroundColor: `color-mix(in srgb, ${column.color} 12%, white)`,
+        }}
+      >
         <div className="flex items-center gap-2 min-w-0">
           <span
             className="h-2.5 w-2.5 shrink-0 rounded-full"
@@ -47,11 +53,10 @@ export function KanbanColumn({ column, onDealClick }: KanbanColumnProps) {
             Sin negocios
           </p>
         ) : (
-          column.deals.map((deal, index) => (
+          column.deals.map((deal) => (
             <DealCard
               key={deal.id}
               deal={deal}
-              index={index}
               onClick={onDealClick}
             />
           ))

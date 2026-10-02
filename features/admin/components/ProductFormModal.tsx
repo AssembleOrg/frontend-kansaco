@@ -20,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import ImageSelectionModal from './ImageSelectionModal';
 import { ProductBultosEditor } from './ProductBultosEditor';
+import { ProductGamaEditor } from './ProductGamaEditor';
 import {
   ImageListItem,
   getProductImages,
@@ -693,6 +694,13 @@ export default function ProductFormModal({
                 disabled={isLoading}
               />
               <ProductBultosEditor
+                token={token}
+                productId={product?.id}
+                savedPresentation={product?.presentation ?? ''}
+                draftPresentation={formData.presentation}
+                disabled={isLoading}
+              />
+              <ProductGamaEditor
                 token={token}
                 productId={product?.id}
                 savedPresentation={product?.presentation ?? ''}

@@ -8,6 +8,7 @@ import {
   formatDate,
   leadTypeBadgeClass,
   leadTypeLabel,
+  vendorColor,
 } from '@/features/crm/utils';
 import { MoneyText } from './MoneyText';
 import { cn } from '@/lib/utils';
@@ -15,12 +16,11 @@ import { cn } from '@/lib/utils';
 interface Props {
   deal: Deal;
   stageColor: string;
-  index?: number;
   onClick: (dealId: number) => void;
 }
 
-export function DealCardMobile({ deal, stageColor, index = 0, onClick }: Props) {
-  const isAlt = index % 2 === 1;
+export function DealCardMobile({ deal, stageColor, onClick }: Props) {
+  const color = vendorColor(deal.vendor);
   return (
     <button
       type="button"
@@ -28,9 +28,12 @@ export function DealCardMobile({ deal, stageColor, index = 0, onClick }: Props) 
       className={cn(
         'group flex w-full items-center gap-3 px-4 py-3 text-left',
         'border-b border-neutral-200/60 last:border-b-0',
-        'transition-colors active:bg-neutral-100',
-        isAlt ? 'bg-[#16a245]/[0.07]' : 'bg-white'
+        'border-l-4 transition-colors active:brightness-95'
       )}
+      style={{
+        borderLeftColor: color,
+        backgroundColor: `color-mix(in srgb, ${color} 7%, white)`,
+      }}
     >
       <span
         aria-hidden
@@ -49,7 +52,16 @@ export function DealCardMobile({ deal, stageColor, index = 0, onClick }: Props) 
           />
         </div>
         <div className="mt-0.5 flex items-center gap-1.5 truncate text-[12px] text-neutral-500">
-          <span className="truncate">{deal.vendor?.nombre ?? 'Sin vendedor'}</span>
+          {deal.vendor ? (
+            <span
+              className="truncate rounded-full px-2 py-0.5 text-[11px] font-bold text-white"
+              style={{ backgroundColor: color }}
+            >
+              {deal.vendor.nombre}
+            </span>
+          ) : (
+            <span className="truncate">Sin vendedor</span>
+          )}
           <span aria-hidden>·</span>
           <span className="shrink-0">{formatDate(deal.fechaCierre)}</span>
           <span aria-hidden>·</span>
