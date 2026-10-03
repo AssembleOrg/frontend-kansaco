@@ -279,6 +279,11 @@ function OrderSuccessContent() {
                         {item.presentation && (
                           <span className="block text-xs text-gray-500">{item.presentation}</span>
                         )}
+                        {item.skus && item.skus.length > 0 && (
+                          <span className="block font-mono text-[11px] text-gray-400">
+                            SKU {item.skus.join(' / ')}
+                          </span>
+                        )}
                         {describirBultos(item.quantity, item.bultos) && (
                           <span
                             className={`block text-xs ${

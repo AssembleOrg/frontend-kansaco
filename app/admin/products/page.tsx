@@ -31,6 +31,8 @@ import {
   getBultos,
   getAllBultosForProducts,
   getGamasPorPresentacion,
+  getAllSkus,
+  SkusPorProducto,
   getProductImages,
   getProductsPaginated,
   ImageListItem,
@@ -92,6 +94,7 @@ export default function ProductsPage() {
   const [bultosMap, setBultosMap] = useState<BultosPorProducto>({});
   const [bultos, setBultos] = useState<BultoAdmin[]>([]);
   const [gamasMap, setGamasMap] = useState<Record<number, Record<string, string>>>({});
+  const [skusMap, setSkusMap] = useState<SkusPorProducto>({});
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -129,16 +132,19 @@ export default function ProductsPage() {
         all.push(...res.data);
         if (!res.hasNext) break;
       }
-      const [map, lista, gamas] = await Promise.all([
+      const [map, lista, gamas, skus] = await Promise.all([
         getAllBultosForProducts(token),
         getBultos(token),
         // Sin la tabla de gamas el admin sigue funcionando (filtro vacío).
         getGamasPorPresentacion(token).catch(() => ({})),
+        // Ídem códigos Tango: sin la tabla, la búsqueda solo usa los demás campos.
+        getAllSkus(token).catch(() => ({})),
       ]);
       setProducts(all);
       setBultosMap(map);
       setBultos(lista);
       setGamasMap(gamas);
+      setSkusMap(skus);
       setSelected((cur) => new Set([...cur].filter((id) => all.some((p) => p.id === id))));
     } catch (e) {
       setError(e instanceof Error ? e.message : 'Error al cargar productos');
@@ -199,12 +205,14 @@ export default function ProductsPage() {
           p.name.toLowerCase().includes(qn) ||
           p.sku?.toLowerCase().includes(qn) ||
           p.slug?.toLowerCase().includes(qn) ||
-          p.presentation?.toLowerCase().includes(qn)) &&
+          p.presentation?.toLowerCase().includes(qn) ||
+          // Códigos Tango de cualquier presentación (ej. 0010002700).
+          Object.values(skusMap[p.id] ?? {}).some((cs) => cs.some((c) => c.toLowerCase().includes(qn)))) &&
         (categoria === 'all' || categoriasDe(p).includes(categoria)) &&
         pasaBulto(p, filtroBulto) &&
         pasaGama(p)
     );
-  }, [products, q, categoria, filtroBulto, pasaBulto, pasaGama]);
+  }, [products, q, categoria, filtroBulto, pasaBulto, pasaGama, skusMap]);
 
   const visibles = useMemo(() => {
     const test = ESTADOS.find((e) => e.value === estado)!.test;
@@ -776,6 +784,11 @@ export default function ProductsPage() {
                             title={bs.length === 0 && pareceMenor20L(pres) ? 'Pendiente: < 20 L sin bulto' : undefined}
                           >
                             {pres}
+                            {skusMap[p.id]?.[pres]?.length ? (
+                              <span className="font-mono text-[10px] text-neutral-400" title="SKU Tango">
+                                {skusMap[p.id][pres].join(' / ')}
+                              </span>
+                            ) : null}
                             {gamasMap[p.id]?.[pres] && (
                               <span className="rounded bg-blue-50 px-1 text-blue-800" title="Gama">
                                 {gamasMap[p.id][pres]}

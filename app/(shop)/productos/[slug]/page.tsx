@@ -11,6 +11,7 @@ import { AddToCartButton } from '@/features/cart/components/client/AddToCartButt
 import { useCart } from '@/features/cart/hooks/useCart';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useBultos } from '@/features/cart/hooks/useBultos';
+import { useSkus } from '@/features/cart/hooks/useSkus';
 import { splitPresentations } from '@/lib/bultos';
 import { Loader2, ArrowLeft, Info, Droplet, Box, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -24,6 +25,7 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoadingImages, setIsLoadingImages] = useState(true);
   const bultos = useBultos([product.id])[product.id];
+  const skus = useSkus([product.id])[product.id];
 
   getProductPrice(product); // Price calculation for future use
 
@@ -270,7 +272,14 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
                         const bs = bultos?.[pres] ?? [];
                         return (
                           <li key={pres} className="flex items-center justify-between gap-3 px-3 py-2 text-sm">
-                            <span className="text-gray-800">{pres}</span>
+                            <span className="text-gray-800">
+                              {pres}
+                              {skus?.[pres]?.length ? (
+                                <span className="ml-2 font-mono text-[11px] text-gray-400">
+                                  SKU {skus[pres].join(' / ')}
+                                </span>
+                              ) : null}
+                            </span>
                             <span className="flex flex-wrap justify-end gap-1 text-xs">
                               {bs.length === 0 ? (
                                 <span className="text-gray-400">por unidad</span>

@@ -1158,6 +1158,33 @@ export async function updateProduct(
   return result.data;
 }
 
+/**
+ * Renombra una presentación y mueve con ella sus bultos, gama, SKU Tango y
+ * carritos abiertos. Devuelve el producto con el texto de presentación nuevo.
+ */
+export async function renamePresentation(
+  token: string,
+  productId: number,
+  from: string,
+  to: string
+): Promise<Product> {
+  if (!API_BASE_URL) {
+    throw new Error('API URL not configured.');
+  }
+  const response = await fetch(`${API_BASE_URL}/product/${productId}/presentation/rename`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ from, to }),
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{ status: string; data: Product }>(response);
+  return result.data;
+}
+
 export async function deleteProduct(
   token: string,
   productId: number
@@ -3017,6 +3044,27 @@ export async function getBultosForProducts(productIds: number[]): Promise<Bultos
   if (ids.length === 0 || !API_BASE_URL) return {};
   return bultoFetch<BultosPorProducto>(`/products?ids=${ids.join(',')}`, null);
 }
+
+/** { productId: { presentación: códigos Tango } }. */
+export type SkusPorProducto = Record<number, Record<string, string[]>>;
+
+/** Público: códigos Tango por presentación de los productos dados. */
+export async function getSkusForProducts(productIds: number[]): Promise<SkusPorProducto> {
+  const ids = [...new Set(productIds)].filter((id) => id > 0);
+  if (ids.length === 0 || !API_BASE_URL) return {};
+  return bultoFetch<SkusPorProducto>(`/skus?ids=${ids.join(',')}`, null);
+}
+
+/** Staff: códigos Tango de todo el catálogo. */
+export const getAllSkus = (token: string) => bultoFetch<SkusPorProducto>('/skus/todos', token);
+
+/** Staff: reemplaza los códigos Tango de una presentación ([] = quitar). */
+export const setSkusPresentacion = (
+  token: string,
+  productId: number,
+  presentation: string,
+  skus: string[],
+) => bultoFetch<unknown>('/skus', token, { method: 'PUT', body: { productId, presentation, skus } });
 
 /** Público: gamas de Tango de cada producto { productId: ['AMG', 'AAG'] }. */
 export const getGamasPorProducto = () => bultoFetch<Record<number, string[]>>('/gamas', null);

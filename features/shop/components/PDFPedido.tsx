@@ -347,7 +347,11 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
                     {(item.presentation || describirBultos(item.quantity, item.bultos)) && (
                       <Text style={{ fontSize: 7, color: '#666' }}>
                         {'\n'}
-                        {[item.presentation, describirBultos(item.quantity, item.bultos)]
+                        {[
+                          item.presentation,
+                          describirBultos(item.quantity, item.bultos),
+                          item.skus?.length ? `SKU ${item.skus.join(' / ')}` : '',
+                        ]
                           .filter(Boolean)
                           .join(' · ')}
                       </Text>

@@ -24,11 +24,13 @@ interface CartItemCardProps {
   item: CartItem;
   /** Bultos de esta presentación (si tiene): el +/- avanza de a bulto. */
   bultos?: BultoInfo[];
+  /** Códigos Tango de la presentación elegida. */
+  skus?: string[];
 }
 
 const DEBOUNCE_MS = 350;
 
-export const CartItemCard = ({ item, bultos }: CartItemCardProps) => {
+export const CartItemCard = ({ item, bultos, skus }: CartItemCardProps) => {
   const updateQuantity = useCartStore((s) => s.updateQuantity);
   const removeFromCart = useCartStore((s) => s.removeFromCart);
   const { formatPrice, getProductPrice } = useCart();
@@ -140,6 +142,9 @@ export const CartItemCard = ({ item, bultos }: CartItemCardProps) => {
               <span className="rounded-full bg-green-50 px-2 py-0.5 text-[11px] font-medium text-green-700">
                 {presentation}
               </span>
+            )}
+            {skus && skus.length > 0 && (
+              <span className="font-mono text-[11px] text-neutral-400">{skus.join(' / ')}</span>
             )}
           </div>
 

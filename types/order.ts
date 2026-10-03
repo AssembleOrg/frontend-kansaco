@@ -9,6 +9,8 @@ export interface OrderItem {
   presentation?: string;
   /** Copia de los bultos al momento del pedido (la calcula el backend). */
   bultos?: { nombre: string; unidades: number }[];
+  /** Copia de los códigos Tango de la presentación (la calcula el backend). */
+  skus?: string[];
 }
 
 export interface OrderContactInfo {

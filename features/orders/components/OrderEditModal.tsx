@@ -602,6 +602,9 @@ export function OrderEditModal({
                             {item.presentation}
                           </span>
                         )}
+                        {item.skus && item.skus.length > 0 && (
+                          <span className="font-mono text-xs">SKU {item.skus.join(' / ')}</span>
+                        )}
                       </div>
                       {(() => {
                         // Copia del pedido si la tiene; si no, bultos vigentes.

@@ -34,6 +34,7 @@ import { estaFrenado, MENSAJE_BLOQUEO } from '@/types/auth';
 import { AR_PROVINCES } from '@/lib/constants/provinces';
 import { normalizeText } from '@/lib/geo';
 import { useBultos } from '@/features/cart/hooks/useBultos';
+import { useSkus } from '@/features/cart/hooks/useSkus';
 import { describirBultos, tieneSueltas } from '@/lib/bultos';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/constants/images';
 
@@ -828,6 +829,7 @@ type SummaryItem = {
 
 function OrderItemsList({ items }: { items: SummaryItem[] }) {
   const bultos = useBultos(items.map((i) => i.product.id));
+  const skus = useSkus(items.map((i) => i.product.id));
   return (
     <ul className="divide-y divide-neutral-100">
       {items.map((item) => (
@@ -859,6 +861,11 @@ function OrderItemsList({ items }: { items: SummaryItem[] }) {
                   <span className="truncate">{item.presentation}</span>
                 </>
               )}
+              {skus[item.product.id]?.[item.presentation ?? '']?.length ? (
+                <span className="truncate font-mono text-neutral-400">
+                  {skus[item.product.id][item.presentation ?? ''].join(' / ')}
+                </span>
+              ) : null}
             </div>
             <BultosLine
               quantity={item.quantity}

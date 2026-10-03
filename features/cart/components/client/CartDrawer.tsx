@@ -29,6 +29,7 @@ import {
 } from '@/components/ui/dialog';
 import { CartItemCard } from './CartItemCard';
 import { useBultos } from '@/features/cart/hooks/useBultos';
+import { useSkus } from '@/features/cart/hooks/useSkus';
 
 export const CartDrawer = () => {
   const { token } = useAuth();
@@ -41,6 +42,7 @@ export const CartDrawer = () => {
   const [confirmEmptyOpen, setConfirmEmptyOpen] = useState(false);
   // Un solo pedido de bultos para todo el carrito (no uno por tarjeta).
   const bultos = useBultos((cart?.items || []).map((i) => i.product.id), isCartOpen);
+  const skus = useSkus((cart?.items || []).map((i) => i.product.id), isCartOpen);
 
   const isAuthenticated = !!token;
   const productCount = cart?.items?.length ?? 0;
@@ -111,6 +113,7 @@ export const CartDrawer = () => {
                     <CartItemCard
                       item={item}
                       bultos={bultos[item.product.id]?.[item.presentation ?? '']}
+                      skus={skus[item.product.id]?.[item.presentation ?? '']}
                     />
                   </motion.li>
                 ))}

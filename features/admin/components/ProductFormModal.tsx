@@ -21,6 +21,8 @@ import { Progress } from '@/components/ui/progress';
 import ImageSelectionModal from './ImageSelectionModal';
 import { ProductBultosEditor } from './ProductBultosEditor';
 import { ProductGamaEditor } from './ProductGamaEditor';
+import { ProductSkuEditor } from './ProductSkuEditor';
+import { PresentationRenamer } from './PresentationRenamer';
 import {
   ImageListItem,
   getProductImages,
@@ -173,6 +175,9 @@ export default function ProductFormModal({
 
   const { token } = useAuth();
   const [categoryInput, setCategoryInput] = useState('');
+  // Presentación tal como está en la BD. Cambia al renombrar sin cerrar el modal:
+  // los editores (bultos/gama/SKU) y el renombrador trabajan sobre este texto.
+  const [savedPresentation, setSavedPresentation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<ImageListItem[]>([]);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
@@ -287,6 +292,7 @@ export default function ProductFormModal({
         imageUrl: product.imageUrl ?? '',
         isFeatured: product.isFeatured ?? false,
       });
+      setSavedPresentation(product.presentation ?? '');
       setBrokenImagesCount(0);
       setImagesLoadFailed(false);
       setImagesLoaded(false);
@@ -298,6 +304,7 @@ export default function ProductFormModal({
       }
     } else {
       setSelectedImages([]);
+      setSavedPresentation('');
       setBrokenImagesCount(0);
       setImagesLoadFailed(false);
       setImagesLoaded(true); // create flow: no images to load
@@ -693,17 +700,42 @@ export default function ProductFormModal({
                 placeholder="Ej: 1L, 5L, 20L"
                 disabled={isLoading}
               />
+              {product?.id && (
+                <PresentationRenamer
+                  token={token}
+                  productId={product.id}
+                  savedPresentation={savedPresentation}
+                  draftPresentation={formData.presentation}
+                  disabled={isLoading}
+                  onRenamed={(presentation) => {
+                    // Crítico: el "Guardar" del form debe mandar el texto nuevo,
+                    // si no el backend borraría lo recién movido.
+                    setSavedPresentation(presentation);
+                    setFormData((prev) => ({ ...prev, presentation }));
+                  }}
+                />
+              )}
               <ProductBultosEditor
+                key={`bultos-${savedPresentation}`}
                 token={token}
                 productId={product?.id}
-                savedPresentation={product?.presentation ?? ''}
+                savedPresentation={savedPresentation}
                 draftPresentation={formData.presentation}
                 disabled={isLoading}
               />
               <ProductGamaEditor
+                key={`gama-${savedPresentation}`}
                 token={token}
                 productId={product?.id}
-                savedPresentation={product?.presentation ?? ''}
+                savedPresentation={savedPresentation}
+                draftPresentation={formData.presentation}
+                disabled={isLoading}
+              />
+              <ProductSkuEditor
+                key={`sku-${savedPresentation}`}
+                token={token}
+                productId={product?.id}
+                savedPresentation={savedPresentation}
                 draftPresentation={formData.presentation}
                 disabled={isLoading}
               />
