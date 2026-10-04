@@ -2,7 +2,7 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { User, LoginPayload, LoginApiResponse } from '@/types/auth';
-import { loginUser as apiLoginUser } from '@/lib/api';
+import { loginUser as apiLoginUser, linkVisitorToUser } from '@/lib/api';
 import { useCartStore } from '@/features/cart/store/cartStore';
 import { cookieUtils, COOKIE_NAMES } from '@/lib/cookies';
 import { logger } from '@/lib/logger';
@@ -153,7 +153,10 @@ export const useAuthStore = create<AuthState>()(
             // Save to cookies
             cookieUtils.set(COOKIE_NAMES.AUTH_TOKEN, token, { expires: 7 });
             cookieUtils.set(COOKIE_NAMES.USER_DATA, JSON.stringify(userWithDiscounts), { expires: 7 });
-            
+
+            // Fire & forget: asocia la navegación anónima previa a este usuario.
+            linkVisitorToUser(token);
+
             logger.debug('AuthStore: Login successful', {
               userId: user.id,
               email: user.email,

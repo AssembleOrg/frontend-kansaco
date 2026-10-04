@@ -2646,6 +2646,7 @@ export interface AnalyticsEvent {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   payload: Record<string, any> | null;
   createdAt: string;
+  user?: { id: string; email: string; nombre: string; apellido: string; rol: string } | null;
 }
 
 export interface PaginatedEventsResponse {
@@ -2700,11 +2701,14 @@ export interface UserActivity {
   lastLogin: string | null;
   loginCount: number;
   searchCount: number;
+  viewCount: number;
+  recentEvents: AnalyticsEvent[];
 }
 
-// Helper to unwrap { status: "success", data: T } backend wrapper
+// Helper to unwrap { status: "success", data: T } backend wrapper.
+// '/reportes' es alias de '/analytics': uBlock bloquea URLs con /analytics/events.
 async function fetchAnalytics<T>(token: string, path: string): Promise<T> {
-  const url = `${API_BASE_URL}/analytics/${path}`;
+  const url = `${API_BASE_URL}/reportes/${path}`;
   apiLogger.request('GET', url);
   const response = await fetch(url, {
     headers: { Authorization: `Bearer ${token}` },
@@ -2723,6 +2727,7 @@ export interface TopViewedProduct {
   productName: string;
   productSlug: string;
   views: number;
+  uniqueViewers: number;
 }
 
 export interface AnalyticsDashboard {
@@ -2748,19 +2753,60 @@ export async function getAnalyticsDashboard(
   return fetchAnalytics<AnalyticsDashboard>(token, qs ? `dashboard?${qs}` : 'dashboard');
 }
 
-// Public tracking (no auth required)
-export async function trackPublicEvent(event: {
-  eventType: string;
-  productId?: number;
-  productName?: string;
-  productSlug?: string;
-  query?: string;
-}): Promise<void> {
+// Id anónimo por navegador para contar personas (no aperturas) en "Más vistos".
+// Si el navegador pide Global Privacy Control, no seguimos entre visitas.
+function getVisitorId(): string | undefined {
   try {
-    await fetch(`${API_BASE_URL}/analytics/track`, {
+    if ((navigator as Navigator & { globalPrivacyControl?: boolean }).globalPrivacyControl) {
+      return undefined;
+    }
+    let id = localStorage.getItem('kv_id');
+    if (!id) {
+      id = crypto.randomUUID();
+      localStorage.setItem('kv_id', id);
+    }
+    return id;
+  } catch {
+    return undefined;
+  }
+}
+
+// Public tracking (auth opcional: con token el evento queda asociado al usuario).
+// '/actividad/vista' es alias de '/analytics/track', que bloquean los adblockers.
+export async function trackPublicEvent(
+  event: {
+    eventType: string;
+    productId?: number;
+    productName?: string;
+    productSlug?: string;
+    query?: string;
+    resultsCount?: number;
+  },
+  token?: string | null,
+): Promise<void> {
+  try {
+    await fetch(`${API_BASE_URL}/actividad/vista`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(event),
+      headers: {
+        'Content-Type': 'application/json',
+        ...(token && { Authorization: `Bearer ${token}` }),
+      },
+      body: JSON.stringify({ ...event, visitorId: getVisitorId() }),
+    });
+  } catch {
+    // Silent fail - analytics should never break the app
+  }
+}
+
+// Tras el login: lo que este navegador vio como anónimo pasa a la ficha del usuario.
+export async function linkVisitorToUser(token: string): Promise<void> {
+  const visitorId = getVisitorId();
+  if (!visitorId) return;
+  try {
+    await fetch(`${API_BASE_URL}/actividad/vincular`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ visitorId }),
     });
   } catch {
     // Silent fail - analytics should never break the app
@@ -2777,6 +2823,7 @@ export async function getAnalyticsEvents(
     dateFrom?: string;
     dateTo?: string;
     search?: string;
+    rol?: string;
   },
 ): Promise<PaginatedEventsResponse> {
   const params = new URLSearchParams();
@@ -2787,7 +2834,8 @@ export async function getAnalyticsEvents(
   if (options?.dateFrom) params.set('dateFrom', options.dateFrom);
   if (options?.dateTo) params.set('dateTo', options.dateTo);
   if (options?.search) params.set('search', options.search);
-  return fetchAnalytics<PaginatedEventsResponse>(token, `events?${params.toString()}`);
+  if (options?.rol) params.set('rol', options.rol);
+  return fetchAnalytics<PaginatedEventsResponse>(token, `registros?${params.toString()}`);
 }
 
 export async function getAnalyticsUsers(

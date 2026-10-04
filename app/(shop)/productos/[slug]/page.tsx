@@ -317,7 +317,7 @@ function ProductDetailPageContent() {
   const [product, setProduct] = useState<Product | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const { token } = useAuth();
+  const { token, isAuthReady } = useAuth();
 
   const params = useParams();
   const searchParams = useSearchParams();
@@ -359,19 +359,6 @@ function ProductDetailPageContent() {
         const productData = await getProductBySlug(slug, token);
         if (productData) {
           setProduct(productData);
-          // Track product view (debounced per product, 30 min cooldown)
-          const viewKey = `pv_${productData.id}`;
-          const lastView = localStorage.getItem(viewKey);
-          const now = Date.now();
-          if (!lastView || now - Number(lastView) > 30 * 60 * 1000) {
-            localStorage.setItem(viewKey, String(now));
-            trackPublicEvent({
-              eventType: 'product_view',
-              productId: productData.id,
-              productName: productData.name,
-              productSlug: productData.slug,
-            });
-          }
         } else {
           setError('Producto no encontrado');
         }
@@ -385,6 +372,27 @@ function ProductDetailPageContent() {
     };
     fetchProduct();
   }, [slug, token]);
+
+  // Track product view (30 min cooldown por producto). Espera a que el auth se
+  // hidrate: si no, la vista sale anónima y el cooldown bloquea la del usuario.
+  useEffect(() => {
+    if (!product || !isAuthReady) return;
+    try {
+      const viewKey = `pv_${product.id}`;
+      const lastView = localStorage.getItem(viewKey);
+      const now = Date.now();
+      if (lastView && now - Number(lastView) <= 30 * 60 * 1000) return;
+      localStorage.setItem(viewKey, String(now));
+    } catch {
+      // localStorage bloqueado: trackear igual, sin cooldown.
+    }
+    trackPublicEvent({
+      eventType: 'product_view',
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+    }, token);
+  }, [product, isAuthReady, token]);
 
   if (isLoading) {
     return (

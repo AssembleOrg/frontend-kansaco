@@ -493,6 +493,17 @@ export default function RegisterPage() {
                   'Crear Cuenta'
                 )}
               </Button>
+              <p className="text-center text-xs text-gray-400">
+                Al crear tu cuenta aceptás los{' '}
+                <Link href="/terminos-y-condiciones" className="text-[#16a245] hover:underline">
+                  Términos y condiciones
+                </Link>{' '}
+                y la{' '}
+                <Link href="/privacidad" className="text-[#16a245] hover:underline">
+                  Política de privacidad
+                </Link>
+                .
+              </p>
             </form>
           </CardContent>
 

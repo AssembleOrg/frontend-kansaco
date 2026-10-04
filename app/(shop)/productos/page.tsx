@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getGamasPorProducto, getProducts, getProductsPaginated } from '@/lib/api';
+import { getGamasPorProducto, getProducts, getProductsPaginated, trackPublicEvent } from '@/lib/api';
 import { Product } from '@/types';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters, { Faceta } from '@/features/products/components/client/ProductFilters';
@@ -31,6 +31,11 @@ const categoriasDe = (p: Product) =>
 const envasesDe = (p: Product) =>
   [...new Set(splitPresentations(p.presentation).map(tipoEnvase).filter((e): e is string => !!e))];
 
+const coincideBusqueda = (p: Product, q: string) =>
+  [p.name, p.sku, p.aplication, p.presentation, ...categoriasDe(p)]
+    .filter(Boolean)
+    .some((t) => String(t).toLowerCase().includes(q));
+
 const tamanosDe = (p: Product) => {
   const pres = splitPresentations(p.presentation);
   const t = new Set<keyof typeof TAMANOS>();
@@ -47,7 +52,7 @@ function ProductsContent() {
   const debounceTimer = useRef<NodeJS.Timeout | null>(null);
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { token } = useAuth();
+  const { token, isAuthReady } = useAuth();
   const { openCart } = useCart();
 
   const currentPage = Number(searchParams.get('page')) || 1;
@@ -137,11 +142,24 @@ function ProductsContent() {
   // ─── Filtrado ────────────────────────────────────────────────────
 
   const qn = searchTerm.trim().toLowerCase();
-  const pasaBusqueda = (p: Product) =>
-    !qn ||
-    [p.name, p.sku, p.aplication, p.presentation, ...categoriasDe(p)]
-      .filter(Boolean)
-      .some((t) => String(t).toLowerCase().includes(qn));
+  const pasaBusqueda = (p: Product) => !qn || coincideBusqueda(p, qn);
+
+  // Registra la búsqueda (≥3 letras, 1,5 s sin cambios). El filtrado es local,
+  // así que sin esto el backend nunca se enteraba de qué buscan los clientes.
+  const lastTrackedSearch = useRef('');
+  useEffect(() => {
+    const q = searchQuery.trim().toLowerCase();
+    if (q.length < 3 || isLoading || !isAuthReady || q === lastTrackedSearch.current) return;
+    const t = setTimeout(() => {
+      lastTrackedSearch.current = q;
+      trackPublicEvent(
+        { eventType: 'search', query: q, resultsCount: products.filter((p) => coincideBusqueda(p, q)).length },
+        token,
+      );
+    }, 1500);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchQuery, isLoading, isAuthReady]);
 
   const valoresDe: Record<Filtro, (p: Product) => string[]> = {
     category: categoriasDe,

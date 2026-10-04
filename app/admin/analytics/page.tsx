@@ -18,7 +18,9 @@ import {
   TopViewedProduct,
   ProductCompareResult,
   UsersByZoneItem,
+  UserActivity,
 } from '@/lib/api';
+import { CATEGORIA_LABEL, UserRole } from '@/types/auth';
 import {
   BarChart3,
   Users,
@@ -133,13 +135,14 @@ export default function AnalyticsPage() {
     dateFrom: '',
     dateTo: '',
     search: '',
+    rol: '',
   });
 
   // Users state
   const [users, setUsers] = useState<AnalyticsUser[]>([]);
   const [usersPagination, setUsersPagination] = useState({ page: 1, totalPages: 1, total: 0, hasNext: false, hasPrev: false });
   const [userSearch, setUserSearch] = useState('');
-  const [selectedUser, setSelectedUser] = useState<{ user: AnalyticsUser; activity: { lastLogin: string | null; loginCount: number; searchCount: number } } | null>(null);
+  const [selectedUser, setSelectedUser] = useState<{ user: AnalyticsUser; activity: UserActivity } | null>(null);
 
   // Products tab state
   const [productRankOrder, setProductRankOrder] = useState<'top' | 'bottom'>('top');
@@ -211,6 +214,7 @@ export default function AnalyticsPage() {
         dateFrom: eventFilters.dateFrom || undefined,
         dateTo: eventFilters.dateTo || undefined,
         search: eventFilters.search || undefined,
+        rol: eventFilters.rol || undefined,
       });
       setEvents(result.data);
       setEventsPagination({ page: result.page, totalPages: result.totalPages, total: result.total, hasNext: result.hasNext, hasPrev: result.hasPrev });
@@ -331,15 +335,7 @@ export default function AnalyticsPage() {
     } catch { return dateStr; }
   };
 
-  const rolLabel = (rol: string) => {
-    const labels: Record<string, string> = {
-      ADMIN: 'Admin',
-      CLIENTE_MINORISTA: 'Minorista',
-      CLIENTE_MAYORISTA: 'Mayorista',
-      ASISTENTE: 'Asistente',
-    };
-    return labels[rol] || rol;
-  };
+  const rolLabel = (rol: string) => CATEGORIA_LABEL[rol as UserRole] || rol;
 
   const rolBadgeColor = (rol: string) => {
     const colors: Record<string, string> = {
@@ -347,6 +343,10 @@ export default function AnalyticsPage() {
       CLIENTE_MINORISTA: 'bg-blue-100 text-blue-800',
       CLIENTE_MAYORISTA: 'bg-amber-100 text-amber-800',
       ASISTENTE: 'bg-teal-100 text-teal-800',
+      SUBMAYORISTA: 'bg-orange-100 text-orange-800',
+      REVENDEDOR: 'bg-pink-100 text-pink-800',
+      TALLER: 'bg-sky-100 text-sky-800',
+      LUBRICENTRO: 'bg-emerald-100 text-emerald-800',
     };
     return colors[rol] || 'bg-gray-100 text-gray-800';
   };
@@ -443,6 +443,8 @@ export default function AnalyticsPage() {
           onFilterChange={(key, value) => setEventFilters((prev) => ({ ...prev, [key]: value }))}
           onPageChange={(page) => loadEvents(page)}
           formatDate={formatDate}
+          rolLabel={rolLabel}
+          rolBadgeColor={rolBadgeColor}
         />
       )}
 
@@ -674,6 +676,7 @@ function OverviewTab({
 
   const topViewedChartData = topViewed.slice(0, 8).map((p) => ({
     name: p.productName.length > 20 ? p.productName.substring(0, 20) + '...' : p.productName,
+    personas: p.uniqueViewers,
     visitas: p.views,
   }));
 
@@ -921,7 +924,9 @@ function OverviewTab({
           <Eye className="h-5 w-5 text-blue-600" />
           Productos que mas interesan
         </h3>
-        <p className="text-xs text-gray-400 mb-4">Productos que los clientes abren para ver en detalle</p>
+        <p className="text-xs text-gray-400 mb-4">
+          Personas distintas que abrieron cada producto (sin contar admin ni asistentes). En gris, aperturas totales.
+        </p>
         {topViewedChartData.length === 0 ? (
           <EmptyState text="Todavia no hay visitas a productos" />
         ) : (
@@ -945,11 +950,12 @@ function OverviewTab({
                     fontSize: '13px',
                   }}
                 />
-                <Bar dataKey="visitas" name="Visitas" fill="#3b82f6" radius={[6, 6, 0, 0]}>
+                <Bar dataKey="personas" name="Personas" fill="#3b82f6" radius={[6, 6, 0, 0]}>
                   {topViewedChartData.map((_, index) => (
                     <Cell key={index} fill={CHART_COLORS[index % CHART_COLORS.length]} />
                   ))}
                 </Bar>
+                <Bar dataKey="visitas" name="Aperturas" fill="#d4d4d4" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
           </div>
@@ -1493,18 +1499,74 @@ function PeriodSelector({
 // =============================================
 // Events Tab
 // =============================================
+function eventDetail(event: AnalyticsEvent): string | null {
+  if (event.eventType === 'search' && event.payload?.query) {
+    return `"${event.payload.query}" (${event.payload.resultsCount ?? '?'} resultados)`;
+  }
+  if (event.eventType === 'product_view' && event.payload?.productName) return event.payload.productName;
+  if (event.eventType === 'login') return 'Ingresó al sistema';
+  return null;
+}
+
+function EventTypeBadge({ type }: { type: string }) {
+  return (
+    <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
+      type === 'login'
+        ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
+        : type === 'product_view'
+          ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
+          : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200'
+    }`}>
+      {type === 'login' ? <LogIn className="h-3 w-3" /> : type === 'product_view' ? <Eye className="h-3 w-3" /> : <Search className="h-3 w-3" />}
+      {type === 'product_view' ? 'vista' : type === 'search' ? 'búsqueda' : type}
+    </span>
+  );
+}
+
+const ROL_FILTER_OPTIONS: UserRole[] = ['TALLER', 'LUBRICENTRO', 'CLIENTE_MAYORISTA', 'SUBMAYORISTA', 'REVENDEDOR', 'CLIENTE_MINORISTA'];
+
 function EventsTab({
-  events, pagination, filters, isLoading, error, onFilterChange, onPageChange, formatDate,
+  events, pagination, filters, isLoading, error, onFilterChange, onPageChange, formatDate, rolLabel, rolBadgeColor,
 }: {
   events: AnalyticsEvent[];
   pagination: { page: number; totalPages: number; total: number; hasNext: boolean; hasPrev: boolean };
-  filters: { userId: string; eventType: string; dateFrom: string; dateTo: string; search: string };
+  filters: { userId: string; eventType: string; dateFrom: string; dateTo: string; search: string; rol: string };
   isLoading: boolean;
   error: string | null;
   onFilterChange: (key: string, value: string) => void;
   onPageChange: (page: number) => void;
   formatDate: (d: string) => string;
+  rolLabel: (rol: string) => string;
+  rolBadgeColor: (rol: string) => string;
 }) {
+  // Debounce del buscador: sin esto, cada tecla dispara un request.
+  const [searchInput, setSearchInput] = useState(filters.search);
+  useEffect(() => {
+    if (searchInput === filters.search) return;
+    const t = setTimeout(() => onFilterChange('search', searchInput), 400);
+    return () => clearTimeout(t);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchInput]);
+
+  // Nombre + rol actual si el evento es de un usuario; si no, email del login o Visitante.
+  const renderUsuario = (event: AnalyticsEvent) => {
+    const rol = event.user?.rol || event.payload?.rol;
+    const nombre = event.user
+      ? `${event.user.nombre} ${event.user.apellido}`.trim() || event.user.email
+      : event.payload?.email;
+    if (!nombre) return <span className="italic text-neutral-400">Visitante</span>;
+    return (
+      <span className="inline-flex min-w-0 max-w-full items-center gap-1.5">
+        <span className="truncate">{nombre}</span>
+        {rol ? (
+          <span className={`inline-flex shrink-0 rounded-full px-1.5 py-0.5 text-[10px] font-medium ${rolBadgeColor(rol)}`}>
+            {rolLabel(rol)}
+          </span>
+        ) : null}
+      </span>
+    );
+  };
+
   return (
     <div className="space-y-4">
       {/* Filters */}
@@ -1513,13 +1575,23 @@ function EventsTab({
           <Filter className="h-4 w-4 text-neutral-500" />
           <span className="text-sm font-medium text-neutral-700">Filtros</span>
         </div>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <Input
-            placeholder="Email, producto o término..."
-            value={filters.search}
-            onChange={(e) => onFilterChange('search', e.target.value)}
+            placeholder="Cliente, email, producto o término..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
             className="text-sm"
           />
+          <select
+            value={filters.rol}
+            onChange={(e) => onFilterChange('rol', e.target.value)}
+            className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm"
+          >
+            <option value="">Todos los roles</option>
+            {ROL_FILTER_OPTIONS.map((r) => (
+              <option key={r} value={r}>{rolLabel(r)}</option>
+            ))}
+          </select>
           <select
             value={filters.eventType}
             onChange={(e) => onFilterChange('eventType', e.target.value)}
@@ -1555,36 +1627,19 @@ function EventsTab({
           <p className="px-4 py-8 text-center text-sm text-neutral-500">No se encontraron registros</p>
         ) : (
           events.map((event) => {
-            const detalle =
-              event.eventType === 'search' && event.payload?.query
-                ? `"${event.payload.query}" (${event.payload.resultsCount ?? '?'} resultados)`
-                : event.eventType === 'product_view' && event.payload?.productName
-                  ? event.payload.productName
-                  : event.eventType === 'login'
-                    ? 'Ingresó al sistema'
-                    : null;
-            const usuario = event.payload?.email || 'Visitante';
+            const detalle = eventDetail(event);
             return (
               <div
                 key={event.id}
                 className="flex flex-col gap-1 border-b border-neutral-200/60 px-4 py-3 last:border-b-0"
               >
                 <div className="flex items-center justify-between gap-2">
-                  <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                    event.eventType === 'login'
-                      ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
-                      : event.eventType === 'product_view'
-                        ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
-                        : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200'
-                  }`}>
-                    {event.eventType === 'login' ? <LogIn className="h-3 w-3" /> : event.eventType === 'product_view' ? <Eye className="h-3 w-3" /> : <Search className="h-3 w-3" />}
-                    {event.eventType === 'product_view' ? 'vista' : event.eventType}
-                  </span>
+                  <EventTypeBadge type={event.eventType} />
                   <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">
                     {formatDate(event.createdAt)}
                   </span>
                 </div>
-                <p className="truncate text-[13px] text-neutral-700">{usuario}</p>
+                <p className="truncate text-[13px] text-neutral-700">{renderUsuario(event)}</p>
                 {detalle ? (
                   <p className="truncate text-[12px] text-neutral-500">{detalle}</p>
                 ) : null}
@@ -1648,28 +1703,13 @@ function EventsTab({
                       {formatDate(event.createdAt)}
                     </td>
                     <td className="px-4 py-3">
-                      <span className={`inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-medium ${
-                        event.eventType === 'login'
-                          ? 'bg-green-50 text-green-700 ring-1 ring-green-200'
-                          : event.eventType === 'product_view'
-                            ? 'bg-blue-50 text-blue-700 ring-1 ring-blue-200'
-                            : 'bg-purple-50 text-purple-700 ring-1 ring-purple-200'
-                      }`}>
-                        {event.eventType === 'login' ? <LogIn className="h-3 w-3" /> : event.eventType === 'product_view' ? <Eye className="h-3 w-3" /> : <Search className="h-3 w-3" />}
-                        {event.eventType === 'product_view' ? 'vista' : event.eventType}
-                      </span>
+                      <EventTypeBadge type={event.eventType} />
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600">
-                      {event.payload?.email || <span className="italic text-neutral-400">Visitante</span>}
+                      {renderUsuario(event)}
                     </td>
                     <td className="px-4 py-3 text-sm text-neutral-600">
-                      {event.eventType === 'search' && event.payload?.query
-                        ? `"${event.payload.query}" (${event.payload.resultsCount ?? '?'} resultados)`
-                        : event.eventType === 'product_view' && event.payload?.productName
-                          ? event.payload.productName
-                          : event.eventType === 'login'
-                            ? 'Ingresó al sistema'
-                            : '-'}
+                      {eventDetail(event) ?? '-'}
                     </td>
                   </tr>
                 ))
@@ -1722,7 +1762,7 @@ function UsersTab({
   pagination: { page: number; totalPages: number; total: number; hasNext: boolean; hasPrev: boolean };
   search: string;
   isLoading: boolean;
-  selectedUser: { user: AnalyticsUser; activity: { lastLogin: string | null; loginCount: number; searchCount: number } } | null;
+  selectedUser: { user: AnalyticsUser; activity: UserActivity } | null;
   onSearchChange: (search: string) => void;
   onPageChange: (page: number) => void;
   onViewUser: (user: AnalyticsUser) => void;
@@ -1751,7 +1791,7 @@ function UsersTab({
         open={selectedUser !== null}
         onOpenChange={(open) => { if (!open) onCloseDetail(); }}
       >
-        <ResponsiveDialogContent className="sm:max-w-md">
+        <ResponsiveDialogContent className="sm:max-w-lg">
           <ResponsiveDialogHeader>
             <ResponsiveDialogTitle>
               {selectedUser
@@ -1760,7 +1800,8 @@ function UsersTab({
             </ResponsiveDialogTitle>
           </ResponsiveDialogHeader>
           {selectedUser && (
-            <div className="grid grid-cols-1 gap-3 py-2 sm:grid-cols-3">
+            <>
+            <div className="grid grid-cols-2 gap-3 py-2 sm:grid-cols-4">
               <div className="rounded-lg border border-neutral-200/70 bg-neutral-50/60 p-3">
                 <p className="text-[11px] uppercase tracking-wide text-neutral-500">Último login</p>
                 <p className="mt-1 text-sm font-medium tabular-nums text-neutral-900">
@@ -1779,7 +1820,39 @@ function UsersTab({
                   {selectedUser.activity.searchCount}
                 </p>
               </div>
+              <div className="rounded-lg border border-neutral-200/70 bg-neutral-50/60 p-3">
+                <p className="text-[11px] uppercase tracking-wide text-neutral-500">Productos vistos</p>
+                <p className="mt-1 text-sm font-semibold tabular-nums text-neutral-900">
+                  {selectedUser.activity.viewCount}
+                </p>
+              </div>
             </div>
+
+            <div>
+              <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-neutral-500">Actividad reciente</p>
+              {selectedUser.activity.recentEvents.length === 0 ? (
+                <p className="py-4 text-center text-sm text-neutral-500">Sin actividad registrada</p>
+              ) : (
+                <ul className="max-h-72 divide-y divide-neutral-200/60 overflow-y-auto rounded-lg border border-neutral-200/70">
+                  {selectedUser.activity.recentEvents.map((event) => (
+                    <li key={event.id} className="flex items-center gap-2 px-3 py-2">
+                      <EventTypeBadge type={event.eventType} />
+                      <span className="min-w-0 flex-1 truncate text-[13px] text-neutral-700">
+                        {event.eventType === 'product_view' && event.payload?.productSlug ? (
+                          <Link href={`/productos/${event.payload.productSlug}`} target="_blank" className="hover:underline">
+                            {eventDetail(event)}
+                          </Link>
+                        ) : (
+                          eventDetail(event) ?? '-'
+                        )}
+                      </span>
+                      <span className="shrink-0 text-[11px] tabular-nums text-neutral-500">{formatDate(event.createdAt)}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+            </>
           )}
         </ResponsiveDialogContent>
       </ResponsiveDialog>
