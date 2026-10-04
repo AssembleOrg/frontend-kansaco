@@ -19,10 +19,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import ImageSelectionModal from './ImageSelectionModal';
-import { ProductBultosEditor } from './ProductBultosEditor';
-import { ProductGamaEditor } from './ProductGamaEditor';
-import { ProductSkuEditor } from './ProductSkuEditor';
-import { PresentationRenamer } from './PresentationRenamer';
+import { PresentacionesEditor } from './PresentacionesEditor';
 import {
   ImageListItem,
   getProductImages,
@@ -635,12 +632,30 @@ export default function ProductFormModal({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="max-h-[90vh] w-full max-w-2xl overflow-y-auto rounded-lg bg-white shadow-lg">
+      <div className="flex max-h-[92vh] w-full max-w-6xl flex-col overflow-hidden rounded-xl bg-white shadow-lg">
         {/* Header */}
-        <div className="flex items-center justify-between border-b border-gray-200 px-6 py-4">
-          <h2 className="text-xl font-bold text-gray-900">
-            {product ? 'Editar Producto' : 'Crear Nuevo Producto'}
-          </h2>
+        <div className="flex shrink-0 items-center justify-between gap-3 border-b border-gray-200 px-6 py-3">
+          <div className="min-w-0">
+            <h2 className="text-lg font-bold text-gray-900">
+              {product ? 'Editar producto' : 'Crear nuevo producto'}
+            </h2>
+            {product && (
+              <p className="flex flex-wrap items-center gap-1.5 text-xs text-neutral-500">
+                <span className="truncate">{formData.name || product.name}</span>
+                {product.sku && <span className="font-mono">· SKU {product.sku}</span>}
+                <span
+                  className={`rounded-full px-1.5 py-0.5 font-medium ${
+                    formData.isVisible ? 'bg-green-100 text-green-800' : 'bg-neutral-100 text-neutral-600'
+                  }`}
+                >
+                  {formData.isVisible ? 'Visible' : 'Oculto'}
+                </span>
+                {formData.isFeatured && (
+                  <span className="rounded-full bg-amber-100 px-1.5 py-0.5 font-medium text-amber-800">Destacado</span>
+                )}
+              </p>
+            )}
+          </div>
           <button
             onClick={handleClose}
             disabled={isLoading}
@@ -651,59 +666,123 @@ export default function ProductFormModal({
         </div>
 
         {/* Form */}
-        <form onSubmit={handleSubmit} className="space-y-6 p-6">
+        <form onSubmit={handleSubmit} className="min-h-0 flex-1 space-y-5 overflow-y-auto bg-neutral-50/60 p-5">
           {error && (
             <div className="rounded-lg border border-red-200 bg-red-50 p-4 text-sm text-red-600">
               {error}
             </div>
           )}
 
-          {/* Nombre */}
-          <div>
-            <Label htmlFor="name">Nombre del Producto *</Label>
-            <Input
-              id="name"
-              name="name"
-              value={formData.name}
-              onChange={handleInputChange}
-              placeholder="Ej: Lubricante Industrial XYZ"
-              disabled={isLoading}
-              required
-            />
-          </div>
+          <div className="grid gap-5 lg:grid-cols-[minmax(0,1fr)_280px]">
+            {/* ===== Columna principal ===== */}
+            <div className="min-w-0 space-y-5">
+              <section className="rounded-xl border border-neutral-200 bg-white p-4 space-y-4">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Datos generales</h3>
+              {/* Nombre */}
+              <div>
+                <Label htmlFor="name">Nombre del Producto *</Label>
+                <Input
+                  id="name"
+                  name="name"
+                  value={formData.name}
+                  onChange={handleInputChange}
+                  placeholder="Ej: Lubricante Industrial XYZ"
+                  disabled={isLoading}
+                  required
+                />
+              </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            {/* SKU */}
-            <div>
-              <Label htmlFor="sku">SKU</Label>
-              <Input
-                id="sku"
-                name="sku"
-                value={formData.sku}
-                onChange={handleInputChange}
-                placeholder="Ej: PROD-123 (letras, números, - y _)"
-                disabled={isLoading}
-              />
-              <p className="mt-1 text-xs text-gray-500">
-                Solo letras, números, guiones (-) y guiones bajos (_)
-              </p>
-            </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <Label htmlFor="sku">SKU (familia)</Label>
+                  <Input
+                    id="sku"
+                    name="sku"
+                    value={formData.sku}
+                    onChange={handleInputChange}
+                    placeholder="Ej: 2700"
+                    disabled={isLoading}
+                  />
+                  <p className="mt-1 text-xs text-gray-500">
+                    Letras, números, guiones (-) y guiones bajos (_)
+                  </p>
+                </div>
+                <div>
+                  <Label htmlFor="price">Precio *</Label>
+                  <Input
+                    id="price"
+                    name="price"
+                    type="number"
+                    step="0.01"
+                    value={formData.price}
+                    onChange={handleInputChange}
+                    placeholder="0.00"
+                    disabled={isLoading}
+                    required
+                  />
+                </div>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+              {/* Aplicación */}
+              <div>
+                <Label htmlFor="aplication">Aplicación</Label>
+                <Input
+                  id="aplication"
+                  name="aplication"
+                  value={formData.aplication}
+                  onChange={handleInputChange}
+                  placeholder="Ej: Uso en máquinas textiles"
+                  disabled={isLoading}
+                />
+              </div>
 
-            {/* Presentación */}
-            <div>
-              <Label htmlFor="presentation">Presentación</Label>
-              <Input
-                id="presentation"
-                name="presentation"
-                value={formData.presentation}
-                onChange={handleInputChange}
-                placeholder="Ej: 1L, 5L, 20L"
-                disabled={isLoading}
-              />
-              {product?.id && (
-                <PresentationRenamer
+              {/* Whole Saler */}
+              <div>
+                <Label htmlFor="wholeSaler">Mayorista</Label>
+                <Input
+                  id="wholeSaler"
+                  name="wholeSaler"
+                  value={formData.wholeSaler}
+                  onChange={handleInputChange}
+                  placeholder="Nombre del mayorista"
+                  disabled={isLoading}
+                />
+              </div>
+
+                </div>
+              {/* Descripción */}
+              <div>
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea
+                  id="description"
+                  name="description"
+                  value={formData.description}
+                  onChange={handleInputChange}
+                  placeholder="Descripción del producto..."
+                  rows={3}
+                  disabled={isLoading}
+                />
+              </div>
+
+              </section>
+
+              <section className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Presentaciones</h3>
+                <div>
+                  <Label htmlFor="presentation">Opciones (separadas por coma)</Label>
+                  <Input
+                    id="presentation"
+                    name="presentation"
+                    value={formData.presentation}
+                    onChange={handleInputChange}
+                    placeholder="Ej: Tambor 200 Litros, Balde 20 Litros, Bidón 1 Litro"
+                    disabled={isLoading}
+                  />
+                </div>
+                <PresentacionesEditor
+                  key={`pres-${product?.id ?? 'nuevo'}-${savedPresentation}`}
                   token={token}
-                  productId={product.id}
+                  productId={product?.id}
                   savedPresentation={savedPresentation}
                   draftPresentation={formData.presentation}
                   disabled={isLoading}
@@ -714,410 +793,333 @@ export default function ProductFormModal({
                     setFormData((prev) => ({ ...prev, presentation }));
                   }}
                 />
-              )}
-              <ProductBultosEditor
-                key={`bultos-${savedPresentation}`}
-                token={token}
-                productId={product?.id}
-                savedPresentation={savedPresentation}
-                draftPresentation={formData.presentation}
-                disabled={isLoading}
-              />
-              <ProductGamaEditor
-                key={`gama-${savedPresentation}`}
-                token={token}
-                productId={product?.id}
-                savedPresentation={savedPresentation}
-                draftPresentation={formData.presentation}
-                disabled={isLoading}
-              />
-              <ProductSkuEditor
-                key={`sku-${savedPresentation}`}
-                token={token}
-                productId={product?.id}
-                savedPresentation={savedPresentation}
-                draftPresentation={formData.presentation}
-                disabled={isLoading}
-              />
-            </div>
-          </div>
+              </section>
 
-          {/* Descripción */}
-          <div>
-            <Label htmlFor="description">Descripción</Label>
-            <Textarea
-              id="description"
-              name="description"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Descripción del producto..."
-              rows={3}
-              disabled={isLoading}
-            />
-          </div>
+              <section className="rounded-xl border border-neutral-200 bg-white p-4">
+              {/* ========== IMÁGENES - Sección inline mejorada ========== */}
+              <div>
+                <Label>Imágenes del Producto</Label>
 
-          {/* Aplicación */}
-          <div>
-            <Label htmlFor="aplication">Aplicación</Label>
-            <Input
-              id="aplication"
-              name="aplication"
-              value={formData.aplication}
-              onChange={handleInputChange}
-              placeholder="Ej: Uso en máquinas textiles"
-              disabled={isLoading}
-            />
-          </div>
-
-          {/* Categorías */}
-          <div>
-            <Label>Categorías</Label>
-            <div className="flex gap-2">
-              <select
-                value={categoryInput}
-                onChange={(e) => setCategoryInput(e.target.value)}
-                className="flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
-                disabled={isLoading || isLoadingCategories}
-              >
-                <option value="">
-                  {isLoadingCategories ? 'Cargando categorías...' : 'Seleccionar categoría...'}
-                </option>
-                {availableCategories.map((cat) => (
-                  <option key={cat.id} value={cat.name}>
-                    {cat.name}
-                  </option>
-                ))}
-              </select>
-              <Button
-                type="button"
-                onClick={handleAddCategory}
-                variant="outline"
-                disabled={isLoading || !categoryInput || isLoadingCategories}
-              >
-                Agregar
-              </Button>
-            </div>
-            <p className="mt-1 text-xs text-gray-500">
-              También puedes escribir el nombre de una categoría nueva. Se creará automáticamente.
-            </p>
-            {formData.category.length > 0 && (
-              <div className="mt-2 flex flex-wrap gap-2">
-                {formData.category.map((cat, index) => (
-                  <span
-                    key={index}
-                    className="inline-flex items-center gap-2 rounded-full bg-blue-100 px-3 py-1 text-sm text-blue-700"
-                  >
-                    {cat}
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveCategory(index)}
-                      className="hover:text-blue-900"
-                      disabled={isLoading}
-                    >
-                      ×
-                    </button>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-2 gap-4">
-            {/* Precio */}
-            <div>
-              <Label htmlFor="price">Precio *</Label>
-              <Input
-                id="price"
-                name="price"
-                type="number"
-                step="0.01"
-                value={formData.price}
-                onChange={handleInputChange}
-                placeholder="0.00"
-                disabled={isLoading}
-                required
-              />
-            </div>
-
-            {/* Stock */}
-            {/* <div>
-              <Label htmlFor="stock">Stock</Label>
-              <Input
-                id="stock"
-                name="stock"
-                type="number"
-                value={formData.stock}
-                onChange={handleInputChange}
-                placeholder="0"
-                disabled={isLoading}
-              />
-            </div> */}
-          </div>
-
-          {/* ========== IMÁGENES - Sección inline mejorada ========== */}
-          <div>
-            <Label>Imágenes del Producto</Label>
-
-            {/* Broken images warning */}
-            {brokenImagesCount > 0 && (
-              <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
-                <AlertTriangle className="h-4 w-4 shrink-0" />
-                <span>
-                  {brokenImagesCount} imagen{brokenImagesCount > 1 ? 'es' : ''} rota
-                  {brokenImagesCount > 1 ? 's' : ''} fue
-                  {brokenImagesCount > 1 ? 'ron' : ''} removida
-                  {brokenImagesCount > 1 ? 's' : ''} automáticamente.
-                </span>
-              </div>
-            )}
-
-            {/* Loading state */}
-            {isLoadingImages && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
-                <Loader2 className="h-4 w-4 animate-spin" />
-                Cargando imágenes...
-              </div>
-            )}
-
-            {/* Load failed banner */}
-            {imagesLoadFailed && product?.id && (
-              <div className="mt-3 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
-                <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
-                <div className="flex-1">
-                  <p className="font-medium">
-                    No se pudieron cargar las imágenes del producto.
-                  </p>
-                  <p className="text-xs text-red-600">
-                    Reintentá antes de guardar para no perder las imágenes existentes.
-                  </p>
-                </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => product?.id && loadProductImages(product.id)}
-                  className="shrink-0"
-                >
-                  Reintentar
-                </Button>
-              </div>
-            )}
-
-            {/* Image grid with drag & drop */}
-            {!isLoadingImages && selectedImages.length > 0 && (
-              <div className="mt-3 space-y-2">
-                <p className="text-xs text-gray-500">
-                  Arrastrá para reordenar. La primera imagen es la portada.
-                </p>
-                <DndContext
-                  sensors={sensors}
-                  collisionDetection={closestCenter}
-                  onDragEnd={handleDragEnd}
-                >
-                  <SortableContext
-                    items={selectedImages.map((img) => img.key)}
-                    strategy={horizontalListSortingStrategy}
-                  >
-                    <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
-                      {selectedImages.map((img, index) => (
-                        <SortableImageItem
-                          key={img.key}
-                          image={img}
-                          index={index}
-                          onRemove={handleRemoveImage}
-                          disabled={isLoading}
-                        />
-                      ))}
-                    </div>
-                  </SortableContext>
-                </DndContext>
-              </div>
-            )}
-
-            {/* Action buttons: gallery + upload */}
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setIsImageModalOpen(true)}
-                disabled={isLoading || isUploading}
-                className="gap-2"
-              >
-                <ImageIcon className="h-4 w-4" />
-                Elegir de galería
-              </Button>
-
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={isLoading || isUploading}
-                className="gap-2"
-              >
-                {isUploading ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Upload className="h-4 w-4" />
+                {/* Broken images warning */}
+                {brokenImagesCount > 0 && (
+                  <div className="mt-2 flex items-center gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-700">
+                    <AlertTriangle className="h-4 w-4 shrink-0" />
+                    <span>
+                      {brokenImagesCount} imagen{brokenImagesCount > 1 ? 'es' : ''} rota
+                      {brokenImagesCount > 1 ? 's' : ''} fue
+                      {brokenImagesCount > 1 ? 'ron' : ''} removida
+                      {brokenImagesCount > 1 ? 's' : ''} automáticamente.
+                    </span>
+                  </div>
                 )}
-                {isUploading
-                  ? `Subiendo ${batchProgressPercent}%`
-                  : 'Subir nueva'}
-              </Button>
 
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/jpeg,image/png,image/gif,image/webp"
-                multiple
-                className="hidden"
-                onChange={(e) => {
-                  if (e.target.files && e.target.files.length > 0) {
-                    handleInlineUpload(e.target.files);
-                  }
-                }}
-              />
-            </div>
+                {/* Loading state */}
+                {isLoadingImages && (
+                  <div className="mt-3 flex items-center gap-2 text-sm text-gray-500">
+                    <Loader2 className="h-4 w-4 animate-spin" />
+                    Cargando imágenes...
+                  </div>
+                )}
 
-            {/* Real-time upload progress list (xhr.upload.onprogress) */}
-            {uploadQueue.length > 0 && (
-              <div className="mt-3 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
-                {uploadQueue.map((item) => (
-                  <div key={item.id} className="text-xs">
-                    <div className="flex items-center justify-between gap-2">
-                      <span className="truncate font-medium text-gray-700">
-                        {item.fileName}
-                      </span>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <span className="text-gray-500">
-                          {formatBytes(item.fileSize)}
-                        </span>
-                        {item.status === 'uploading' && (
-                          <span className="font-semibold text-green-700">
-                            {item.progress}%
+                {/* Load failed banner */}
+                {imagesLoadFailed && product?.id && (
+                  <div className="mt-3 flex items-start gap-3 rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-700">
+                    <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0" />
+                    <div className="flex-1">
+                      <p className="font-medium">
+                        No se pudieron cargar las imágenes del producto.
+                      </p>
+                      <p className="text-xs text-red-600">
+                        Reintentá antes de guardar para no perder las imágenes existentes.
+                      </p>
+                    </div>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => product?.id && loadProductImages(product.id)}
+                      className="shrink-0"
+                    >
+                      Reintentar
+                    </Button>
+                  </div>
+                )}
+
+                {/* Image grid with drag & drop */}
+                {!isLoadingImages && selectedImages.length > 0 && (
+                  <div className="mt-3 space-y-2">
+                    <p className="text-xs text-gray-500">
+                      Arrastrá para reordenar. La primera imagen es la portada.
+                    </p>
+                    <DndContext
+                      sensors={sensors}
+                      collisionDetection={closestCenter}
+                      onDragEnd={handleDragEnd}
+                    >
+                      <SortableContext
+                        items={selectedImages.map((img) => img.key)}
+                        strategy={horizontalListSortingStrategy}
+                      >
+                        <div className="grid grid-cols-3 gap-2 sm:grid-cols-4 md:grid-cols-5">
+                          {selectedImages.map((img, index) => (
+                            <SortableImageItem
+                              key={img.key}
+                              image={img}
+                              index={index}
+                              onRemove={handleRemoveImage}
+                              disabled={isLoading}
+                            />
+                          ))}
+                        </div>
+                      </SortableContext>
+                    </DndContext>
+                  </div>
+                )}
+
+                {/* Action buttons: gallery + upload */}
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsImageModalOpen(true)}
+                    disabled={isLoading || isUploading}
+                    className="gap-2"
+                  >
+                    <ImageIcon className="h-4 w-4" />
+                    Elegir de galería
+                  </Button>
+
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={isLoading || isUploading}
+                    className="gap-2"
+                  >
+                    {isUploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Upload className="h-4 w-4" />
+                    )}
+                    {isUploading
+                      ? `Subiendo ${batchProgressPercent}%`
+                      : 'Subir nueva'}
+                  </Button>
+
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/gif,image/webp"
+                    multiple
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        handleInlineUpload(e.target.files);
+                      }
+                    }}
+                  />
+                </div>
+
+                {/* Real-time upload progress list (xhr.upload.onprogress) */}
+                {uploadQueue.length > 0 && (
+                  <div className="mt-3 space-y-2 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    {uploadQueue.map((item) => (
+                      <div key={item.id} className="text-xs">
+                        <div className="flex items-center justify-between gap-2">
+                          <span className="truncate font-medium text-gray-700">
+                            {item.fileName}
                           </span>
-                        )}
-                        {item.status === 'done' && (
-                          <span className="font-semibold text-green-700">
-                            ✓ Listo
-                          </span>
-                        )}
-                        {item.status === 'error' && (
-                          <button
-                            type="button"
-                            onClick={() => handleDismissUploadItem(item.id)}
-                            className="rounded p-0.5 text-red-600 hover:bg-red-100"
-                            aria-label="Descartar"
-                          >
-                            <X className="h-3.5 w-3.5" />
-                          </button>
+                          <div className="flex shrink-0 items-center gap-2">
+                            <span className="text-gray-500">
+                              {formatBytes(item.fileSize)}
+                            </span>
+                            {item.status === 'uploading' && (
+                              <span className="font-semibold text-green-700">
+                                {item.progress}%
+                              </span>
+                            )}
+                            {item.status === 'done' && (
+                              <span className="font-semibold text-green-700">
+                                ✓ Listo
+                              </span>
+                            )}
+                            {item.status === 'error' && (
+                              <button
+                                type="button"
+                                onClick={() => handleDismissUploadItem(item.id)}
+                                className="rounded p-0.5 text-red-600 hover:bg-red-100"
+                                aria-label="Descartar"
+                              >
+                                <X className="h-3.5 w-3.5" />
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                        <Progress
+                          value={
+                            item.status === 'done'
+                              ? 100
+                              : item.status === 'error'
+                                ? item.progress
+                                : item.progress
+                          }
+                          className={`mt-1 h-1.5 ${
+                            item.status === 'error' ? 'bg-red-100' : ''
+                          }`}
+                        />
+                        {item.status === 'error' && item.errorMessage && (
+                          <p className="mt-1 text-[11px] text-red-600">
+                            {item.errorMessage}
+                          </p>
                         )}
                       </div>
-                    </div>
-                    <Progress
-                      value={
-                        item.status === 'done'
-                          ? 100
-                          : item.status === 'error'
-                            ? item.progress
-                            : item.progress
-                      }
-                      className={`mt-1 h-1.5 ${
-                        item.status === 'error' ? 'bg-red-100' : ''
-                      }`}
-                    />
-                    {item.status === 'error' && item.errorMessage && (
-                      <p className="mt-1 text-[11px] text-red-600">
-                        {item.errorMessage}
-                      </p>
-                    )}
+                    ))}
                   </div>
-                ))}
+                )}
+
+                {/* Drop zone (shown when no images) */}
+                {!isLoadingImages && selectedImages.length === 0 && (
+                  <div
+                    onDrop={handleDrop}
+                    onDragOver={handleDragOver}
+                    className="mt-3 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-green-400 hover:bg-green-50/50"
+                  >
+                    <Plus className="mb-2 h-8 w-8 text-gray-400" />
+                    <p className="text-sm text-gray-500">
+                      Arrastrá archivos acá, o usá los botones de arriba
+                    </p>
+                    <p className="mt-1 text-xs text-gray-400">
+                      JPEG, PNG, GIF, WEBP (máx. 10MB)
+                    </p>
+                  </div>
+                )}
               </div>
-            )}
 
-            {/* Drop zone (shown when no images) */}
-            {!isLoadingImages && selectedImages.length === 0 && (
-              <div
-                onDrop={handleDrop}
-                onDragOver={handleDragOver}
-                className="mt-3 flex flex-col items-center justify-center rounded-lg border-2 border-dashed border-gray-300 p-8 text-center transition-colors hover:border-green-400 hover:bg-green-50/50"
-              >
-                <Plus className="mb-2 h-8 w-8 text-gray-400" />
-                <p className="text-sm text-gray-500">
-                  Arrastrá archivos acá, o usá los botones de arriba
-                </p>
-                <p className="mt-1 text-xs text-gray-400">
-                  JPEG, PNG, GIF, WEBP (máx. 10MB)
-                </p>
+              </section>
+            </div>
+
+            {/* ===== Barra lateral ===== */}
+            <aside className="space-y-5 lg:sticky lg:top-0 lg:self-start">
+              <section className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3">
+                <h3 className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Publicación</h3>
+              {/* Visible */}
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="isVisible"
+                  name="isVisible"
+                  checked={formData.isVisible}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, isVisible: checked as boolean }))
+                  }
+                  disabled={isLoading}
+                />
+                <Label htmlFor="isVisible" className="cursor-pointer">
+                  Visible en la tienda
+                </Label>
               </div>
-            )}
-          </div>
 
-          {/* Whole Saler */}
-          <div>
-            <Label htmlFor="wholeSaler">Mayorista</Label>
-            <Input
-              id="wholeSaler"
-              name="wholeSaler"
-              value={formData.wholeSaler}
-              onChange={handleInputChange}
-              placeholder="Nombre del mayorista"
-              disabled={isLoading}
-            />
-          </div>
+              {/* Destacado */}
+              <div className="flex items-center gap-3">
+                <Checkbox
+                  id="isFeatured"
+                  name="isFeatured"
+                  checked={formData.isFeatured}
+                  onCheckedChange={(checked) =>
+                    setFormData((prev) => ({ ...prev, isFeatured: checked as boolean }))
+                  }
+                  disabled={isLoading}
+                />
+                <Label htmlFor="isFeatured" className="cursor-pointer">
+                  Destacar producto en página principal
+                </Label>
+              </div>
 
-          {/* Visible */}
-          <div className="flex items-center gap-3">
-            <Checkbox
-              id="isVisible"
-              name="isVisible"
-              checked={formData.isVisible}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({ ...prev, isVisible: checked as boolean }))
-              }
-              disabled={isLoading}
-            />
-            <Label htmlFor="isVisible" className="cursor-pointer">
-              Visible en la tienda
-            </Label>
-          </div>
+              </section>
+              <section className="rounded-xl border border-neutral-200 bg-white p-4">
+              {/* Categorías */}
+              <div>
+                <Label>Categorías</Label>
+                <div className="flex gap-2">
+                  <select
+                    value={categoryInput}
+                    onChange={(e) => setCategoryInput(e.target.value)}
+                    className="min-w-0 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm focus:border-green-500 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={isLoading || isLoadingCategories}
+                  >
+                    <option value="">
+                      {isLoadingCategories ? 'Cargando categorías...' : 'Seleccionar categoría...'}
+                    </option>
+                    {availableCategories.map((cat) => (
+                      <option key={cat.id} value={cat.name}>
+                        {cat.name}
+                      </option>
+                    ))}
+                  </select>
+                  {/* Desktop: solo el ícono (la barra lateral es angosta); mobile: con texto. */}
+                  <Button
+                    type="button"
+                    onClick={handleAddCategory}
+                    variant="outline"
+                    disabled={isLoading || !categoryInput || isLoadingCategories}
+                    aria-label="Agregar categoría"
+                    title="Agregar categoría"
+                    className="shrink-0 gap-1 border-green-200 text-green-700 hover:bg-green-50 lg:w-9 lg:px-0"
+                  >
+                    <Plus className="h-4 w-4" />
+                    <span className="lg:hidden">Agregar</span>
+                  </Button>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">
+                  También puedes escribir el nombre de una categoría nueva. Se creará automáticamente.
+                </p>
+                {formData.category.length > 0 && (
+                  <div className="mt-2 flex flex-wrap gap-2">
+                    {formData.category.map((cat, index) => (
+                      <span
+                        key={index}
+                        className="inline-flex max-w-full items-center gap-1.5 rounded-full bg-green-50 px-2.5 py-1 text-xs font-medium text-green-800 ring-1 ring-inset ring-green-200"
+                      >
+                        <span className="truncate">{cat}</span>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveCategory(index)}
+                          className="shrink-0 rounded-full p-0.5 hover:bg-green-100 hover:text-green-900"
+                          disabled={isLoading}
+                          aria-label={`Quitar ${cat}`}
+                        >
+                          <X className="h-3 w-3" />
+                        </button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
 
-          {/* Destacado */}
-          <div className="flex items-center gap-3">
-            <Checkbox
-              id="isFeatured"
-              name="isFeatured"
-              checked={formData.isFeatured}
-              onCheckedChange={(checked) =>
-                setFormData((prev) => ({ ...prev, isFeatured: checked as boolean }))
-              }
-              disabled={isLoading}
-            />
-            <Label htmlFor="isFeatured" className="cursor-pointer">
-              Destacar producto en página principal
-            </Label>
-          </div>
-
-          {/* Slug (auto-generated, read-only) */}
-          <div>
-            <Label htmlFor="slug">Slug (auto-generado)</Label>
-            <Input
-              id="slug"
-              name="slug"
-              value={formData.slug}
-              disabled
-              className="bg-gray-50 text-gray-600"
-            />
+              </section>
+              <section className="rounded-xl border border-neutral-200 bg-white p-4">
+              {/* Slug (auto-generated, read-only) */}
+              <div>
+                <Label htmlFor="slug">Slug (auto-generado)</Label>
+                <Input
+                  id="slug"
+                  name="slug"
+                  value={formData.slug}
+                  disabled
+                  className="bg-gray-50 text-gray-600"
+                />
+              </div>
+              </section>
+            </aside>
           </div>
         </form>
 
         {/* Footer */}
-        <div className="flex gap-3 border-t border-gray-200 bg-gray-50 px-6 py-4">
+        <div className="flex shrink-0 justify-end gap-3 border-t border-gray-200 bg-white px-6 py-3">
           <Button
             onClick={handleClose}
             variant="outline"
             disabled={isLoading}
-            className="flex-1"
+            className="min-w-[120px]"
           >
             Cancelar
           </Button>
@@ -1128,7 +1130,7 @@ export default function ProductFormModal({
               isUploading ||
               (!!product?.id && (isLoadingImages || imagesLoadFailed))
             }
-            className="flex-1 gap-2 bg-green-600 hover:bg-green-700"
+            className="min-w-[160px] gap-2 bg-green-600 hover:bg-green-700"
           >
             {isLoading && <Loader2 className="h-4 w-4 animate-spin" />}
             {product ? 'Guardar Cambios' : 'Crear Producto'}

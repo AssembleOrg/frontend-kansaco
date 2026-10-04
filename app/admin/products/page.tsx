@@ -773,26 +773,34 @@ export default function ProductsPage() {
                       </p>
                       {/* Presentaciones con sus bultos */}
                       <div className="mt-1.5 flex flex-wrap gap-1.5">
-                        {presDe(p).map(({ pres, bultos: bs }) => (
+                        {presDe(p).map(({ pres, bultos: bs }) => {
+                          const skus = skusMap[p.id]?.[pres] ?? [];
+                          const gama = gamasMap[p.id]?.[pres];
+                          const pendiente = bs.length === 0 && pareceMenor20L(pres);
+                          // Detalle en el tooltip: la fila queda compacta aunque haya muchas presentaciones.
+                          const detalle = [
+                            pendiente && 'Pendiente: < 20 L sin bulto',
+                            `SKU Tango: ${skus.length ? skus.join(' / ') : 'sin cargar'}`,
+                            `Gama: ${gama ?? 'sin cargar'}`,
+                          ].filter(Boolean).join('\n');
+                          return (
                           <span
                             key={pres}
                             className={`inline-flex items-center gap-1 rounded-md border px-1.5 py-0.5 text-[11px] ${
-                              bs.length === 0 && pareceMenor20L(pres)
+                              pendiente
                                 ? 'border-amber-200 bg-amber-50 text-amber-800'
                                 : 'border-neutral-200 bg-white text-neutral-700'
                             }`}
-                            title={bs.length === 0 && pareceMenor20L(pres) ? 'Pendiente: < 20 L sin bulto' : undefined}
+                            title={detalle}
                           >
                             {pres}
-                            {skusMap[p.id]?.[pres]?.length ? (
-                              <span className="font-mono text-[10px] text-neutral-400" title="SKU Tango">
-                                {skusMap[p.id][pres].join(' / ')}
+                            {gama && (
+                              <span className="rounded bg-green-50 px-1 font-mono text-[10px] font-medium text-green-800 ring-1 ring-inset ring-green-200">
+                                {gama}
                               </span>
-                            ) : null}
-                            {gamasMap[p.id]?.[pres] && (
-                              <span className="rounded bg-blue-50 px-1 text-blue-800" title="Gama">
-                                {gamasMap[p.id][pres]}
-                              </span>
+                            )}
+                            {skus.length === 0 && (
+                              <span className="text-[10px] text-amber-600" aria-label="Sin SKU Tango">· sin SKU</span>
                             )}
                             {bs.map((b) => (
                               <span key={b.id} className="rounded bg-green-100 px-1 text-green-800">
@@ -800,7 +808,8 @@ export default function ProductsPage() {
                               </span>
                             ))}
                           </span>
-                        ))}
+                          );
+                        })}
                       </div>
                     </div>
 

@@ -101,6 +101,11 @@ const CHART_COLORS = [
 export default function AnalyticsPage() {
   const { token } = useAuth();
   const [activeTab, setActiveTab] = useState<TabKey>('overview');
+  // Tab inicial desde ?tab= (p. ej. "Volver al mapa" desde Usuarios).
+  useEffect(() => {
+    const t = new URLSearchParams(window.location.search).get('tab');
+    if (t) setActiveTab(t as TabKey);
+  }, []);
   const [isLoading, setIsLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [period, setPeriod] = useState<string>('month');

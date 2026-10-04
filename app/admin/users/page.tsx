@@ -9,7 +9,8 @@ import { buildWhatsAppLink, buildMailtoLink } from '@/features/crm/utils';
 import { WhatsAppIcon } from '@/components/icons/WhatsAppIcon';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Loader2, RefreshCw, UserCheck, Search } from 'lucide-react';
+import { Loader2, RefreshCw, UserCheck, Search, ArrowLeft } from 'lucide-react';
+import Link from 'next/link';
 import { toast } from 'sonner';
 
 // Roles asignables desde el panel. Se excluye ADMIN por seguridad
@@ -199,6 +200,14 @@ function AdminUsersContent() {
     <div className="mx-auto w-full max-w-6xl px-4 py-6 lg:px-6">
       <div className="mb-6 flex items-center justify-between">
         <div>
+          {searchParams.get('provincia') && (
+            <Link
+              href="/admin/analytics?tab=zonesMap"
+              className="mb-2 inline-flex items-center gap-1 text-sm text-neutral-500 hover:text-green-700"
+            >
+              <ArrowLeft className="h-4 w-4" /> Volver al mapa
+            </Link>
+          )}
           <h1 className="flex items-center gap-2 text-xl font-semibold text-neutral-900 lg:text-2xl">
             <UserCheck className="h-5 w-5 text-green-700" />
             Cuentas de usuario

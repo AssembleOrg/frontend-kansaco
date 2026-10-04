@@ -3070,8 +3070,11 @@ export const setSkusPresentacion = (
 export const getGamasPorProducto = () => bultoFetch<Record<number, string[]>>('/gamas', null);
 
 /** Staff: { productId: { presentación: gama } } de todo el catálogo. */
-export const getGamasPorPresentacion = (token: string) =>
-  bultoFetch<Record<number, Record<string, string>>>('/gamas/presentaciones', token);
+export const getGamasPorPresentacion = (token: string, productIds?: number[]) =>
+  bultoFetch<Record<number, Record<string, string>>>(
+    `/gamas/presentaciones${productIds ? `?ids=${productIds.join(',')}` : ''}`,
+    token
+  );
 
 /** Staff: fija o quita (gama null) la gama de una presentación. */
 export const setGamaPresentacion = (
