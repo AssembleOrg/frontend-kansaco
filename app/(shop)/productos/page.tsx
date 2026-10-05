@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { pareceMenor20L, splitPresentations, tipoEnvase } from '@/lib/bultos';
 import { GAMAS } from '@/lib/gamas';
+import { categoriasDe, puntaje } from '@/lib/busqueda';
 import { Search, X } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 24;
@@ -25,16 +26,8 @@ type Orden = 'destacados' | 'az' | 'za';
 
 const TAMANOS = { chico: 'Menos de 20 L (por bulto)', grande: '20 L o más' } as const;
 
-const categoriasDe = (p: Product) =>
-  p.categories && p.categories.length > 0 ? p.categories.map((c) => c.name) : p.category || [];
-
 const envasesDe = (p: Product) =>
   [...new Set(splitPresentations(p.presentation).map(tipoEnvase).filter((e): e is string => !!e))];
-
-const coincideBusqueda = (p: Product, q: string) =>
-  [p.name, p.sku, p.aplication, p.presentation, ...categoriasDe(p)]
-    .filter(Boolean)
-    .some((t) => String(t).toLowerCase().includes(q));
 
 const tamanosDe = (p: Product) => {
   const pres = splitPresentations(p.presentation);
@@ -142,7 +135,8 @@ function ProductsContent() {
   // ─── Filtrado ────────────────────────────────────────────────────
 
   const qn = searchTerm.trim().toLowerCase();
-  const pasaBusqueda = (p: Product) => !qn || coincideBusqueda(p, qn);
+  const puntajes = useMemo(() => new Map(products.map((p) => [p.id, qn ? puntaje(p, qn) : 1])), [products, qn]);
+  const pasaBusqueda = (p: Product) => (puntajes.get(p.id) ?? 0) > 0;
 
   // Registra la búsqueda (≥3 letras, 1,5 s sin cambios). El filtrado es local,
   // así que sin esto el backend nunca se enteraba de qué buscan los clientes.
@@ -153,7 +147,7 @@ function ProductsContent() {
     const t = setTimeout(() => {
       lastTrackedSearch.current = q;
       trackPublicEvent(
-        { eventType: 'search', query: q, resultsCount: products.filter((p) => coincideBusqueda(p, q)).length },
+        { eventType: 'search', query: q, resultsCount: products.filter((p) => puntaje(p, q) > 0).length },
         token,
       );
     }, 1500);
@@ -197,9 +191,11 @@ function ProductsContent() {
           ? b.name.localeCompare(a.name, 'es')
           : orden === 'az'
             ? a.name.localeCompare(b.name, 'es')
-            : Number(b.isFeatured) - Number(a.isFeatured) || a.name.localeCompare(b.name, 'es')
+            : (puntajes.get(b.id) ?? 0) - (puntajes.get(a.id) ?? 0) ||
+              Number(b.isFeatured) - Number(a.isFeatured) ||
+              a.name.localeCompare(b.name, 'es')
       ),
-    [filtered, orden]
+    [filtered, orden, puntajes]
   );
 
   const totalPages = Math.max(1, Math.ceil(sorted.length / ITEMS_PER_PAGE));
