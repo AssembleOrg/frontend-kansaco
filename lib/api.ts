@@ -527,15 +527,10 @@ export async function getProductBySlug(
     });
     const fullResponse =
       await handleResponse<ActualProductsApiResponse>(response);
-    if (
-      fullResponse &&
-      Array.isArray(fullResponse.data) &&
-      fullResponse.data.length > 0
-    ) {
-      return fullResponse.data[0];
-    } else {
-      return null;
-    }
+    // Match exacto: el backend viejo filtraba con LIKE y podía traer otro producto primero.
+    return Array.isArray(fullResponse?.data)
+      ? fullResponse.data.find((p) => p.slug === slug) ?? null
+      : null;
   } catch (error) {
     console.error(`Error in getProductBySlug for ${slug}:`, error);
     return null;
