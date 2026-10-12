@@ -23,6 +23,9 @@ module.exports = {
         sans: ['var(--font-inter)', 'ui-sans-serif', 'system-ui', '-apple-system', 'Segoe UI', 'Roboto', 'sans-serif'],
       },
       colors: {
+        // Verde de marca (#16a245): pisa el green-600 de Tailwind (#16a34a) para
+        // que panel, tienda y mails usen exactamente el mismo.
+        green: { 600: '#16a245' },
         border: "hsl(var(--border))",
         input: "hsl(var(--input))",
         ring: "hsl(var(--ring))",

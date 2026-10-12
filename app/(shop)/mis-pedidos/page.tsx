@@ -4,7 +4,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { getMyOrdersPaginated } from '@/lib/api';
-import { Order } from '@/types/order';
+import { Order, ORDER_STATUS_BADGE, ORDER_STATUS_LABEL } from '@/types/order';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Loader2, ArrowLeft, ChevronLeft, ChevronRight, Package, Calendar } from 'lucide-react';
@@ -86,34 +86,6 @@ function OrdersHistoryContent() {
     setPagination((prev) => ({ ...prev, page: prev.page }));
   };
 
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'COMPLETADO':
-        return 'default';
-      case 'ENVIADO':
-        return 'default';
-      case 'PROCESANDO':
-        return 'secondary';
-      case 'PENDIENTE':
-        return 'outline';
-      case 'CANCELADO':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      PENDIENTE: 'Pendiente',
-      PROCESANDO: 'Procesando',
-      ENVIADO: 'Enviado',
-      COMPLETADO: 'Completado',
-      CANCELADO: 'Cancelado',
-    };
-    return labels[status] || status;
-  };
-
   if (isLoading && orders.length === 0) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center mt-20">
@@ -185,8 +157,8 @@ function OrdersHistoryContent() {
                       <h3 className="text-base font-semibold text-gray-900">
                         Pedido #{order.id.slice(0, 8)}
                       </h3>
-                      <Badge variant={getStatusBadgeVariant(order.status)}>
-                        {getStatusLabel(order.status)}
+                      <Badge variant={ORDER_STATUS_BADGE[order.status]}>
+                        {ORDER_STATUS_LABEL[order.status]}
                       </Badge>
                       {order.status === 'PENDIENTE' && (
                         <Badge variant="secondary" className="bg-green-100 text-green-700 hover:bg-green-200">

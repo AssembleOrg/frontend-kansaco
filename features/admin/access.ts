@@ -3,7 +3,7 @@ import type { UserRole } from '@/types/auth';
 /**
  * Secciones del panel que sólo ve ADMIN. Espejo de los `@Roles` del backend:
  * la asistente (ASISTENTE) puede con órdenes, productos, categorías, imágenes
- * y cuentas (sólo frenar/destrabar; la categoría la cambia el admin); a todo
+ * y cuentas (frenar/destrabar y asignar categoría a clientes); a todo
  * lo demás el backend le responde 403, así que ni se lo mostramos. Si el
  * backend le abre una sección nueva, sacarla de acá.
  */

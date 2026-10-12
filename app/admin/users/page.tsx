@@ -42,8 +42,12 @@ const bloqueoLabel = (bloqueo: UserBloqueo) =>
 
 function AdminUsersContent() {
   const { token, user: currentUser } = useAuth();
-  // La categoría (lista de precios) la cambia sólo el admin; el freno, admin y asistente.
-  const puedeCambiarCategoria = currentUser?.rol === 'ADMIN';
+  // Categoría y freno: admin y asistente. La asistente sólo asigna categorías de
+  // cliente a cuentas de clientes (el backend también lo valida).
+  const esAdmin = currentUser?.rol === 'ADMIN';
+  const rolesAsignables = esAdmin
+    ? ASSIGNABLE_ROLES
+    : ASSIGNABLE_ROLES.filter((r) => !esStaff(r.value));
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -456,7 +460,7 @@ function AdminUsersContent() {
                       )}
                     </td>
                     <td className="px-4 py-3">
-                      {isAdmin || isSelf || !puedeCambiarCategoria ? (
+                      {isAdmin || isSelf || (!esAdmin && esStaff(u.rol)) ? (
                         <span className="text-neutral-500">{roleLabel(u.rol)}</span>
                       ) : (
                         <div className="flex items-center gap-2">
@@ -468,7 +472,7 @@ function AdminUsersContent() {
                             }
                             className="h-9 rounded-md border border-neutral-200 bg-white px-2 text-sm text-neutral-800 focus:border-green-500 focus:outline-none focus:ring-1 focus:ring-green-500 disabled:opacity-50"
                           >
-                            {ASSIGNABLE_ROLES.map((r) => (
+                            {rolesAsignables.map((r) => (
                               <option key={r.value} value={r.value}>
                                 {r.label}
                               </option>

@@ -59,8 +59,36 @@ export const MODALIDAD_LABEL: Record<ModalidadEnvio, string> = {
   EXPRESO: 'Expreso / Larga distancia',
 };
 
-// Estados de orden
-export type OrderStatus = 'PENDIENTE' | 'PROCESANDO' | 'ENVIADO' | 'COMPLETADO' | 'CANCELADO';
+// Estados de orden. Espejo de `OrderStatus` del backend.
+export type OrderStatus = 'PENDIENTE' | 'RECIBIDO' | 'PROCESANDO' | 'ENVIADO' | 'CANCELADO';
+
+/** Etapas en orden; CANCELADO sale del flujo desde cualquiera. */
+export const ORDER_STATUS_FLOW: readonly OrderStatus[] = [
+  'PENDIENTE',
+  'RECIBIDO',
+  'PROCESANDO',
+  'ENVIADO',
+];
+
+export const ORDER_STATUS_LABEL: Record<OrderStatus, string> = {
+  PENDIENTE: 'Pendiente',
+  RECIBIDO: 'Recibido',
+  PROCESANDO: 'En proceso',
+  ENVIADO: 'Enviado',
+  CANCELADO: 'Cancelado',
+};
+
+/** Variante del <Badge> de cada estado. */
+export const ORDER_STATUS_BADGE: Record<
+  OrderStatus,
+  'default' | 'secondary' | 'outline' | 'destructive'
+> = {
+  PENDIENTE: 'outline',
+  RECIBIDO: 'secondary',
+  PROCESANDO: 'secondary',
+  ENVIADO: 'default',
+  CANCELADO: 'destructive',
+};
 
 export interface Order {
   id: string;
@@ -72,7 +100,10 @@ export interface Order {
   shippingInfo?: OrderShippingInfo; // Opcional: órdenes previas al MÓDULO 3 no lo traen
   items?: OrderItem[]; // Opcional para compatibilidad con respuestas del backend
   totalAmount?: number | string; // Puede venir como string desde el backend
+  /** Nota del cliente (checkout). Solo la edita el dueño del pedido. */
   notes?: string;
+  /** Nota interna del staff; el backend solo la manda a ADMIN/ASISTENTE. */
+  internalNotes?: string;
   createdAt: string;
   updatedAt: string;
   /** Último cambio real de estado (no se mueve al editar notas). */
@@ -139,4 +170,6 @@ export interface UpdateOrderDto {
   shippingInfo?: OrderShippingInfo;
   items?: OrderItem[];
   notes?: string;
+  /** Solo staff. */
+  internalNotes?: string;
 }

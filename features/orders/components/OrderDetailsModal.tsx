@@ -1,7 +1,13 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Order, Direccion, MODALIDAD_LABEL } from '@/types/order';
+import {
+  Order,
+  Direccion,
+  MODALIDAD_LABEL,
+  ORDER_STATUS_BADGE,
+  ORDER_STATUS_LABEL,
+} from '@/types/order';
 import {
   Dialog,
   DialogContent,
@@ -38,6 +44,8 @@ function formatDir(d?: Direccion): string {
 import { formatDateForDisplay } from '@/lib/dateUtils';
 import { OrderEditModal } from './OrderEditModal';
 import { OrderNoteModal } from './OrderNoteModal';
+import { OrderStatusBar } from './OrderStatusBar';
+import { OrderStatusConfirm } from './OrderStatusConfirm';
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { siteConfig } from '@/lib/site-config';
 import { downloadOrderPDF, updateOrder, updateOrderStatus } from '@/lib/api';
@@ -49,9 +57,9 @@ interface OrderDetailsModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onOrderUpdated?: () => void;
-  /** Habilita el botón de notas del admin (editar notas en cualquier estado). */
+  /** Staff: muestra la nota interna y permite editarla (en cualquier estado). */
   allowNotes?: boolean;
-  /** Staff (ADMIN/ASISTENTE): habilita el atajo para volver a PENDIENTE y editar. */
+  /** Staff (ADMIN/ASISTENTE): puede mover el pedido de etapa (y volver a PENDIENTE para editar). */
   isStaff?: boolean;
 }
 
@@ -68,7 +76,9 @@ export function OrderDetailsModal({
   const [isSavingNote, setIsSavingNote] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [isReverting, setIsReverting] = useState(false);
-  // Nota mostrada; se actualiza optimísticamente al guardar (null = usar la de la orden).
+  // Etapa elegida en la barra (o CANCELADO), a la espera de confirmación.
+  const [pendingStatus, setPendingStatus] = useState<Order['status'] | null>(null);
+  // Nota interna mostrada; se actualiza optimísticamente al guardar (null = usar la de la orden).
   const [localNotes, setLocalNotes] = useState<string | null>(null);
   // Estado mostrado; se actualiza optimísticamente al promover en la descarga (null = usar el de la orden).
   const [localStatus, setLocalStatus] = useState<Order['status'] | null>(null);
@@ -82,7 +92,7 @@ export function OrderDetailsModal({
 
   if (!order) return null;
 
-  const displayedNotes = localNotes !== null ? localNotes : order.notes;
+  const internalNotes = localNotes !== null ? localNotes : order.internalNotes;
   const displayedStatus = localStatus ?? order.status;
 
   const isPendiente = displayedStatus === 'PENDIENTE';
@@ -95,9 +105,10 @@ export function OrderDetailsModal({
 
     setIsDownloading(true);
     try {
-      // Primero promovemos a PROCESANDO (solo si está PENDIENTE) para que el
-      // estado ya actualizado salga impreso en el PDF que genera el backend.
-      const promoted = displayedStatus === 'PENDIENTE';
+      // El staff, al descargar un pedido PENDIENTE, lo promueve a PROCESANDO antes
+      // (así el estado ya actualizado sale en el PDF). Un cliente solo descarga:
+      // no puede cambiar estados, el backend le respondería 403.
+      const promoted = isStaff && displayedStatus === 'PENDIENTE';
       if (promoted) {
         await updateOrderStatus(token, order.id, 'PROCESANDO');
         setLocalStatus('PROCESANDO');
@@ -105,7 +116,7 @@ export function OrderDetailsModal({
       await downloadOrderPDF(token, order.id);
       toast.success(
         promoted
-          ? 'Pedido marcado como Procesando y PDF descargado'
+          ? 'Pedido marcado como En proceso y PDF descargado'
           : 'PDF descargado correctamente'
       );
       // Refrescar la tabla padre para reflejar el nuevo estado.
@@ -121,21 +132,29 @@ export function OrderDetailsModal({
   // El backend solo permite editar items en PENDIENTE. Para editar un pedido en
   // preparación, el staff lo vuelve a PENDIENTE (los estados son libres).
   const canRevertToPendiente =
-    isStaff && (displayedStatus === 'PROCESANDO' || displayedStatus === 'ENVIADO');
+    isStaff && displayedStatus !== 'PENDIENTE' && displayedStatus !== 'CANCELADO';
 
-  const handleRevertToPendiente = async () => {
+  // Staff: mueve el pedido de etapa (barra de estado y atajo "volver a Pendiente").
+  const handleChangeStatus = async (next: Order['status'], motivo?: string) => {
     if (!token) {
       toast.error('No estás autenticado');
       return;
     }
     setIsReverting(true);
     try {
-      await updateOrderStatus(token, order.id, 'PENDIENTE');
-      setLocalStatus('PENDIENTE');
-      toast.success('Pedido devuelto a Pendiente. Ya podés editarlo.');
+      const updated = await updateOrderStatus(token, order.id, next, motivo);
+      setLocalStatus(next);
+      // La cancelación anexa el motivo a la nota interna.
+      if (motivo && updated?.internalNotes !== undefined) setLocalNotes(updated.internalNotes);
+      setPendingStatus(null);
+      toast.success(
+        next === 'PENDIENTE'
+          ? 'Pedido devuelto a Pendiente. Ya podés editarlo.'
+          : `Pedido marcado como ${ORDER_STATUS_LABEL[next]}`
+      );
       onOrderUpdated?.();
     } catch (error) {
-      console.error('Error al volver a Pendiente:', error);
+      console.error('Error al cambiar el estado:', error);
       toast.error('No se pudo cambiar el estado');
     } finally {
       setIsReverting(false);
@@ -146,7 +165,7 @@ export function OrderDetailsModal({
     if (!token || !order) return;
     setIsSavingNote(true);
     try {
-      await updateOrder(token, order.id, { notes: finalNotes });
+      await updateOrder(token, order.id, { internalNotes: finalNotes });
       setLocalNotes(finalNotes);
       toast.success('Nota guardada correctamente');
       setIsNoteModalOpen(false);
@@ -157,34 +176,6 @@ export function OrderDetailsModal({
     } finally {
       setIsSavingNote(false);
     }
-  };
-
-  const getStatusBadgeVariant = (status: string) => {
-    switch (status) {
-      case 'COMPLETADO':
-        return 'default';
-      case 'ENVIADO':
-        return 'default';
-      case 'PROCESANDO':
-        return 'secondary';
-      case 'PENDIENTE':
-        return 'outline';
-      case 'CANCELADO':
-        return 'destructive';
-      default:
-        return 'outline';
-    }
-  };
-
-  const getStatusLabel = (status: string) => {
-    const labels: Record<string, string> = {
-      PENDIENTE: 'Pendiente',
-      PROCESANDO: 'Procesando',
-      ENVIADO: 'Enviado',
-      COMPLETADO: 'Completado',
-      CANCELADO: 'Cancelado',
-    };
-    return labels[status] || status;
   };
 
   const getCustomerTypeLabel = (type: string) => {
@@ -200,8 +191,8 @@ export function OrderDetailsModal({
               <Package className="h-5 w-5" />
               Detalles del Pedido
             </span>
-            <Badge variant={getStatusBadgeVariant(displayedStatus)}>
-              {getStatusLabel(displayedStatus)}
+            <Badge variant={ORDER_STATUS_BADGE[displayedStatus]}>
+              {ORDER_STATUS_LABEL[displayedStatus]}
             </Badge>
           </DialogTitle>
           <DialogDescription>
@@ -210,6 +201,26 @@ export function OrderDetailsModal({
         </DialogHeader>
 
         <div className="space-y-6 py-4">
+          <div className="space-y-2">
+            <OrderStatusBar
+              status={displayedStatus}
+              onChange={isStaff ? setPendingStatus : undefined}
+              disabled={isReverting}
+            />
+            {isStaff && displayedStatus !== 'CANCELADO' && (
+              <div className="text-right">
+                <button
+                  type="button"
+                  onClick={() => setPendingStatus('CANCELADO')}
+                  disabled={isReverting}
+                  className="text-xs font-medium text-red-600 hover:underline disabled:opacity-50"
+                >
+                  Cancelar pedido
+                </button>
+              </div>
+            )}
+          </div>
+
           {/* Información General */}
           <div className="space-y-3">
             <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
@@ -469,41 +480,57 @@ export function OrderDetailsModal({
             </>
           )}
 
-          {/* Notas */}
-          {(displayedNotes || allowNotes) && (
+          {/* Notas del cliente (checkout): solo lectura para todos */}
+          {order.notes && (
+            <>
+              <Separator />
+              <div className="space-y-3">
+                <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                  <FileText className="h-4 w-4" />
+                  Notas del cliente
+                </h3>
+                <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
+                  <p className="text-sm text-gray-700 whitespace-pre-wrap">{order.notes}</p>
+                </div>
+              </div>
+            </>
+          )}
+
+          {/* Nota interna: solo staff */}
+          {allowNotes && (
             <>
               <Separator />
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
-                    <FileText className="h-4 w-4" />
-                    Notas
-                  </h3>
-                  {allowNotes && (
-                    <Button
-                      onClick={() => setIsNoteModalOpen(true)}
-                      variant="outline"
-                      size="sm"
-                      className="gap-1"
-                    >
-                      <Edit className="h-3.5 w-3.5" />
-                      {displayedNotes ? 'Editar' : 'Agregar'}
-                    </Button>
-                  )}
+                  <div>
+                    <h3 className="flex items-center gap-2 text-sm font-semibold text-gray-900">
+                      <FileText className="h-4 w-4" />
+                      Nota interna
+                    </h3>
+                    <p className="text-xs text-gray-500">Solo la ve el equipo de Kansaco.</p>
+                  </div>
+                  <Button
+                    onClick={() => setIsNoteModalOpen(true)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1"
+                  >
+                    <Edit className="h-3.5 w-3.5" />
+                    {internalNotes ? 'Editar' : 'Agregar'}
+                  </Button>
                 </div>
-                {displayedNotes ? (
-                  <div className="rounded-lg border border-gray-200 bg-gray-50 p-4">
-                    <p className="text-sm text-gray-700 whitespace-pre-wrap">
-                      {displayedNotes}
-                    </p>
+                {internalNotes ? (
+                  <div className="rounded-lg border border-amber-200 bg-amber-50 p-4">
+                    <p className="text-sm text-gray-700 whitespace-pre-wrap">{internalNotes}</p>
                   </div>
                 ) : (
-                  <p className="text-sm text-gray-400">Sin notas.</p>
+                  <p className="text-sm text-gray-400">Sin nota interna.</p>
                 )}
               </div>
             </>
           )}
         </div>
+
 
         {/* Footer con botón o mensaje */}
         <Separator />
@@ -559,10 +586,10 @@ export function OrderDetailsModal({
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Este pedido está en <strong>{getStatusLabel(displayedStatus)}</strong>. Para editar
+                Este pedido está en <strong>{ORDER_STATUS_LABEL[displayedStatus]}</strong>. Para editar
                 sus productos, primero volvé a <strong>Pendiente</strong>.
                 <Button
-                  onClick={handleRevertToPendiente}
+                  onClick={() => handleChangeStatus('PENDIENTE')}
                   disabled={isReverting}
                   variant="outline"
                   className="mt-3 w-full border-2 border-gray-300 text-gray-700 hover:border-green-600 hover:text-green-700 hover:bg-green-50 font-semibold transition-colors"
@@ -585,7 +612,7 @@ export function OrderDetailsModal({
             <Alert>
               <Info className="h-4 w-4" />
               <AlertDescription>
-                Esta orden ha sido <strong>{getStatusLabel(displayedStatus)}</strong> y no puede modificarse.
+                Esta orden ha sido <strong>{ORDER_STATUS_LABEL[displayedStatus]}</strong> y no puede modificarse.
                 Si necesitas ayuda, contacta con nosotros:
                 <div className="mt-2 space-y-1">
                   <div>
@@ -623,13 +650,35 @@ export function OrderDetailsModal({
         />
       )}
 
+      {/* Staff: confirmación de cambio de etapa, y motivo al cancelar */}
+      {isStaff && (
+        <>
+          <OrderStatusConfirm
+            orderId={order.id}
+            status={pendingStatus !== 'CANCELADO' ? pendingStatus : null}
+            isSubmitting={isReverting}
+            onConfirm={() => {
+              if (pendingStatus) void handleChangeStatus(pendingStatus);
+            }}
+            onClose={() => setPendingStatus(null)}
+          />
+          <OrderNoteModal
+            open={pendingStatus === 'CANCELADO'}
+            onOpenChange={(open) => !open && setPendingStatus(null)}
+            mode="cancel"
+            isSubmitting={isReverting}
+            onConfirm={(motivo) => handleChangeStatus('CANCELADO', motivo)}
+          />
+        </>
+      )}
+
       {/* Modal de Notas (solo admin) */}
       {allowNotes && (
         <OrderNoteModal
           open={isNoteModalOpen}
           onOpenChange={setIsNoteModalOpen}
           mode="note"
-          initialNotes={displayedNotes}
+          initialNotes={internalNotes}
           isSubmitting={isSavingNote}
           onConfirm={handleSaveNote}
         />

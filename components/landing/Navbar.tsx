@@ -20,6 +20,7 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useAuthStore } from '@/features/auth/store/authStore';
 import { useCartStore } from '@/features/cart/store/cartStore';
 import { esStaff } from '@/types/auth';
+import { NotificationBell } from '@/features/notifications/NotificationBell';
 import { useRouter, usePathname } from 'next/navigation';
 import {
   DropdownMenu,
@@ -527,6 +528,9 @@ const Navbar = () => {
                 <User className="h-5 w-5" />
               </Link>
             )}
+
+            {/* Avisos de pedidos: solo clientes (el staff tiene su panel). */}
+            {isAuthenticated && !isStaff && <NotificationBell />}
 
             <div className="relative">
               <button

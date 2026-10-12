@@ -1579,7 +1579,9 @@ export async function downloadOrdersExport(
 export async function updateOrderStatus(
   token: string,
   orderId: string,
-  status: OrderStatus
+  status: OrderStatus,
+  /** Motivo de cancelación (solo con CANCELADO): queda en la nota interna; el cliente no lo ve. */
+  motivo?: string
 ): Promise<Order> {
   if (!API_BASE_URL) {
     throw new Error('API URL not configured.');
@@ -1600,7 +1602,7 @@ export async function updateOrderStatus(
         Accept: 'application/json',
         Authorization: `Bearer ${token}`,
       },
-      body: JSON.stringify({ status }),
+      body: JSON.stringify({ status, motivo }),
       cache: 'no-store',
     });
 
@@ -3164,3 +3166,41 @@ export const assignBulto = (token: string, id: number, items: BultoItemRef[], dr
 
 export const unassignBulto = (token: string, id: number, items: BultoItemRef[], dryRun: boolean) =>
   bultoFetch<AssignPreview>(`/${id}/unassign`, token, { method: 'POST', body: { items, dryRun } });
+
+// ---- Avisos al usuario (campanita) ----
+
+export interface AppNotification {
+  id: number;
+  /** PROMO: reservado para promociones por categoría (todavía no se emiten). */
+  tipo: 'PEDIDO_ESTADO' | 'PEDIDO_EDITADO' | 'PROMO';
+  titulo: string;
+  mensaje: string;
+  orderId: string | null;
+  /** null = sin leer. */
+  leidaAt: string | null;
+  createdAt: string;
+}
+
+/** Últimos avisos del usuario logueado + cantidad sin leer. */
+export async function getNotifications(
+  token: string,
+): Promise<{ items: AppNotification[]; noLeidas: number }> {
+  const response = await fetch(`${API_BASE_URL}/notification`, {
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  const result = await handleResponse<{
+    data: { items: AppNotification[]; noLeidas: number };
+  }>(response);
+  return result.data;
+}
+
+/** Marca un aviso como leído, o todos si no se pasa id. */
+export async function markNotificationsRead(token: string, id?: number): Promise<void> {
+  const response = await fetch(`${API_BASE_URL}/notification/${id ? `${id}/read` : 'read'}`, {
+    method: 'PATCH',
+    headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+    cache: 'no-store',
+  });
+  await handleResponse(response);
+}

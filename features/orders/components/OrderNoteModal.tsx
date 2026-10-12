@@ -19,21 +19,11 @@ interface OrderNoteModalProps {
   onOpenChange: (open: boolean) => void;
   /** Nota actual de la orden (para prellenar en modo edición). */
   initialNotes?: string;
-  /** Modo cancelación: exige un motivo y lo agrega a las notas existentes. */
+  /** Modo cancelación: exige un motivo (el backend lo anexa a la nota interna). */
   mode: 'cancel' | 'note';
   isSubmitting?: boolean;
-  /**
-   * Devuelve el texto final de notas que se guardará.
-   * En modo 'cancel' recibe el motivo escrito; en modo 'note', el texto completo.
-   */
-  onConfirm: (finalNotes: string) => void | Promise<void>;
-}
-
-/** Formatea el motivo de cancelación con fecha, para anexarlo a las notas. */
-function buildCancelNote(existing: string | undefined, reason: string): string {
-  const stamp = new Date().toLocaleDateString('es-AR');
-  const line = `[CANCELADO ${stamp}] ${reason.trim()}`;
-  return existing && existing.trim() ? `${existing.trim()}\n${line}` : line;
+  /** En modo 'cancel' recibe el motivo escrito; en modo 'note', el texto completo de la nota. */
+  onConfirm: (text: string) => void | Promise<void>;
 }
 
 export function OrderNoteModal({
@@ -62,10 +52,7 @@ export function OrderNoteModal({
       setError('Ingresá el motivo de la cancelación.');
       return;
     }
-    const finalNotes = isCancel
-      ? buildCancelNote(initialNotes, value)
-      : value.trim();
-    await onConfirm(finalNotes);
+    await onConfirm(value.trim());
   };
 
   return (
@@ -73,12 +60,12 @@ export function OrderNoteModal({
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader>
           <DialogTitle>
-            {isCancel ? 'Cancelar orden' : 'Nota de la orden'}
+            {isCancel ? 'Cancelar orden' : 'Nota interna'}
           </DialogTitle>
           <DialogDescription>
             {isCancel
-              ? 'Indicá por qué se cancela o por qué no hubo venta. Quedará registrado en las notas de la orden.'
-              : 'Agregá o editá una nota interna para esta orden.'}
+              ? 'Indicá por qué se cancela. Queda en la nota interna; el cliente no lo ve.'
+              : 'Agregá o editá la nota interna de esta orden. Solo la ve el equipo de Kansaco.'}
           </DialogDescription>
         </DialogHeader>
 

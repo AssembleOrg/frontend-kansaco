@@ -22,6 +22,7 @@ import {
 import { useAuth } from '@/features/auth/hooks/useAuth';
 import { OrderDetailsModal } from '@/features/orders/components/OrderDetailsModal';
 import { OrderNoteModal } from '@/features/orders/components/OrderNoteModal';
+import { OrderStatusConfirm } from '@/features/orders/components/OrderStatusConfirm';
 import { toast } from 'sonner';
 import {
   ColumnDef,
@@ -33,9 +34,9 @@ import {
 // Colores y labels para estados
 const statusConfig: Record<OrderStatus, { label: string; color: string; bg: string }> = {
   PENDIENTE: { label: 'Pendiente', color: 'text-yellow-700', bg: 'bg-yellow-100' },
-  PROCESANDO: { label: 'Procesando', color: 'text-blue-700', bg: 'bg-blue-100' },
-  ENVIADO: { label: 'Enviado', color: 'text-purple-700', bg: 'bg-purple-100' },
-  COMPLETADO: { label: 'Completado', color: 'text-green-700', bg: 'bg-green-100' },
+  RECIBIDO: { label: 'Recibido', color: 'text-sky-700', bg: 'bg-sky-100' },
+  PROCESANDO: { label: 'En proceso', color: 'text-blue-700', bg: 'bg-blue-100' },
+  ENVIADO: { label: 'Enviado', color: 'text-green-700', bg: 'bg-green-100' },
   CANCELADO: { label: 'Cancelado', color: 'text-red-700', bg: 'bg-red-100' },
 };
 
@@ -44,18 +45,18 @@ const STATUSES = Object.keys(statusConfig) as OrderStatus[];
 // Categorías que se pueden filtrar: las comerciales + cuentas pendientes.
 const CATEGORIAS: UserRole[] = [...B2B_ROLES, 'CLIENTE_MINORISTA'];
 
-// Para la frase-resumen: "12 pedidos completados".
+// Para la frase-resumen: "12 pedidos enviados".
 const STATUS_PLURAL: Record<OrderStatus, string> = {
   PENDIENTE: 'pendientes',
+  RECIBIDO: 'recibidos',
   PROCESANDO: 'en proceso',
   ENVIADO: 'enviados',
-  COMPLETADO: 'completados',
   CANCELADO: 'cancelados',
 };
 
 const ddmm = (s: string) => s.split('-').reverse().join('/');
 
-/** Frase que explica qué se está viendo, p. ej. "42 pedidos completados entre el 01/08/2026 y el 31/08/2026". */
+/** Frase que explica qué se está viendo, p. ej. "42 pedidos enviados entre el 01/08/2026 y el 31/08/2026". */
 function describeView(total: number, f: OrderFilters): string {
   const estados = f.status?.length
     ? ' ' + f.status.map((s) => STATUS_PLURAL[s]).join(' o ')
@@ -98,7 +99,7 @@ function OrdersPageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  // Filtros en la URL: se pueden compartir ("completados de agosto") y sobreviven un F5.
+  // Filtros en la URL: se pueden compartir ("enviados de agosto") y sobreviven un F5.
   const filters = useMemo<OrderFilters>(() => {
     const get = (k: string) => searchParams.get(k) || undefined;
     const categoria = get('categoria') as UserRole | undefined;
@@ -141,7 +142,7 @@ function OrdersPageContent() {
     return () => clearTimeout(t);
   }, [searchTerm, filters.q, setFilters]);
 
-  const { orders, isLoading, error, pagination, countsByStatus, updateStatus, updateNotes, refresh, goToPage } = useOrders(filters);
+  const { orders, isLoading, error, pagination, countsByStatus, updateStatus, refresh, goToPage } = useOrders(filters);
   const totalAllStatuses = countsByStatus
     ? Object.values(countsByStatus).reduce((a, b) => a + b, 0)
     : undefined;
@@ -170,45 +171,35 @@ function OrdersPageContent() {
     : null;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [downloadingOrderId, setDownloadingOrderId] = useState<string | null>(null);
-  // Orden pendiente de cancelar (abre el modal que pide el motivo).
-  const [orderToCancel, setOrderToCancel] = useState<Order | null>(null);
-  const [isCancelling, setIsCancelling] = useState(false);
+  // Cambio de estado a confirmar: avisa al cliente, así que nunca se aplica con
+  // un solo clic. Cancelar pide además el motivo.
+  const [statusChange, setStatusChange] = useState<{ order: Order; status: OrderStatus } | null>(null);
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
   const handleStatusChange = useCallback(async (orderId: string, newStatus: OrderStatus) => {
-    // Al cancelar, pedir el motivo antes de aplicar el cambio.
-    if (newStatus === 'CANCELADO') {
-      const order = orders.find((o) => o.id === orderId);
-      if (order) {
-        setOrderToCancel(order);
-        return;
-      }
-    }
+    const order = orders.find((o) => o.id === orderId);
+    if (order && order.status !== newStatus) setStatusChange({ order, status: newStatus });
+  }, [orders]);
 
+  // Aplica el cambio ya confirmado (con el motivo, si es una cancelación).
+  const handleConfirmStatus = useCallback(async (motivo?: string) => {
+    if (!statusChange) return;
+    setIsChangingStatus(true);
     try {
-      await updateStatus(orderId, newStatus);
-      toast.success('Estado actualizado correctamente');
+      await updateStatus(statusChange.order.id, statusChange.status, motivo);
+      toast.success(
+        statusChange.status === 'CANCELADO'
+          ? 'Orden cancelada y motivo registrado'
+          : 'Estado actualizado correctamente'
+      );
+      setStatusChange(null);
       refresh();
     } catch {
       toast.error('Error al actualizar el estado');
-    }
-  }, [orders, updateStatus, refresh]);
-
-  // Confirma la cancelación: cambia el estado y guarda el motivo en las notas.
-  const handleConfirmCancel = useCallback(async (finalNotes: string) => {
-    if (!orderToCancel) return;
-    setIsCancelling(true);
-    try {
-      await updateStatus(orderToCancel.id, 'CANCELADO');
-      await updateNotes(orderToCancel.id, finalNotes);
-      toast.success('Orden cancelada y motivo registrado');
-      setOrderToCancel(null);
-      refresh();
-    } catch {
-      toast.error('Error al cancelar la orden');
     } finally {
-      setIsCancelling(false);
+      setIsChangingStatus(false);
     }
-  }, [orderToCancel, updateStatus, updateNotes, refresh]);
+  }, [statusChange, updateStatus, refresh]);
 
   const handleDownloadPDF = useCallback(async (order: Order) => {
     if (!token) return;
@@ -224,7 +215,7 @@ function OrdersPageContent() {
       await downloadOrderPDF(token, order.id);
       toast.success(
         promoted
-          ? 'Pedido marcado como Procesando y PDF descargado'
+          ? 'Pedido marcado como En proceso y PDF descargado'
           : 'PDF descargado correctamente'
       );
       if (promoted) refresh();
@@ -366,7 +357,7 @@ function OrdersPageContent() {
           const order = row.original;
           return (
             <div className="flex items-center justify-center gap-2">
-              {order.notes && (
+              {(order.notes || order.internalNotes) && (
                 <span title="Esta orden tiene notas">
                   <FileText className="h-4 w-4 text-amber-500" />
                 </span>
@@ -867,14 +858,22 @@ function OrdersPageContent() {
 
       {/* Modal - Motivo de cancelación */}
       <OrderNoteModal
-        open={!!orderToCancel}
+        open={statusChange?.status === 'CANCELADO'}
         onOpenChange={(open) => {
-          if (!open) setOrderToCancel(null);
+          if (!open) setStatusChange(null);
         }}
         mode="cancel"
-        initialNotes={orderToCancel?.notes}
-        isSubmitting={isCancelling}
-        onConfirm={handleConfirmCancel}
+        isSubmitting={isChangingStatus}
+        onConfirm={handleConfirmStatus}
+      />
+
+      {/* Confirmación del resto de los cambios de estado */}
+      <OrderStatusConfirm
+        orderId={statusChange?.order.id ?? ''}
+        status={statusChange && statusChange.status !== 'CANCELADO' ? statusChange.status : null}
+        isSubmitting={isChangingStatus}
+        onConfirm={() => handleConfirmStatus()}
+        onClose={() => setStatusChange(null)}
       />
     </div>
   );

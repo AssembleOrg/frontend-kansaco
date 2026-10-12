@@ -130,7 +130,7 @@ button, a[role="button"], [data-slot="button"] {
     --card: 0 0% 100%;
     --card-foreground: 222.2 47.4% 11.2%;
 
-    --primary: 142.1 76.2% 36.3%;
+    --primary: 140.1 76.1% 36.1%; /* #16a245, verde de marca */
     --primary-foreground: 355.7 100% 97.3%;
 
     --secondary: 210 40% 96.1%;

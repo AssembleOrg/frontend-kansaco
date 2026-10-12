@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Order, OrderFilters, OrderStatus, PaginatedOrdersResponse } from '@/types/order';
 import { useAuth } from '@/features/auth/hooks/useAuth';
-import { getAllOrdersPaginated, updateOrderStatus, updateOrder } from '@/lib/api';
+import { getAllOrdersPaginated, updateOrderStatus } from '@/lib/api';
 import { useVisiblePolling } from '@/hooks/useVisiblePolling';
 import { toast } from 'sonner';
 
@@ -94,13 +94,13 @@ export function useOrders(filters: OrderFilters = {}) {
   }, [orders]);
 
   // Actualizar estado de una orden
-  const updateStatus = useCallback(async (id: string, status: OrderStatus) => {
+  const updateStatus = useCallback(async (id: string, status: OrderStatus, motivo?: string) => {
     if (!token) {
       throw new Error('Authentication required');
     }
 
     try {
-      const updatedOrder = await updateOrderStatus(token, id, status);
+      const updatedOrder = await updateOrderStatus(token, id, status, motivo);
       // Merge defensivo: preservamos el objeto local (con id y campos completos)
       // por si el backend devuelve la orden con otra forma/anidamiento.
       setOrders(prev =>
@@ -110,27 +110,6 @@ export function useOrders(filters: OrderFilters = {}) {
       return updatedOrder;
     } catch (err) {
       console.error('Error updating order status:', err);
-      throw err;
-    }
-  }, [token]);
-
-  // Actualizar las notas de una orden (motivo de cancelación o nota del admin).
-  // El backend permite al staff editar notas en cualquier estado.
-  const updateNotes = useCallback(async (id: string, notes: string) => {
-    if (!token) {
-      throw new Error('Authentication required');
-    }
-
-    try {
-      const updatedOrder = await updateOrder(token, id, { notes });
-      // Merge defensivo: si el backend devuelve la orden con otra forma
-      // (o sin id por doble-anidamiento), no perdemos el objeto local.
-      setOrders(prev =>
-        prev.map(order => order.id === id ? { ...order, ...updatedOrder, id, notes } : order)
-      );
-      return updatedOrder;
-    } catch (err) {
-      console.error('Error updating order notes:', err);
       throw err;
     }
   }, [token]);
@@ -153,7 +132,6 @@ export function useOrders(filters: OrderFilters = {}) {
     countsByStatus,
     getOrder,
     updateStatus,
-    updateNotes,
     refresh,
     goToPage,
   };

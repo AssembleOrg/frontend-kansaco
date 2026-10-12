@@ -39,7 +39,9 @@ export function OrderEditModal({
   onSuccess,
   isStaff = false,
 }: OrderEditModalProps) {
-  const { token } = useAuth();
+  const { token, user } = useAuth();
+  // El staff no edita la nota que escribió el cliente (tiene su nota interna).
+  const notesReadOnly = isStaff && order.userId !== user?.id;
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // Buscador de productos inline (para agregar sin salir del modal).
@@ -286,7 +288,8 @@ export function OrderEditModal({
           address,
         },
         items: orderItems,
-        notes,
+        // La nota del cliente solo la cambia el dueño del pedido.
+        ...(notesReadOnly ? {} : { notes }),
       };
 
       if (isMayorista) {
@@ -689,13 +692,16 @@ export function OrderEditModal({
 
           {/* Notas */}
           <div>
-            <Label htmlFor="edit-notes">Notas adicionales</Label>
+            <Label htmlFor="edit-notes">
+              {notesReadOnly ? 'Notas del cliente' : 'Notas adicionales'}
+            </Label>
             <Textarea
               id="edit-notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Información adicional sobre tu pedido..."
+              placeholder={notesReadOnly ? 'Sin notas' : 'Información adicional sobre tu pedido...'}
               disabled={isSubmitting}
+              readOnly={notesReadOnly}
               rows={3}
             />
           </div>
