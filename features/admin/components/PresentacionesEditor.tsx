@@ -9,15 +9,12 @@ import {
   BultoAdmin,
   getBultos,
   getBultosForProducts,
-  getGamasPorPresentacion,
   getSkusForProducts,
   renamePresentation,
-  setGamaPresentacion,
   setSkusPresentacion,
   unassignBulto,
 } from '@/lib/api';
 import { BultoInfo, splitPresentations } from '@/lib/bultos';
-import { GAMAS } from '@/lib/gamas';
 
 interface Props {
   token: string | null;
@@ -42,7 +39,7 @@ const parseSkus = (txt: string) => [
 ];
 
 /**
- * Tabla única de presentaciones: renombrar, gama, SKU Tango y bultos por fila.
+ * Tabla única de presentaciones: renombrar, SKU Tango y bultos por fila.
  * Todo se aplica al instante (no espera al "Guardar" del producto), igual que antes.
  */
 export function PresentacionesEditor({
@@ -55,7 +52,6 @@ export function PresentacionesEditor({
 }: Props) {
   const [catalogo, setCatalogo] = useState<BultoAdmin[]>([]);
   const [bultos, setBultos] = useState<Record<string, BultoInfo[]>>({});
-  const [gamas, setGamas] = useState<Record<string, string>>({});
   const [skus, setSkus] = useState<Record<string, string[]>>({});
   const [skuTxt, setSkuTxt] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
@@ -67,11 +63,10 @@ export function PresentacionesEditor({
     if (!token || !productId) return;
     setLoading(true);
     try {
-      // Cada parte falla por separado: sin bultos o sin gamas, el resto sigue andando.
-      const [cat, b, g, s] = await Promise.all([
+      // Cada parte falla por separado: sin bultos o sin SKU, el resto sigue andando.
+      const [cat, b, s] = await Promise.all([
         getBultos(token).catch(() => []),
         getBultosForProducts([productId]).catch(() => ({})),
-        getGamasPorPresentacion(token, [productId]).catch(() => ({})),
         getSkusForProducts([productId]).catch(() => ({})),
       ]);
       const skusProd =
@@ -80,7 +75,6 @@ export function PresentacionesEditor({
       setBultos(
         (b as Record<number, Record<string, BultoInfo[]>>)[productId] ?? {}
       );
-      setGamas((g as Record<number, Record<string, string>>)[productId] ?? {});
       setSkus(skusProd);
       setSkuTxt(
         Object.fromEntries(
@@ -99,7 +93,7 @@ export function PresentacionesEditor({
   if (!productId) {
     return (
       <p className="rounded-lg border border-dashed border-neutral-200 bg-neutral-50 px-3 py-2 text-xs text-neutral-500">
-        Creá el producto para cargar gama, SKU Tango y bultos de cada
+        Creá el producto para cargar SKU Tango y bultos de cada
         presentación.
       </p>
     );
@@ -110,7 +104,6 @@ export function PresentacionesEditor({
   const hayBorrador = borrador.join('|') !== guardadas.join('|');
   const nuevas = borrador.filter((p) => !guardadas.includes(p));
   const seQuitan = guardadas.filter((p) => !borrador.includes(p));
-  const sinGama = guardadas.filter((p) => !gamas[p]).length;
   const sinSku = guardadas.filter((p) => !skus[p]?.length).length;
 
   /** Ejecuta un cambio de una fila con su spinner y recarga. */
@@ -156,7 +149,7 @@ export function PresentacionesEditor({
       setRenombrando(null);
       onRenamed(product.presentation);
       toast.success('Presentación renombrada', {
-        description: `"${from}" → "${to}" (con su gama, SKU y bultos)`,
+        description: `"${from}" → "${to}" (con su SKU y bultos)`,
       });
     } catch (e) {
       toast.error(e instanceof Error ? e.message : 'No se pudo renombrar');
@@ -175,11 +168,6 @@ export function PresentacionesEditor({
         <span className="rounded-full bg-neutral-100 px-2 py-0.5 font-medium text-neutral-700">
           {guardadas.length} presentaci{guardadas.length === 1 ? 'ón' : 'ones'}
         </span>
-        {sinGama > 0 && (
-          <span className="rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-800">
-            {sinGama} sin gama
-          </span>
-        )}
         {sinSku > 0 && (
           <span className="rounded-full bg-amber-50 px-2 py-0.5 font-medium text-amber-800">
             {sinSku} sin SKU
@@ -208,7 +196,7 @@ export function PresentacionesEditor({
           {seQuitan.length > 0 && (
             <>
               {' '}
-              · se quitan (con su gama, SKU y bultos):{' '}
+              · se quitan (con su SKU y bultos):{' '}
               <b>{seQuitan.join(', ')}</b>
             </>
           )}
@@ -223,14 +211,11 @@ export function PresentacionesEditor({
         </p>
       ) : (
         <div className="max-h-[340px] overflow-auto rounded-lg border border-neutral-200">
-          <table className="w-full min-w-[640px] text-xs">
+          <table className="w-full min-w-[530px] text-xs">
             <thead className="sticky top-0 z-10 bg-neutral-50 text-[11px] uppercase tracking-wide text-neutral-500">
               <tr>
                 <th className="px-3 py-2 text-left font-semibold">
                   Presentación
-                </th>
-                <th className="w-[110px] px-2 py-2 text-left font-semibold">
-                  Gama
                 </th>
                 <th className="w-[210px] px-2 py-2 text-left font-semibold">
                   SKU Tango
@@ -303,7 +288,7 @@ export function PresentacionesEditor({
                             title={
                               hayBorrador
                                 ? 'Guardá o descartá los cambios del texto antes de renombrar'
-                                : 'Renombrar (conserva gama, SKU y bultos)'
+                                : 'Renombrar (conserva SKU y bultos)'
                             }
                             disabled={
                               bloqueado(pres) ||
@@ -320,36 +305,6 @@ export function PresentacionesEditor({
                           </button>
                         </div>
                       )}
-                    </td>
-
-                    {/* Gama */}
-                    <td className="px-2 py-1.5">
-                      <select
-                        aria-label={`Gama de ${pres}`}
-                        value={gamas[pres] ?? ''}
-                        disabled={bloqueado(pres)}
-                        onChange={(e) =>
-                          run(
-                            pres,
-                            () =>
-                              setGamaPresentacion(
-                                token!,
-                                productId,
-                                pres,
-                                e.target.value || null
-                              ),
-                            'No se pudo actualizar la gama'
-                          )
-                        }
-                        className={`w-full rounded-md border px-1.5 py-1 ${gamas[pres] ? 'border-neutral-300 bg-white' : 'border-amber-200 bg-amber-50 text-amber-800'}`}
-                      >
-                        <option value="">—</option>
-                        {GAMAS.map((g) => (
-                          <option key={g} value={g}>
-                            {g}
-                          </option>
-                        ))}
-                      </select>
                     </td>
 
                     {/* SKU Tango */}

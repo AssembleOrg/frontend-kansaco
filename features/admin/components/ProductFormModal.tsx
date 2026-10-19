@@ -173,7 +173,7 @@ export default function ProductFormModal({
   const { token } = useAuth();
   const [categoryInput, setCategoryInput] = useState('');
   // Presentación tal como está en la BD. Cambia al renombrar sin cerrar el modal:
-  // los editores (bultos/gama/SKU) y el renombrador trabajan sobre este texto.
+  // los editores (bultos/SKU) y el renombrador trabajan sobre este texto.
   const [savedPresentation, setSavedPresentation] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [selectedImages, setSelectedImages] = useState<ImageListItem[]>([]);

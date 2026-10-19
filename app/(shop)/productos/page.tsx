@@ -3,7 +3,7 @@
 
 import { useState, useEffect, useMemo, Suspense, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
-import { getGamasPorProducto, getProducts, getProductsPaginated, trackPublicEvent } from '@/lib/api';
+import { getProducts, getProductsPaginated, trackPublicEvent } from '@/lib/api';
 import { Product } from '@/types';
 import ProductCard from '@/features/products/components/ProductCard';
 import ProductFilters, { Faceta } from '@/features/products/components/client/ProductFilters';
@@ -15,13 +15,12 @@ import { useBultos } from '@/features/cart/hooks/useBultos';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { pareceMenor20L, splitPresentations, tipoEnvase } from '@/lib/bultos';
-import { GAMAS } from '@/lib/gamas';
 import { categoriasDe, puntaje } from '@/lib/busqueda';
 import { Search, X } from 'lucide-react';
 
 const ITEMS_PER_PAGE = 24;
 
-type Filtro = 'category' | 'envase' | 'tamano' | 'gama';
+type Filtro = 'category' | 'envase' | 'tamano';
 type Orden = 'destacados' | 'az' | 'za';
 
 const TAMANOS = { chico: 'Menos de 20 L (por bulto)', grande: '20 L o más' } as const;
@@ -38,7 +37,6 @@ const tamanosDe = (p: Product) => {
 
 function ProductsContent() {
   const [products, setProducts] = useState<Product[]>([]);
-  const [gamas, setGamas] = useState<Record<number, string[]>>({});
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -53,7 +51,6 @@ function ProductsContent() {
     category: searchParams.get('category'),
     envase: searchParams.get('envase'),
     tamano: searchParams.get('tamano'),
-    gama: searchParams.get('gama'),
   };
   const searchQuery = searchParams.get('search') ?? '';
   const orden = (searchParams.get('orden') as Orden) || 'destacados';
@@ -102,10 +99,6 @@ function ProductsContent() {
           all = (await getProducts(token)).filter((p) => p.isVisible);
         }
         if (!cancelled) setProducts(all);
-        // Sin gamas el filtro no aparece; el catálogo funciona igual.
-        getGamasPorProducto()
-          .then((g) => !cancelled && setGamas(g))
-          .catch(() => {});
       } catch (err) {
         if (!cancelled) {
           setError(err instanceof Error ? err.message : 'Error al cargar productos.');
@@ -159,7 +152,6 @@ function ProductsContent() {
     category: categoriasDe,
     envase: envasesDe,
     tamano: tamanosDe,
-    gama: (p) => gamas[p.id] ?? [],
   };
 
   /** Pasa todos los filtros menos `excepto` (para contar opciones de esa faceta). */
@@ -182,7 +174,7 @@ function ProductsContent() {
   };
 
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  const filtered = useMemo(() => products.filter((p) => pasa(p)), [products, gamas, qn, filtros.category, filtros.envase, filtros.tamano, filtros.gama]);
+  const filtered = useMemo(() => products.filter((p) => pasa(p)), [products, qn, filtros.category, filtros.envase, filtros.tamano]);
 
   const sorted = useMemo(
     () =>
@@ -216,11 +208,10 @@ function ProductsContent() {
     ...(filtros.tamano
       ? [{ key: 'tamano', label: TAMANOS[filtros.tamano as keyof typeof TAMANOS] ?? filtros.tamano }]
       : []),
-    ...(filtros.gama ? [{ key: 'gama', label: `Gama ${filtros.gama}` }] : []),
   ];
   const limpiarTodo = () => {
     setSearchTerm('');
-    setParams({ search: null, category: null, envase: null, tamano: null, gama: null });
+    setParams({ search: null, category: null, envase: null, tamano: null });
   };
 
   const renderPagination = () => {
@@ -338,7 +329,6 @@ function ProductsContent() {
                   label: TAMANOS[o.value as keyof typeof TAMANOS],
                 })),
               },
-              { key: 'gama', titulo: 'Gama', opciones: faceta('gama', [...GAMAS]) },
             ]}
             activos={filtros}
             onChange={(key, value) => setParams({ [key]: value })}
