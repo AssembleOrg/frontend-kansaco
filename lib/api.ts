@@ -2138,9 +2138,11 @@ export async function associateProductImage(
       );
     }
 
-    const result = await handleResponse<ProductImage>(response);
+    const result = await handleResponse<
+      ProductImage | { status: string; data: ProductImage }
+    >(response);
     apiLogger.response('POST', url, response.status);
-    return result;
+    return 'data' in result ? result.data : result;
   } catch (error) {
     apiLogger.error('POST', url, error);
     if (
@@ -2196,9 +2198,11 @@ export async function uploadProductImage(
       );
     }
 
-    const result = await handleResponse<ProductImage>(response);
+    const result = await handleResponse<
+      ProductImage | { status: string; data: ProductImage }
+    >(response);
     apiLogger.response('POST', url, response.status);
-    return result;
+    return 'data' in result ? result.data : result;
   } catch (error) {
     apiLogger.error('POST', url, error);
     throw error;
