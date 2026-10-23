@@ -422,8 +422,9 @@ export default function ProductsPage() {
       setIsModalOpen(false);
       setEditing(null);
       await load();
-    } catch {
-      toast.error(editing ? 'Error al actualizar el producto' : 'Error al crear el producto');
+    } catch (e) {
+      const fallback = editing ? 'Error al actualizar el producto' : 'Error al crear el producto';
+      toast.error(e instanceof Error ? `${fallback}: ${e.message}` : fallback);
     } finally {
       setIsSubmitting(false);
     }

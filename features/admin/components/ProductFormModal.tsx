@@ -597,6 +597,24 @@ export default function ProductFormModal({
       return;
     }
 
+    // El alta exige estos campos (al editar no, hay productos viejos sin cargar).
+    if (!product) {
+      const faltan = (
+        [
+          ['SKU', formData.sku],
+          ['Aplicación', formData.aplication],
+          ['Descripción', formData.description],
+          ['Presentaciones', formData.presentation],
+        ] as const
+      )
+        .filter(([, v]) => !v?.trim())
+        .map(([label]) => label);
+      if (faltan.length > 0) {
+        setError(`Completá: ${faltan.join(', ')}`);
+        return;
+      }
+    }
+
     if (formData.sku.trim()) {
       const skuPattern = /^[a-zA-Z0-9_-]+$/;
       if (!skuPattern.test(formData.sku.trim())) {
@@ -694,7 +712,7 @@ export default function ProductFormModal({
 
                 <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <Label htmlFor="sku">SKU (familia)</Label>
+                  <Label htmlFor="sku">SKU (familia){!product && ' *'}</Label>
                   <Input
                     id="sku"
                     name="sku"
@@ -702,6 +720,7 @@ export default function ProductFormModal({
                     onChange={handleInputChange}
                     placeholder="Ej: 2700"
                     disabled={isLoading}
+                    required={!product}
                   />
                   <p className="mt-1 text-xs text-gray-500">
                     Letras, números, guiones (-) y guiones bajos (_)
@@ -725,7 +744,7 @@ export default function ProductFormModal({
                 <div className="grid gap-4 sm:grid-cols-2">
               {/* Aplicación */}
               <div>
-                <Label htmlFor="aplication">Aplicación</Label>
+                <Label htmlFor="aplication">Aplicación{!product && ' *'}</Label>
                 <Input
                   id="aplication"
                   name="aplication"
@@ -733,6 +752,7 @@ export default function ProductFormModal({
                   onChange={handleInputChange}
                   placeholder="Ej: Uso en máquinas textiles"
                   disabled={isLoading}
+                  required={!product}
                 />
               </div>
 
@@ -752,7 +772,7 @@ export default function ProductFormModal({
                 </div>
               {/* Descripción */}
               <div>
-                <Label htmlFor="description">Descripción</Label>
+                <Label htmlFor="description">Descripción{!product && ' *'}</Label>
                 <Textarea
                   id="description"
                   name="description"
@@ -761,6 +781,7 @@ export default function ProductFormModal({
                   placeholder="Descripción del producto..."
                   rows={3}
                   disabled={isLoading}
+                  required={!product}
                 />
               </div>
 
@@ -769,7 +790,7 @@ export default function ProductFormModal({
               <section className="rounded-xl border border-neutral-200 bg-white p-4 space-y-3">
                 <h3 className="text-[11px] font-semibold uppercase tracking-wide text-neutral-400">Presentaciones</h3>
                 <div>
-                  <Label htmlFor="presentation">Opciones (separadas por coma)</Label>
+                  <Label htmlFor="presentation">Opciones (separadas por coma){!product && ' *'}</Label>
                   <Input
                     id="presentation"
                     name="presentation"
@@ -777,6 +798,7 @@ export default function ProductFormModal({
                     onChange={handleInputChange}
                     placeholder="Ej: Tambor 200 Litros, Balde 20 Litros, Bidón 1 Litro"
                     disabled={isLoading}
+                    required={!product}
                   />
                 </div>
                 <PresentacionesEditor
