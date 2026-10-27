@@ -118,11 +118,11 @@ const styles = StyleSheet.create({
     fontSize: 8,
   },
   colQuantity: {
-    width: '15%',
+    width: '22%',
     textAlign: 'center',
   },
   colName: {
-    width: '85%',
+    width: '78%',
   },
   footer: {
     marginTop: 12,
@@ -340,16 +340,19 @@ const PedidoDocument: React.FC<PDFPedidoProps> = ({ order }) => {
 
               {order.items.map((item, index) => (
                 <View key={index} style={styles.tableRow}>
-                  <Text style={styles.colQuantity}>{item.quantity}</Text>
+                  <Text style={styles.colQuantity}>
+                    {describirBultos(item.quantity, item.bultos)
+                      ? `${describirBultos(item.quantity, item.bultos)} (${item.quantity} u.)`
+                      : item.quantity}
+                  </Text>
                   <Text style={styles.colName}>
                     {item.productName}
                     {item.productId == null && ' (excepcional, a cotizar)'}
-                    {(item.presentation || describirBultos(item.quantity, item.bultos)) && (
+                    {(item.presentation || !!item.skus?.length) && (
                       <Text style={{ fontSize: 7, color: '#666' }}>
                         {'\n'}
                         {[
                           item.presentation,
-                          describirBultos(item.quantity, item.bultos),
                           item.skus?.length ? `SKU ${item.skus.join(' / ')}` : '',
                         ]
                           .filter(Boolean)
