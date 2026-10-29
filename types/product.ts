@@ -19,4 +19,6 @@ export interface Product {
   isVisible: boolean;
   isFeatured: boolean;
   price: number | null;
+  /** Ficha técnica (PDF). El archivo se pide con login a /product/:id/technical-sheet. */
+  technicalSheet?: { name: string; size: number | null } | null;
 }

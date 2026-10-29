@@ -20,6 +20,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Progress } from '@/components/ui/progress';
 import ImageSelectionModal from './ImageSelectionModal';
 import { PresentacionesEditor } from './PresentacionesEditor';
+import { FichaTecnicaEditor } from './FichaTecnicaEditor';
 import {
   ImageListItem,
   getProductImages,
@@ -1056,6 +1057,16 @@ export default function ProductFormModal({
                 </Label>
               </div>
 
+              </section>
+              <section className="rounded-xl border border-neutral-200 bg-white p-4">
+                <FichaTecnicaEditor
+                  key={product?.id ?? 'nuevo'}
+                  token={token}
+                  productId={product?.id}
+                  productName={formData.name || product?.name || ''}
+                  initial={product?.technicalSheet}
+                  disabled={isLoading}
+                />
               </section>
               <section className="rounded-xl border border-neutral-200 bg-white p-4">
               {/* Categorías */}

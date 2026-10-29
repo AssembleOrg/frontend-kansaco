@@ -13,7 +13,8 @@ import { useAuth } from '@/features/auth/hooks/useAuth';
 import { useBultos } from '@/features/cart/hooks/useBultos';
 import { useSkus } from '@/features/cart/hooks/useSkus';
 import { splitPresentations } from '@/lib/bultos';
-import { Loader2, ArrowLeft, Info, Droplet, Box, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Loader2, ArrowLeft, Info, Droplet, Box, ChevronLeft, ChevronRight, FileText, Lock } from 'lucide-react';
+import TechnicalSheetViewer from '@/features/products/components/client/TechnicalSheetViewer';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
@@ -24,6 +25,8 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
   const [productImages, setProductImages] = useState<ProductImage[]>([]);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [isLoadingImages, setIsLoadingImages] = useState(true);
+  const { token } = useAuth();
+  const [isSheetOpen, setIsSheetOpen] = useState(false);
   const bultos = useBultos([product.id])[product.id];
   const skus = useSkus([product.id])[product.id];
 
@@ -300,6 +303,38 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
               })()}
             </div>
 
+            {product.technicalSheet && (
+              <div>
+                <div className="mb-2 flex items-center space-x-2">
+                  <FileText className="h-5 w-5 text-gray-500" />
+                  <h2 className="text-lg font-semibold text-gray-900">
+                    Ficha técnica
+                  </h2>
+                </div>
+                {token ? (
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => setIsSheetOpen(true)}
+                    className="border-green-600 text-green-700 hover:bg-green-50 hover:text-green-800"
+                  >
+                    <FileText className="mr-2 h-4 w-4" />
+                    Ver ficha técnica
+                  </Button>
+                ) : (
+                  <Link
+                    href={`/login?redirect=${encodeURIComponent(
+                      `/productos/${encodeURIComponent(product.slug)}/`
+                    )}`}
+                    className="inline-flex items-center gap-2 rounded-md border border-gray-300 px-4 py-2 text-sm text-gray-700 transition-colors hover:border-green-600 hover:text-green-700"
+                  >
+                    <Lock className="h-4 w-4" />
+                    Iniciá sesión para ver la ficha técnica
+                  </Link>
+                )}
+              </div>
+            )}
+
             <div className="mt-auto pt-6">
               <AddToCartButton
                 product={product}
@@ -309,6 +344,16 @@ function ProductDetailView({ product, backUrl }: { product: Product; backUrl: st
           </div>
         </div>
       </div>
+
+      {isSheetOpen && token && product.technicalSheet && (
+        <TechnicalSheetViewer
+          productId={product.id}
+          productName={product.name}
+          fileName={product.technicalSheet.name}
+          token={token}
+          onClose={() => setIsSheetOpen(false)}
+        />
+      )}
     </div>
   );
 }

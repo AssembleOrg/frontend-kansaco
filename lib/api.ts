@@ -1076,6 +1076,8 @@ export async function createProduct(
   // Limpiar campos que no acepta el DTO del backend
   const cleanData: Omit<Product, 'id' | 'slug'> = { ...productData };
   delete (cleanData as Record<string, unknown>).categories;
+  // La ficha técnica se sube aparte (uploadTechnicalSheet).
+  delete (cleanData as Record<string, unknown>).technicalSheet;
   // Ensure category is never null/empty — backend requires non-null
   if (!cleanData.category || cleanData.category.length === 0) {
     cleanData.category = ['General'];
@@ -1121,6 +1123,7 @@ export async function updateProduct(
   delete (cleanData as Partial<Product>).id;
   delete (cleanData as Partial<Product>).slug;
   delete (cleanData as Record<string, unknown>).categories;
+  delete (cleanData as Record<string, unknown>).technicalSheet;
   // Ensure category is never null/empty — backend requires non-null
   if (cleanData.category !== undefined && (!cleanData.category || cleanData.category.length === 0)) {
     cleanData.category = ['General'];
@@ -3207,4 +3210,107 @@ export async function markNotificationsRead(token: string, id?: number): Promise
     cache: 'no-store',
   });
   await handleResponse(response);
+}
+
+// ===== Ficha técnica (PDF) por producto =====
+
+export interface TechnicalSheetInfo {
+  name: string;
+  size: number | null;
+}
+
+/** Sube o reemplaza la ficha técnica. Sólo ADMIN/ASISTENTE. */
+export function uploadTechnicalSheet(
+  token: string,
+  productId: number,
+  file: File,
+  onProgress?: (percent: number) => void
+): Promise<TechnicalSheetInfo> {
+  const url = `${API_BASE_URL}/product/${productId}/technical-sheet`;
+  apiLogger.request('POST', url);
+
+  return new Promise<TechnicalSheetInfo>((resolve, reject) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', url);
+    xhr.setRequestHeader('Authorization', `Bearer ${token}`);
+    xhr.setRequestHeader('Accept', 'application/json');
+    xhr.upload?.addEventListener('progress', (event) => {
+      if (onProgress && event.lengthComputable && event.total > 0) {
+        onProgress(Math.round((event.loaded / event.total) * 100));
+      }
+    });
+
+    xhr.onload = () => {
+      apiLogger.response('POST', url, xhr.status);
+      let json: { data?: TechnicalSheetInfo; message?: string | string[] } | null = null;
+      try {
+        json = JSON.parse(xhr.responseText);
+      } catch {
+        // respuesta sin JSON
+      }
+      if (xhr.status >= 200 && xhr.status < 300 && json?.data) {
+        resolve(json.data);
+        return;
+      }
+      if (xhr.status === 401) {
+        handleUnauthorized();
+        reject(new Error('Tu sesión venció. Volvé a iniciar sesión.'));
+        return;
+      }
+      if (xhr.status === 413) {
+        reject(new Error('El PDF no puede superar los 20 MB'));
+        return;
+      }
+      if (xhr.status === 429) {
+        reject(new Error('Demasiados intentos seguidos. Esperá unos segundos.'));
+        return;
+      }
+      const message = Array.isArray(json?.message)
+        ? json.message.join(', ')
+        : json?.message;
+      reject(new Error(message || `Error ${xhr.status} al subir la ficha técnica`));
+    };
+    xhr.onerror = () => reject(new Error('Error de red al subir la ficha técnica'));
+    xhr.send(formData);
+  });
+}
+
+/** Quita la ficha técnica del producto. Sólo ADMIN/ASISTENTE. */
+export async function deleteTechnicalSheet(
+  token: string,
+  productId: number
+): Promise<void> {
+  const response = await fetch(
+    `${API_BASE_URL}/product/${productId}/technical-sheet`,
+    {
+      method: 'DELETE',
+      headers: { Accept: 'application/json', Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    }
+  );
+  await handleResponse<unknown>(response);
+}
+
+/** Trae el PDF de la ficha técnica. Requiere estar logueado. */
+export async function fetchTechnicalSheet(
+  token: string,
+  productId: number
+): Promise<Blob> {
+  const response = await fetch(
+    `${API_BASE_URL}/product/${productId}/technical-sheet`,
+    {
+      headers: { Accept: 'application/pdf', Authorization: `Bearer ${token}` },
+      cache: 'no-store',
+    }
+  );
+  if (!response.ok) {
+    if (response.status === 404) {
+      throw new Error('Este producto no tiene ficha técnica disponible.');
+    }
+    await handleResponse<unknown>(response);
+  }
+  return response.blob();
 }
