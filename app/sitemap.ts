@@ -2,8 +2,10 @@ import type { MetadataRoute } from 'next';
 import { SITE_URL, canonicalPath } from '@/lib/seo';
 import { getPublicProductsForSitemap } from '@/lib/seo-products';
 
-// Se regenera cada hora: los productos nuevos entran solos.
-export const revalidate = 3600;
+// Dinámico: en el build de Railway el backend privado no responde y el
+// sitemap quedaba sin productos. Las consultas al backend se cachean 1 h
+// (next.revalidate en seo-products), así que no le pega en cada pedido.
+export const dynamic = 'force-dynamic';
 
 const STATIC_PAGES: { path: string; priority: number; changeFrequency: 'daily' | 'weekly' | 'monthly' | 'yearly' }[] = [
   { path: '/', priority: 1, changeFrequency: 'weekly' },
