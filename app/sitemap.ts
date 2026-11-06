@@ -13,7 +13,6 @@ const STATIC_PAGES: { path: string; priority: number; changeFrequency: 'daily' |
   { path: '/lineas-de-productos', priority: 0.8, changeFrequency: 'monthly' },
   { path: '/kancore', priority: 0.7, changeFrequency: 'monthly' },
   { path: '/tecnologia-lubricantes', priority: 0.6, changeFrequency: 'monthly' },
-  { path: '/lubri-experto', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/mayorista', priority: 0.6, changeFrequency: 'monthly' },
   { path: '/sobre-nosotros', priority: 0.5, changeFrequency: 'yearly' },
   { path: '/contacto', priority: 0.5, changeFrequency: 'yearly' },

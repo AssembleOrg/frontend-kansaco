@@ -9,6 +9,8 @@ export const metadata = pageMetadata({
   description:
     'Contanos qué vehículo o equipo tenés y te recomendamos el lubricante Kansaco indicado para cada uso.',
   path: '/lubri-experto',
+  // Todavía no está terminado: fuera de Google hasta que se lance.
+  noindex: true,
 });
 
 export default function LubriExpertoPage() {
