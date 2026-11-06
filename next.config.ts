@@ -60,6 +60,13 @@ const nextConfig: NextConfig = {
 
   async redirects() {
     return [
+      // Un solo dominio para Google: www → kansaco.com (mismo camino y query).
+      {
+        source: '/:path*',
+        has: [{ type: 'host', value: 'www.kansaco.com' }],
+        destination: 'https://kansaco.com/:path*',
+        permanent: true,
+      },
       // Páginas redirect 301 (con y sin trailing slash)
       // Ver acercade en (business)/ por linea kansaco
       {

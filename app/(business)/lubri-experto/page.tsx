@@ -2,12 +2,14 @@ import { Bot } from 'lucide-react';
 import Footer from '@/components/landing/Footer';
 import BackToHomeButton from '@/components/ui/BackToHomeButton';
 import LubriExpertoForm from '@/components/forms/LubriExpertoForm';
+import { pageMetadata } from '@/lib/seo';
 
-export const metadata = {
-  title: 'Lubri Experto | Kansaco',
+export const metadata = pageMetadata({
+  title: 'Lubri Experto: qué aceite usar en tu vehículo o equipo',
   description:
-    'Contanos qué vehículo o equipo tenés y te recomendamos el lubricante exacto.',
-};
+    'Contanos qué vehículo o equipo tenés y te recomendamos el lubricante Kansaco indicado para cada uso.',
+  path: '/lubri-experto',
+});
 
 export default function LubriExpertoPage() {
   return (

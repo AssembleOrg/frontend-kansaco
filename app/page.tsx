@@ -5,6 +5,7 @@
 // 5. Acento complementario: #f7faf8 (para fondos alternos)
 
 import { Suspense } from 'react';
+import type { Metadata } from 'next';
 import dynamic from 'next/dynamic';
 import Navbar from '@/components/landing/Navbar';
 import HeroBanner from '@/components/landing/HeroBanner';
@@ -16,6 +17,10 @@ import {
   ArgentinaSkeleton,
   FooterSkeleton,
 } from '@/components/landing/skeletons';
+
+export const metadata: Metadata = {
+  alternates: { canonical: '/' },
+};
 
 // Below-the-fold: difiero el chunk hasta que el usuario scrollea (Suspense
 // muestra el skeleton mientras carga). Cada uno arrastra framer-motion y/o

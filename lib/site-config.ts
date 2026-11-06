@@ -12,7 +12,7 @@ export const siteConfig = {
     cuit: '30-58610901-0',
     tagline: 'Ingeniería Líquida',
     description:
-      'Kansaco - Lubricantes y Aceites Industriales',
+      'Fabricantes argentinos de lubricantes desde hace más de 50 años: aceites para motor, caja y diferencial, motos, agro, náutica e industria, grasas y aditivos. Venta mayorista y minorista.',
     url: 'https://kansaco.com',
   },
 
@@ -40,6 +40,11 @@ export const siteConfig = {
     primaryHover: '#128a38',
     accentGold: '#d4af37',
     accentGoldDark: '#b8962e',
+  },
+
+  // Medición: Google Analytics 4, propiedad "Kansaco" (cuenta de Pistech).
+  analytics: {
+    ga4Id: process.env.NEXT_PUBLIC_GA_ID || 'G-Y2B1SKY8L5',
   },
 
   // Desarrollador
