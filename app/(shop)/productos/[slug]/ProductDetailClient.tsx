@@ -18,6 +18,7 @@ import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/constants/images';
+import { listadoGuardado } from '@/lib/volver-a-productos';
 
 function ProductDetailView({ product, backUrl }: { product: Product; backUrl: string }) {
   const { getProductPrice } = useCart();
@@ -380,18 +381,25 @@ function ProductDetailPageContent({ initialProduct }: { initialProduct: Product 
     }
   })();
 
-  // Construir la URL de retorno con los parámetros de la página anterior
-  const getBackUrl = () => {
+  // Construir la URL de retorno con los parámetros de la página anterior.
+  // Links viejos traen ?page/?category; los nuevos lo dejan en sessionStorage
+  // (se lee después de montar para no romper la hidratación).
+  const getBackUrl = (fallbackQs = '') => {
     const page = searchParams.get('page');
     const category = searchParams.get('category');
     const params = new URLSearchParams();
     if (page) params.set('page', page);
     if (category) params.set('category', category);
-    const queryString = params.toString();
+    const queryString = params.toString() || fallbackQs;
     return queryString ? `/productos?${queryString}` : '/productos';
   };
 
-  const backUrl = getBackUrl();
+  const [backUrl, setBackUrl] = useState(() => getBackUrl());
+  useEffect(() => {
+    if (searchParams.get('page') || searchParams.get('category') || !slug) return;
+    const qs = listadoGuardado(slug);
+    if (qs) setBackUrl(`/productos?${qs}`);
+  }, [searchParams, slug]);
 
   useEffect(() => {
     const fetchProduct = async () => {

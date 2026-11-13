@@ -10,6 +10,7 @@ import { AddToCartButton } from '@/features/cart/components/client/AddToCartButt
 import { useCart } from '@/features/cart/hooks/useCart';
 import { BultoInfo, splitPresentations } from '@/lib/bultos';
 import { DEFAULT_PRODUCT_IMAGE } from '@/lib/constants/images';
+import { productoCanonicalHref, recordarListado } from '@/lib/volver-a-productos';
 
 const MAX_PRES = 3;
 
@@ -24,19 +25,10 @@ export default function ProductCard({
   const { formatPrice, getProductPrice } = useCart();
   const searchParams = useSearchParams();
   
-  // Construir la URL del detalle con los parámetros actuales (page, category, etc.)
-  const getProductDetailUrl = () => {
-    const page = searchParams.get('page');
-    const category = searchParams.get('category');
-    const params = new URLSearchParams();
-    if (page) params.set('page', page);
-    if (category) params.set('category', category);
-    const queryString = params.toString();
-    const safeSlug = encodeURIComponent(product.slug);
-    return queryString ? `/productos/${safeSlug}?${queryString}` : `/productos/${safeSlug}`;
-  };
-  
-  const productDetailUrl = getProductDetailUrl();
+  // Siempre la URL canónica (sin ?page/?category): Google las tomaba como
+  // duplicadas. El filtro del listado se recuerda para el botón "volver".
+  const productDetailUrl = productoCanonicalHref(product.slug);
+  const onOpenDetail = () => recordarListado(product.slug, searchParams);
 
   const imageUrl = product.imageUrl || DEFAULT_PRODUCT_IMAGE;
   const imageAlt = product.name;
@@ -49,7 +41,7 @@ export default function ProductCard({
   return (
     <div className="flex h-full flex-col overflow-hidden rounded-lg border shadow-md transition-all duration-300 hover:scale-[1.02] hover:border-green-500 hover:shadow-xl">
       <Link
-        href={productDetailUrl}
+        href={productDetailUrl} onClick={onOpenDetail}
         className="group relative block aspect-square bg-gray-50"
       >
         <Image
@@ -77,7 +69,7 @@ export default function ProductCard({
         )}
 
         {/* Nombre del producto */}
-        <Link href={productDetailUrl}>
+        <Link href={productDetailUrl} onClick={onOpenDetail}>
           <h3 className="mb-2 flex-grow text-base font-semibold text-gray-800 hover:text-green-700 md:text-lg">
             {product.name}
           </h3>
@@ -129,7 +121,7 @@ export default function ProductCard({
             product={product}
             className="w-full bg-green-600 hover:bg-green-700 text-white"
           />
-          <Link href={productDetailUrl} className="block">
+          <Link href={productDetailUrl} onClick={onOpenDetail} className="block">
             <span className="block w-full rounded-md border border-green-600 bg-white px-4 py-2 text-center text-sm font-medium text-green-600 transition-colors duration-300 hover:bg-green-50">
               Ver detalles
             </span>
